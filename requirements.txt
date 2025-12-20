@@ -1,0 +1,25 @@
+# Automation Framework - Dépendances Python
+# Installation: pip install -r requirements.txt
+
+# Capture d'écran
+mss>=9.0.0
+
+# Vision par ordinateur
+opencv-python>=4.8.0
+Pillow>=10.0.0
+numpy>=1.24.0
+
+# Automatisation
+pyautogui>=0.9.54
+
+# Windows (Windows uniquement)
+pywin32>=306; sys_platform == 'win32'
+pynput>=1.7.6
+
+# OCR - Choisir une option:
+# Option 1: EasyOCR (recommandé, supporte GPU)
+# easyocr>=1.7.0
+
+# Option 2: Tesseract (léger, CPU only)
+# Installer Tesseract séparément: https://github.com/UB-Mannheim/tesseract/wiki
+# pytesseract>=0.3.10
