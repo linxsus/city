@@ -176,16 +176,13 @@ class ManoirBase(ABC):
     def placer_fenetre(self):
         """Place la fenêtre à la position et dimensions configurées
 
-        La largeur réelle est calculée à partir de la hauteur et du ratio de la fenêtre.
-        La largeur de config sert de zone de référence pour le positionnement.
+        Gère automatiquement les fenêtres BlueStacks avec ou sans publicité.
+        La pub est à gauche de la zone de jeu, donc on décale la fenêtre vers
+        la gauche pour que la zone de jeu soit visible à la position configurée.
 
-        Le placement ne se fait que si :
-        - C'est le premier placement (démarrage)
-        - La fenêtre a été déplacée ou redimensionnée par l'utilisateur
-
-        Logique:
-        - Si largeur_calculée < largeur_config : ERREUR (zone trop petite)
-        - Si largeur_calculée > largeur_config : ajuster position_x vers la gauche
+        Détection pub/sans pub basée sur le ratio largeur/hauteur:
+        - Sans pub: ratio ≈ 0.55-0.58 (largeur ~563-600px pour hauteur 1032-1040)
+        - Avec pub: ratio ≈ 0.85-0.89 (largeur ~880-920px pour hauteur 1032-1040)
 
         Returns:
             bool: True si succès
@@ -197,7 +194,7 @@ class ManoirBase(ABC):
             self.logger.warning(f"Impossible de placer: fenêtre {self.titre_bluestacks} non trouvée")
             return False
 
-        # Vérifier si un placement est nécessaire
+        # Récupérer les dimensions actuelles AVANT redimensionnement
         rect_actuelle = self._wm.get_window_rect(self._hwnd)
         if not rect_actuelle:
             self.logger.error("Impossible de récupérer la position actuelle")
@@ -206,13 +203,24 @@ class ManoirBase(ABC):
         x_actuel, y_actuel = rect_actuelle[0], rect_actuelle[1]
         largeur_actuelle = rect_actuelle[2] - rect_actuelle[0]
         hauteur_actuelle = rect_actuelle[3] - rect_actuelle[1]
-        position_actuelle = (x_actuel, y_actuel, largeur_actuelle, hauteur_actuelle)
+
+        # Calculer le ratio actuel pour détecter la présence de pub
+        ratio_actuel = largeur_actuelle / hauteur_actuelle if hauteur_actuelle > 0 else 0
+        ratio_cible_sans_pub = self.largeur / self.hauteur  # 600/1040 ≈ 0.577
+
+        # Seuil de détection : si ratio > 0.70, il y a probablement de la pub
+        SEUIL_RATIO_PUB = 0.70
+        a_pub = ratio_actuel > SEUIL_RATIO_PUB
+
+        if not self._fenetre_placee:
+            self.logger.info(
+                f"Premier placement - Dimensions actuelles: {largeur_actuelle}x{hauteur_actuelle}, "
+                f"ratio: {ratio_actuel:.3f}, pub détectée: {a_pub}"
+            )
 
         # Si déjà placée, vérifier si elle a été modifiée
         if self._fenetre_placee and self._position_attendue:
             x_att, y_att, w_att, h_att = self._position_attendue
-
-            # Tolérance de 5px pour les bordures Windows
             tolerance = 5
 
             if (abs(x_actuel - x_att) <= tolerance and
@@ -223,20 +231,16 @@ class ManoirBase(ABC):
                 return True
             else:
                 self.logger.info(
-                    f"Fenêtre déplacée/redimensionnée détectée: "
-                    f"position actuelle ({x_actuel}, {y_actuel}, {largeur_actuelle}x{hauteur_actuelle}) != "
-                    f"position attendue ({x_att}, {y_att}, {w_att}x{h_att})"
+                    f"Fenêtre modifiée détectée: "
+                    f"({x_actuel}, {y_actuel}, {largeur_actuelle}x{hauteur_actuelle}) != "
+                    f"attendu ({x_att}, {y_att}, {w_att}x{h_att})"
                 )
 
-        # Premier placement ou fenêtre a été modifiée -> replacer
-        if not self._fenetre_placee:
-            self.logger.info("Premier placement de la fenêtre")
-
-        # Redimensionner avec maintien du ratio
+        # Redimensionner avec maintien du ratio actuel
         success = self._wm.resize_with_aspect_ratio(
             self._hwnd,
             height=self.hauteur,
-            aspect_ratio=None,  # Auto-détection du ratio actuel
+            aspect_ratio=None,  # Garde le ratio actuel (avec ou sans pub)
             x=self.position_x,  # Position temporaire
             y=self.position_y
         )
@@ -244,37 +248,31 @@ class ManoirBase(ABC):
         if not success:
             return False
 
-        # Récupérer la largeur réelle calculée
+        # Récupérer la largeur réelle après redimensionnement
         size = self._wm.get_window_size(self._hwnd)
         if not size:
-            self.logger.error("Impossible de récupérer les dimensions après placement")
+            self.logger.error("Impossible de récupérer les dimensions après redimensionnement")
             return False
 
         largeur_calculee, hauteur_reelle = size
-        largeur_config = self.largeur
+        largeur_config = self.largeur  # Zone de jeu attendue (600px)
 
         # Calculer la position finale
-        position_x_finale = self.position_x
-        position_y_finale = self.position_y
+        position_x_finale = self.position_x if self.position_x is not None else 0
+        position_y_finale = self.position_y if self.position_y is not None else 0
 
-        # Vérifier la cohérence avec la largeur de config
-        if largeur_calculee < largeur_config:
-            self.logger.error(
-                f"ERREUR: Largeur calculée ({largeur_calculee}px) < largeur config ({largeur_config}px). "
-                f"La zone de jeu sera trop petite pour le positionnement!"
-            )
-            # On continue quand même, mais on log l'erreur
-        elif largeur_calculee > largeur_config:
-            # Ajuster la position X vers la gauche pour centrer la zone de référence
+        # Si la fenêtre est plus large que la zone de jeu (pub présente),
+        # décaler vers la gauche pour cacher la pub
+        if largeur_calculee > largeur_config:
             decalage = largeur_calculee - largeur_config
-            position_x_finale = self.position_x - decalage if self.position_x is not None else -decalage
+            position_x_finale = (self.position_x if self.position_x is not None else 0) - decalage
 
             self.logger.info(
-                f"Largeur calculée ({largeur_calculee}px) > largeur config ({largeur_config}px). "
+                f"Pub détectée ({largeur_calculee}px > {largeur_config}px) - "
                 f"Décalage de {decalage}px vers la gauche (x: {self.position_x} -> {position_x_finale})"
             )
 
-            # Repositionner la fenêtre
+            # Repositionner la fenêtre avec le décalage
             self._wm.move_and_resize_window(
                 self._hwnd,
                 x=position_x_finale,
@@ -282,14 +280,22 @@ class ManoirBase(ABC):
                 width=largeur_calculee,
                 height=hauteur_reelle
             )
-        else:
-            self.logger.debug(
-                f"Largeur calculée ({largeur_calculee}px) = largeur config ({largeur_config}px). Perfect!"
+        elif largeur_calculee < largeur_config:
+            self.logger.warning(
+                f"Fenêtre plus petite que prévu ({largeur_calculee}px < {largeur_config}px) - "
+                f"La zone de jeu pourrait être tronquée"
             )
+        else:
+            self.logger.info(f"Fenêtre sans pub ({largeur_calculee}x{hauteur_reelle})")
 
-        # Mémoriser la position attendue
+        # Mémoriser la position attendue pour détecter les changements
         self._position_attendue = (position_x_finale, position_y_finale, largeur_calculee, hauteur_reelle)
         self._fenetre_placee = True
+
+        self.logger.info(
+            f"Fenêtre placée: position ({position_x_finale}, {position_y_finale}), "
+            f"dimensions {largeur_calculee}x{hauteur_reelle}"
+        )
 
         return True
     
