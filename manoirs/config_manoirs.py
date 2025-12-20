@@ -28,18 +28,36 @@ BLUESTACKS_MANAGER = r"C:\Program Files\BlueStacks_nxt\HD-MultiInstanceManager.e
 # Structure de la fenêtre BlueStacks (de gauche à droite):
 # [PUB (~320px)] [ZONE DE JEU (~563px)] [BANDEAU DROIT (~32px)]
 #
-# Dimensions observées (hauteur ~1032px):
-# - Sans pub, sans bandeau : 563 x 1032 (ratio 0.545)
-# - Sans pub, avec bandeau : 595 x 1032 (ratio 0.577)
-# - Avec pub, sans bandeau : 883 x 1032 (ratio 0.856)
-# - Avec pub, avec bandeau : 915 x 1032 (ratio 0.887)
+# Les 4 configurations correctes (hauteur fixe 1030):
+# - Sans pub, sans bandeau : 563 x 1030
+# - Sans pub, avec bandeau : 595 x 1030
+# - Avec pub, sans bandeau : 884 x 1030
+# - Avec pub, avec bandeau : 915 x 1030
 
+# Hauteur cible pour toutes les configurations
+BLUESTACKS_HAUTEUR = 1030
+
+# Dimensions des 4 configurations possibles
+BLUESTACKS_DIMENSIONS = {
+    # (a_pub, a_bandeau): (largeur, hauteur)
+    (False, False): (563, 1030),  # Sans pub, sans bandeau
+    (False, True): (595, 1030),   # Sans pub, avec bandeau
+    (True, False): (884, 1030),   # Avec pub, sans bandeau
+    (True, True): (915, 1030),    # Avec pub, avec bandeau
+}
+
+# Constantes individuelles (pour compatibilité)
 BLUESTACKS_LARGEUR_ZONE_JEU = 563      # Zone de jeu pure (sans bandeau)
 BLUESTACKS_LARGEUR_BANDEAU = 32         # Bandeau droit avec icônes
 BLUESTACKS_LARGEUR_ZONE_AVEC_BANDEAU = 595  # Zone de jeu + bandeau
 BLUESTACKS_LARGEUR_PUB = 320            # Largeur approximative de la pub
 
-# Seuil de ratio pour détecter la présence de pub
+# Seuils de détection
+BLUESTACKS_SEUIL_PUB = 700  # Si largeur > 700, fenêtre a pub
+BLUESTACKS_SEUIL_BANDEAU_SANS_PUB = 579  # Milieu entre 563 et 595
+BLUESTACKS_SEUIL_BANDEAU_AVEC_PUB = 900  # Milieu entre 884 et 915
+
+# Seuil de ratio pour détecter la présence de pub (conservé pour compatibilité)
 # Sans pub: ratio ≈ 0.55-0.58 | Avec pub: ratio ≈ 0.85-0.89
 BLUESTACKS_SEUIL_RATIO_PUB = 0.70
 

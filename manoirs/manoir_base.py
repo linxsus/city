@@ -18,12 +18,7 @@ from utils.config import (
     CAPTURES_DIR,
     TEMPLATES_DIR,
 )
-from manoirs.config_manoirs import (
-    BLUESTACKS_LARGEUR_ZONE_JEU,
-    BLUESTACKS_LARGEUR_BANDEAU,
-    BLUESTACKS_LARGEUR_ZONE_AVEC_BANDEAU,
-    BLUESTACKS_SEUIL_RATIO_PUB,
-)
+from manoirs.config_manoirs import BLUESTACKS_HAUTEUR
 from utils.logger import get_manoir_logger
 from utils.coordinates import relative_to_absolute, clamp_to_window
 import actions.liste_actions as ListeActions
@@ -31,7 +26,7 @@ from vision.screen_capture import get_screen_capture
 from vision.image_matcher import get_image_matcher
 from vision.color_detector import get_color_detector
 from vision.ocr_engine import get_ocr_engine
-from core.window_manager import get_window_manager
+from core.window_manager import get_window_manager, detecter_dimensions_bluestacks
 from core.slot_manager import get_slot_manager
 from core.timer_manager import get_timer_manager
 from core.window_state_manager import get_window_state_manager
@@ -180,12 +175,14 @@ class ManoirBase(ABC):
         return False
 
     def placer_fenetre(self):
-        """Place la fenêtre à la position et dimensions configurées
+        """Place la fenêtre à la position et dimensions correctes
 
-        Gère automatiquement les fenêtres BlueStacks avec ou sans publicité.
-
-        Structure de la fenêtre BlueStacks (de gauche à droite):
-        [PUB (~320px)] [ZONE DE JEU (~563px)] [BANDEAU DROIT (~32px)]
+        Détecte automatiquement la configuration BlueStacks (pub/bandeau) et
+        applique les dimensions correctes parmi les 4 configurations valides:
+        - 563 x 1030 (sans pub, sans bandeau)
+        - 595 x 1030 (sans pub, avec bandeau)
+        - 884 x 1030 (avec pub, sans bandeau)
+        - 915 x 1030 (avec pub, avec bandeau)
 
         La pub est à gauche, donc on décale la fenêtre vers la gauche pour
         que la zone de jeu soit visible à la position configurée.
@@ -200,7 +197,7 @@ class ManoirBase(ABC):
             self.logger.warning(f"Impossible de placer: fenêtre {self.titre_bluestacks} non trouvée")
             return False
 
-        # Récupérer les dimensions actuelles AVANT redimensionnement
+        # Récupérer les dimensions actuelles
         rect_actuelle = self._wm.get_window_rect(self._hwnd)
         if not rect_actuelle:
             self.logger.error("Impossible de récupérer la position actuelle")
@@ -210,26 +207,26 @@ class ManoirBase(ABC):
         largeur_actuelle = rect_actuelle[2] - rect_actuelle[0]
         hauteur_actuelle = rect_actuelle[3] - rect_actuelle[1]
 
-        # Calculer le ratio actuel pour détecter la présence de pub
-        ratio_actuel = largeur_actuelle / hauteur_actuelle if hauteur_actuelle > 0 else 0
-        a_pub = ratio_actuel > BLUESTACKS_SEUIL_RATIO_PUB
-
-        # Détecter si bandeau présent (tolérance de 20px)
-        # Sans pub : 563 (sans bandeau) ou 595 (avec bandeau)
-        # Avec pub : 883 (sans bandeau) ou 915 (avec bandeau)
-        largeur_base = largeur_actuelle
-        if a_pub:
-            # Soustraire la pub estimée pour obtenir la zone de jeu
-            largeur_base = largeur_actuelle - (largeur_actuelle - BLUESTACKS_LARGEUR_ZONE_AVEC_BANDEAU)
-
-        a_bandeau = abs(largeur_base - BLUESTACKS_LARGEUR_ZONE_AVEC_BANDEAU) < 20 or \
-                    abs(largeur_actuelle - BLUESTACKS_LARGEUR_ZONE_AVEC_BANDEAU) < 20
+        # Détecter la configuration et obtenir les dimensions correctes
+        detection = detecter_dimensions_bluestacks(largeur_actuelle, hauteur_actuelle)
+        largeur_cible, hauteur_cible = detection['dimensions']
+        a_pub = detection['a_pub']
+        a_bandeau = detection['a_bandeau']
+        largeur_pub = detection['largeur_pub']
 
         if not self._fenetre_placee:
             self.logger.info(
-                f"Premier placement - Dimensions: {largeur_actuelle}x{hauteur_actuelle}, "
-                f"ratio: {ratio_actuel:.3f}, pub: {a_pub}, bandeau: {a_bandeau}"
+                f"Premier placement - Actuel: {largeur_actuelle}x{hauteur_actuelle}, "
+                f"pub: {a_pub}, bandeau: {a_bandeau} -> Cible: {largeur_cible}x{hauteur_cible}"
             )
+
+        # Calculer la position finale
+        position_x_base = self.position_x if self.position_x is not None else 0
+        position_y_finale = self.position_y if self.position_y is not None else 0
+
+        # Décaler vers la gauche pour cacher la pub
+        # La zone de jeu doit commencer à position_x_base
+        position_x_finale = position_x_base - largeur_pub
 
         # Si déjà placée, vérifier si elle a été modifiée
         if self._fenetre_placee and self._position_attendue:
@@ -247,76 +244,30 @@ class ManoirBase(ABC):
                     f"attendu ({x_att}, {y_att}, {w_att}x{h_att})"
                 )
 
-        # Redimensionner avec maintien du ratio actuel
-        success = self._wm.resize_with_aspect_ratio(
+        # Appliquer les dimensions correctes
+        success = self._wm.move_and_resize_window(
             self._hwnd,
-            height=self.hauteur,
-            aspect_ratio=None,  # Garde le ratio actuel (avec ou sans pub)
-            x=self.position_x,
-            y=self.position_y
+            x=position_x_finale,
+            y=position_y_finale,
+            width=largeur_cible,
+            height=hauteur_cible
         )
 
         if not success:
             return False
 
-        # Récupérer la largeur réelle après redimensionnement
-        size = self._wm.get_window_size(self._hwnd)
-        if not size:
-            self.logger.error("Impossible de récupérer les dimensions après redimensionnement")
-            return False
-
-        largeur_calculee, hauteur_reelle = size
-
-        # Recalculer la détection pub/bandeau après redimensionnement
-        ratio_apres = largeur_calculee / hauteur_reelle if hauteur_reelle > 0 else 0
-        a_pub_apres = ratio_apres > BLUESTACKS_SEUIL_RATIO_PUB
-
-        # Calculer la largeur de la zone de jeu (avec ou sans bandeau)
-        # En utilisant les constantes de config_manoirs
-        if a_pub_apres:
-            # Avec pub : largeur_pub = largeur_totale - zone_jeu_avec_bandeau
-            largeur_pub = largeur_calculee - BLUESTACKS_LARGEUR_ZONE_AVEC_BANDEAU
-            largeur_zone_jeu = BLUESTACKS_LARGEUR_ZONE_AVEC_BANDEAU
-        else:
-            # Sans pub : la fenêtre EST la zone de jeu (avec ou sans bandeau)
-            largeur_pub = 0
-            largeur_zone_jeu = largeur_calculee
-
-        # Calculer la position finale
-        position_x_base = self.position_x if self.position_x is not None else 0
-        position_y_finale = self.position_y if self.position_y is not None else 0
-
-        # Décaler vers la gauche pour cacher la pub
-        # La zone de jeu doit commencer à position_x_base
-        position_x_finale = position_x_base - largeur_pub
-
-        self.logger.info(
-            f"Calcul position: largeur_totale={largeur_calculee}, largeur_pub={largeur_pub}, "
-            f"largeur_zone_jeu={largeur_zone_jeu}"
-        )
+        # Mémoriser la position attendue pour détecter les changements
+        self._position_attendue = (position_x_finale, position_y_finale, largeur_cible, hauteur_cible)
+        self._fenetre_placee = True
 
         if largeur_pub > 0:
             self.logger.info(
-                f"Pub présente ({largeur_pub}px) - Décalage vers la gauche "
-                f"(x: {position_x_base} -> {position_x_finale})"
+                f"Pub présente ({largeur_pub}px) - Décalage x: {position_x_base} -> {position_x_finale}"
             )
-
-        # Repositionner la fenêtre
-        self._wm.move_and_resize_window(
-            self._hwnd,
-            x=position_x_finale,
-            y=position_y_finale,
-            width=largeur_calculee,
-            height=hauteur_reelle
-        )
-
-        # Mémoriser la position attendue pour détecter les changements
-        self._position_attendue = (position_x_finale, position_y_finale, largeur_calculee, hauteur_reelle)
-        self._fenetre_placee = True
 
         self.logger.info(
             f"Fenêtre placée: position ({position_x_finale}, {position_y_finale}), "
-            f"dimensions {largeur_calculee}x{hauteur_reelle}, zone_jeu visible à x={position_x_base}"
+            f"dimensions {largeur_cible}x{hauteur_cible}"
         )
 
         return True
