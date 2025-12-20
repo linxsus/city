@@ -20,6 +20,29 @@ HAUTEUR_DEFAUT = 720
 BLUESTACKS_PLAYER = r"C:\Program Files\BlueStacks_nxt\HD-Player.exe"
 BLUESTACKS_MANAGER = r"C:\Program Files\BlueStacks_nxt\HD-MultiInstanceManager.exe"
 
+# =====================================================
+# DIMENSIONS BLUESTACKS (pour gestion pub/bandeau)
+# =====================================================
+# Ces valeurs sont basées sur les mesures réelles des fenêtres BlueStacks
+#
+# Structure de la fenêtre BlueStacks (de gauche à droite):
+# [PUB (~320px)] [ZONE DE JEU (~563px)] [BANDEAU DROIT (~32px)]
+#
+# Dimensions observées (hauteur ~1032px):
+# - Sans pub, sans bandeau : 563 x 1032 (ratio 0.545)
+# - Sans pub, avec bandeau : 595 x 1032 (ratio 0.577)
+# - Avec pub, sans bandeau : 883 x 1032 (ratio 0.856)
+# - Avec pub, avec bandeau : 915 x 1032 (ratio 0.887)
+
+BLUESTACKS_LARGEUR_ZONE_JEU = 563      # Zone de jeu pure (sans bandeau)
+BLUESTACKS_LARGEUR_BANDEAU = 32         # Bandeau droit avec icônes
+BLUESTACKS_LARGEUR_ZONE_AVEC_BANDEAU = 595  # Zone de jeu + bandeau
+BLUESTACKS_LARGEUR_PUB = 320            # Largeur approximative de la pub
+
+# Seuil de ratio pour détecter la présence de pub
+# Sans pub: ratio ≈ 0.55-0.58 | Avec pub: ratio ≈ 0.85-0.89
+BLUESTACKS_SEUIL_RATIO_PUB = 0.70
+
 
 # =====================================================
 # CONFIGURATION DES MANOIRS
