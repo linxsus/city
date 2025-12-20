@@ -557,7 +557,8 @@ _window_manager_instance = None
 def detecter_dimensions_bluestacks(largeur_actuelle, hauteur_actuelle):
     """Détecte la configuration BlueStacks et retourne les dimensions correctes
 
-    Basé sur la largeur actuelle de la fenêtre, détermine si elle a:
+    La détection se fait en projetant la largeur à la hauteur cible (1030),
+    puis en déterminant si la fenêtre a:
     - Une pub à gauche (~320px)
     - Un bandeau à droite (~32px)
 
@@ -569,7 +570,7 @@ def detecter_dimensions_bluestacks(largeur_actuelle, hauteur_actuelle):
 
     Args:
         largeur_actuelle: Largeur actuelle de la fenêtre
-        hauteur_actuelle: Hauteur actuelle de la fenêtre (non utilisée mais utile pour logs)
+        hauteur_actuelle: Hauteur actuelle de la fenêtre
 
     Returns:
         dict avec:
@@ -578,24 +579,32 @@ def detecter_dimensions_bluestacks(largeur_actuelle, hauteur_actuelle):
             - a_bandeau: bool indiquant si bandeau présent
             - largeur_pub: largeur de la pub (0 si pas de pub)
     """
-    # Seuils de détection
+    # Hauteur cible fixe
+    HAUTEUR_CIBLE = 1030
+
+    # Seuils de détection (basés sur largeur à hauteur 1030)
     SEUIL_PUB = 700  # Si largeur > 700, fenêtre a pub
     SEUIL_BANDEAU_SANS_PUB = 579  # Milieu entre 563 et 595
     SEUIL_BANDEAU_AVEC_PUB = 900  # Milieu entre 884 et 915
 
-    # Hauteur cible fixe
-    HAUTEUR_CIBLE = 1030
+    # Projeter la largeur à la hauteur cible pour une détection correcte
+    # Cela permet de détecter correctement même si la fenêtre est petite
+    if hauteur_actuelle > 0:
+        facteur_echelle = HAUTEUR_CIBLE / hauteur_actuelle
+        largeur_projetee = largeur_actuelle * facteur_echelle
+    else:
+        largeur_projetee = largeur_actuelle
 
-    # Détecter la présence de pub
-    a_pub = largeur_actuelle > SEUIL_PUB
+    # Détecter la présence de pub (basé sur largeur projetée)
+    a_pub = largeur_projetee > SEUIL_PUB
 
     # Détecter la présence du bandeau selon la présence de pub
     if a_pub:
         # Avec pub: seuil entre 884 et 915
-        a_bandeau = largeur_actuelle > SEUIL_BANDEAU_AVEC_PUB
+        a_bandeau = largeur_projetee > SEUIL_BANDEAU_AVEC_PUB
     else:
         # Sans pub: seuil entre 563 et 595
-        a_bandeau = largeur_actuelle > SEUIL_BANDEAU_SANS_PUB
+        a_bandeau = largeur_projetee > SEUIL_BANDEAU_SANS_PUB
 
     # Dimensions cibles selon la configuration détectée
     dimensions_map = {
@@ -611,7 +620,8 @@ def detecter_dimensions_bluestacks(largeur_actuelle, hauteur_actuelle):
     largeur_pub = dimensions[0] - 595 if a_pub else 0  # 915-595=320 ou 884-595=289
 
     logger.debug(
-        f"Détection BlueStacks: {largeur_actuelle}x{hauteur_actuelle} -> "
+        f"Détection BlueStacks: {largeur_actuelle}x{hauteur_actuelle} "
+        f"(projeté: {largeur_projetee:.0f}x{HAUTEUR_CIBLE}) -> "
         f"pub={a_pub}, bandeau={a_bandeau} -> cible={dimensions[0]}x{dimensions[1]}"
     )
 
