@@ -442,9 +442,62 @@ class WindowManager:
             logger.error(f"Erreur resize_with_aspect_ratio({hwnd}): {e}")
             return False
     
+    def resize_height_only(self, hwnd, height, x=None, y=None):
+        """Redimensionne une fenêtre en ne spécifiant que la hauteur
+
+        Laisse l'application (BlueStacks) gérer sa propre largeur selon
+        ses contraintes internes. Utile quand l'application a des bandeaux
+        fixes qui ne se redimensionnent pas proportionnellement.
+
+        Args:
+            hwnd: Handle de la fenêtre
+            height: Hauteur cible
+            x: Position X (None pour conserver)
+            y: Position Y (None pour conserver)
+
+        Returns:
+            bool: True si succès
+        """
+        if not WIN32_AVAILABLE:
+            return False
+
+        try:
+            if not win32gui.IsWindow(hwnd):
+                logger.error(f"Fenêtre {hwnd} n'existe plus")
+                return False
+
+            # Obtenir les dimensions actuelles
+            current_rect = win32gui.GetWindowRect(hwnd)
+            current_width = current_rect[2] - current_rect[0]
+            current_x = current_rect[0] if x is None else x
+            current_y = current_rect[1] if y is None else y
+
+            # Redimensionner avec la largeur actuelle et la nouvelle hauteur
+            # BlueStacks pourrait ajuster sa largeur en interne
+            win32gui.MoveWindow(hwnd, current_x, current_y, current_width, height, True)
+
+            # Attendre un peu pour que BlueStacks s'ajuste
+            time.sleep(0.1)
+
+            # Récupérer les nouvelles dimensions (BlueStacks peut les avoir ajustées)
+            new_rect = win32gui.GetWindowRect(hwnd)
+            new_width = new_rect[2] - new_rect[0]
+            new_height = new_rect[3] - new_rect[1]
+
+            logger.info(
+                f"Resize hauteur seule: demandé {current_width}x{height}, "
+                f"obtenu {new_width}x{new_height}"
+            )
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Erreur resize_height_only({hwnd}): {e}")
+            return False
+
     def get_foreground_window(self):
         """Obtient la fenêtre actuellement au premier plan
-        
+
         Returns:
             int: Handle de la fenêtre active
         """
