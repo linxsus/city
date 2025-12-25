@@ -1,32 +1,26 @@
-# -*- coding: utf-8 -*-
-"""Package core - Composants principaux du framework"""
+"""
+Module core - Contient les classes de base du système de gestion d'états et chemins.
+"""
 
-from core.window_manager import WindowManager, get_window_manager
-from core.user_activity_detector import UserActivityDetector, get_activity_detector
-from core.timer_manager import Timer, TimerManager, get_timer_manager
-from core.slot_manager import Slot, SlotManager, get_slot_manager
-from core.window_state_manager import (
-    EtatManoir,
-    ManoirState,
-    ManoirStateManager,
-    get_window_state_manager
+from core.exceptions import (
+    ErreurConfiguration,
+    ErreurValidation,
+    EtatInconnuException,
+    AucunEtatTrouve
 )
-from core.message_bus import (
-    MessageType,
-    Message,
-    MessageBus,
-    get_message_bus,
-    demander_raid,
-    signaler_kills_termines,
-    demander_priorite,
-)
-from core.simple_scheduler import (
-    ManoirSelection,
-    SimpleScheduler,
-    get_simple_scheduler,
-)
-from core.engine import (
-    EtatEngine,
-    Engine,
-    get_engine,
-)
+from core.etat import Etat, SingletonMeta
+from core.etat_inconnu import EtatInconnu
+from core.chemin import Chemin
+from core.gestionnaire_etats import GestionnaireEtats
+
+__all__ = [
+    'ErreurConfiguration',
+    'ErreurValidation',
+    'EtatInconnuException',
+    'AucunEtatTrouve',
+    'Etat',
+    'SingletonMeta',
+    'EtatInconnu',
+    'Chemin',
+    'GestionnaireEtats'
+]

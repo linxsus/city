@@ -1,0 +1,35 @@
+# Configuration du système de gestion d'états et chemins
+# Version 1.0
+
+# ===== PRIORITÉS DE TEST DES ÉTATS =====
+[priorites]
+# Ordre de test pour determiner_etat_actuel()
+# Les états listés ici sont testés en premier dans l'ordre
+# Les états non listés sont testés après (ordre non garanti)
+ordre = [
+    "demarrage",
+    "ville",
+    "carte",
+    "formation_troupe",
+    "construction_batiment",
+    "popup_erreur",
+    "popup_confirmation",
+    "popup_info"
+]
+
+# ===== CONFIGURATION PATHFINDING =====
+[pathfinding]
+# Profondeur maximale de recherche (évite boucles infinies)
+max_profondeur = 20
+
+# Timeout en secondes pour la recherche
+timeout_secondes = 5
+
+# ===== LOGGING =====
+[logging]
+# Niveau de détail des logs spécifique au gestionnaire
+# Valeurs: DEBUG, INFO, WARNING, ERROR
+niveau = "INFO"
+
+# Logguer les chemins trouvés
+log_chemins_trouves = true
