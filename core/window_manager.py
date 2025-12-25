@@ -442,9 +442,62 @@ class WindowManager:
             logger.error(f"Erreur resize_with_aspect_ratio({hwnd}): {e}")
             return False
     
+    def resize_height_only(self, hwnd, height, x=None, y=None):
+        """Redimensionne une fenêtre en ne spécifiant que la hauteur
+
+        Laisse l'application (BlueStacks) gérer sa propre largeur selon
+        ses contraintes internes. Utile quand l'application a des bandeaux
+        fixes qui ne se redimensionnent pas proportionnellement.
+
+        Args:
+            hwnd: Handle de la fenêtre
+            height: Hauteur cible
+            x: Position X (None pour conserver)
+            y: Position Y (None pour conserver)
+
+        Returns:
+            bool: True si succès
+        """
+        if not WIN32_AVAILABLE:
+            return False
+
+        try:
+            if not win32gui.IsWindow(hwnd):
+                logger.error(f"Fenêtre {hwnd} n'existe plus")
+                return False
+
+            # Obtenir les dimensions actuelles
+            current_rect = win32gui.GetWindowRect(hwnd)
+            current_width = current_rect[2] - current_rect[0]
+            current_x = current_rect[0] if x is None else x
+            current_y = current_rect[1] if y is None else y
+
+            # Redimensionner avec la largeur actuelle et la nouvelle hauteur
+            # BlueStacks pourrait ajuster sa largeur en interne
+            win32gui.MoveWindow(hwnd, current_x, current_y, current_width, height, True)
+
+            # Attendre un peu pour que BlueStacks s'ajuste
+            time.sleep(0.1)
+
+            # Récupérer les nouvelles dimensions (BlueStacks peut les avoir ajustées)
+            new_rect = win32gui.GetWindowRect(hwnd)
+            new_width = new_rect[2] - new_rect[0]
+            new_height = new_rect[3] - new_rect[1]
+
+            logger.info(
+                f"Resize hauteur seule: demandé {current_width}x{height}, "
+                f"obtenu {new_width}x{new_height}"
+            )
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Erreur resize_height_only({hwnd}): {e}")
+            return False
+
     def get_foreground_window(self):
         """Obtient la fenêtre actuellement au premier plan
-        
+
         Returns:
             int: Handle de la fenêtre active
         """
@@ -499,6 +552,85 @@ class WindowManager:
 
 # Instance globale
 _window_manager_instance = None
+
+
+def detecter_dimensions_bluestacks(largeur_actuelle, hauteur_actuelle):
+    """Détecte la configuration BlueStacks et retourne les dimensions correctes
+
+    La détection se fait en projetant la largeur à la hauteur cible (1030),
+    puis en déterminant si la fenêtre a:
+    - Une pub à gauche (~320px)
+    - Un bandeau à droite (~32px)
+
+    Puis retourne les dimensions correctes parmi les 4 configurations valides:
+    - 563 x 1030 (sans pub, sans bandeau)
+    - 595 x 1030 (sans pub, avec bandeau)
+    - 884 x 1030 (avec pub, sans bandeau)
+    - 915 x 1030 (avec pub, avec bandeau)
+
+    Args:
+        largeur_actuelle: Largeur actuelle de la fenêtre
+        hauteur_actuelle: Hauteur actuelle de la fenêtre
+
+    Returns:
+        dict avec:
+            - dimensions: (largeur, hauteur) cibles
+            - a_pub: bool indiquant si pub présente
+            - a_bandeau: bool indiquant si bandeau présent
+            - largeur_pub: largeur de la pub (0 si pas de pub)
+    """
+    # Hauteur cible fixe
+    HAUTEUR_CIBLE = 1030
+
+    # Seuils de détection (basés sur largeur à hauteur 1030)
+    SEUIL_PUB = 700  # Si largeur > 700, fenêtre a pub
+    SEUIL_BANDEAU_SANS_PUB = 579  # Milieu entre 563 et 595
+    SEUIL_BANDEAU_AVEC_PUB = 900  # Milieu entre 884 et 915
+
+    # Projeter la largeur à la hauteur cible pour une détection correcte
+    # Cela permet de détecter correctement même si la fenêtre est petite
+    if hauteur_actuelle > 0:
+        facteur_echelle = HAUTEUR_CIBLE / hauteur_actuelle
+        largeur_projetee = largeur_actuelle * facteur_echelle
+    else:
+        largeur_projetee = largeur_actuelle
+
+    # Détecter la présence de pub (basé sur largeur projetée)
+    a_pub = largeur_projetee > SEUIL_PUB
+
+    # Détecter la présence du bandeau selon la présence de pub
+    if a_pub:
+        # Avec pub: seuil entre 884 et 915
+        a_bandeau = largeur_projetee > SEUIL_BANDEAU_AVEC_PUB
+    else:
+        # Sans pub: seuil entre 563 et 595
+        a_bandeau = largeur_projetee > SEUIL_BANDEAU_SANS_PUB
+
+    # Dimensions cibles selon la configuration détectée
+    dimensions_map = {
+        (False, False): (563, HAUTEUR_CIBLE),  # Sans pub, sans bandeau
+        (False, True): (595, HAUTEUR_CIBLE),   # Sans pub, avec bandeau
+        (True, False): (884, HAUTEUR_CIBLE),   # Avec pub, sans bandeau
+        (True, True): (915, HAUTEUR_CIBLE),    # Avec pub, avec bandeau
+    }
+
+    dimensions = dimensions_map[(a_pub, a_bandeau)]
+
+    # Calculer la largeur de pub si présente
+    largeur_pub = dimensions[0] - 595 if a_pub else 0  # 915-595=320 ou 884-595=289
+
+    logger.debug(
+        f"Détection BlueStacks: {largeur_actuelle}x{hauteur_actuelle} "
+        f"(projeté: {largeur_projetee:.0f}x{HAUTEUR_CIBLE}) -> "
+        f"pub={a_pub}, bandeau={a_bandeau} -> cible={dimensions[0]}x{dimensions[1]}"
+    )
+
+    return {
+        'dimensions': dimensions,
+        'a_pub': a_pub,
+        'a_bandeau': a_bandeau,
+        'largeur_pub': largeur_pub,
+    }
 
 
 def get_window_manager():

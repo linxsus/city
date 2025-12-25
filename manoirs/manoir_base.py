@@ -18,6 +18,7 @@ from utils.config import (
     CAPTURES_DIR,
     TEMPLATES_DIR,
 )
+from manoirs.config_manoirs import BLUESTACKS_HAUTEUR
 from utils.logger import get_manoir_logger
 from utils.coordinates import relative_to_absolute, clamp_to_window
 import actions.liste_actions as ListeActions
@@ -25,7 +26,7 @@ from vision.screen_capture import get_screen_capture
 from vision.image_matcher import get_image_matcher
 from vision.color_detector import get_color_detector
 from vision.ocr_engine import get_ocr_engine
-from core.window_manager import get_window_manager
+from core.window_manager import get_window_manager, detecter_dimensions_bluestacks
 from core.slot_manager import get_slot_manager
 from core.timer_manager import get_timer_manager
 from core.window_state_manager import get_window_state_manager
@@ -174,18 +175,17 @@ class ManoirBase(ABC):
         return False
 
     def placer_fenetre(self):
-        """Place la fenêtre à la position et dimensions configurées
+        """Place la fenêtre à la position et dimensions correctes
 
-        La largeur réelle est calculée à partir de la hauteur et du ratio de la fenêtre.
-        La largeur de config sert de zone de référence pour le positionnement.
+        Détecte automatiquement la configuration BlueStacks (pub/bandeau) et
+        applique les dimensions correctes parmi les 4 configurations valides:
+        - 563 x 1030 (sans pub, sans bandeau)
+        - 595 x 1030 (sans pub, avec bandeau)
+        - 884 x 1030 (avec pub, sans bandeau)
+        - 915 x 1030 (avec pub, avec bandeau)
 
-        Le placement ne se fait que si :
-        - C'est le premier placement (démarrage)
-        - La fenêtre a été déplacée ou redimensionnée par l'utilisateur
-
-        Logique:
-        - Si largeur_calculée < largeur_config : ERREUR (zone trop petite)
-        - Si largeur_calculée > largeur_config : ajuster position_x vers la gauche
+        La pub est à gauche, donc on décale la fenêtre vers la gauche pour
+        que la zone de jeu soit visible à la position configurée.
 
         Returns:
             bool: True si succès
@@ -197,7 +197,7 @@ class ManoirBase(ABC):
             self.logger.warning(f"Impossible de placer: fenêtre {self.titre_bluestacks} non trouvée")
             return False
 
-        # Vérifier si un placement est nécessaire
+        # Récupérer les dimensions actuelles
         rect_actuelle = self._wm.get_window_rect(self._hwnd)
         if not rect_actuelle:
             self.logger.error("Impossible de récupérer la position actuelle")
@@ -206,90 +206,69 @@ class ManoirBase(ABC):
         x_actuel, y_actuel = rect_actuelle[0], rect_actuelle[1]
         largeur_actuelle = rect_actuelle[2] - rect_actuelle[0]
         hauteur_actuelle = rect_actuelle[3] - rect_actuelle[1]
-        position_actuelle = (x_actuel, y_actuel, largeur_actuelle, hauteur_actuelle)
+
+        # Détecter la configuration et obtenir les dimensions correctes
+        detection = detecter_dimensions_bluestacks(largeur_actuelle, hauteur_actuelle)
+        largeur_cible, hauteur_cible = detection['dimensions']
+        a_pub = detection['a_pub']
+        a_bandeau = detection['a_bandeau']
+        largeur_pub = detection['largeur_pub']
+
+        if not self._fenetre_placee:
+            self.logger.info(
+                f"Premier placement - Actuel: {largeur_actuelle}x{hauteur_actuelle}, "
+                f"pub: {a_pub}, bandeau: {a_bandeau} -> Cible: {largeur_cible}x{hauteur_cible}"
+            )
+
+        # Calculer la position finale
+        position_x_base = self.position_x if self.position_x is not None else 0
+        position_y_finale = self.position_y if self.position_y is not None else 0
+
+        # Décaler vers la gauche pour cacher la pub
+        # La zone de jeu doit commencer à position_x_base
+        position_x_finale = position_x_base - largeur_pub
 
         # Si déjà placée, vérifier si elle a été modifiée
         if self._fenetre_placee and self._position_attendue:
             x_att, y_att, w_att, h_att = self._position_attendue
-
-            # Tolérance de 5px pour les bordures Windows
             tolerance = 5
 
             if (abs(x_actuel - x_att) <= tolerance and
                 abs(y_actuel - y_att) <= tolerance and
                 abs(largeur_actuelle - w_att) <= tolerance and
                 abs(hauteur_actuelle - h_att) <= tolerance):
-                # Fenêtre n'a pas bougé, pas besoin de replacer
                 return True
             else:
                 self.logger.info(
-                    f"Fenêtre déplacée/redimensionnée détectée: "
-                    f"position actuelle ({x_actuel}, {y_actuel}, {largeur_actuelle}x{hauteur_actuelle}) != "
-                    f"position attendue ({x_att}, {y_att}, {w_att}x{h_att})"
+                    f"Fenêtre modifiée: ({x_actuel}, {y_actuel}, {largeur_actuelle}x{hauteur_actuelle}) != "
+                    f"attendu ({x_att}, {y_att}, {w_att}x{h_att})"
                 )
 
-        # Premier placement ou fenêtre a été modifiée -> replacer
-        if not self._fenetre_placee:
-            self.logger.info("Premier placement de la fenêtre")
-
-        # Redimensionner avec maintien du ratio
-        success = self._wm.resize_with_aspect_ratio(
+        # Appliquer les dimensions correctes
+        success = self._wm.move_and_resize_window(
             self._hwnd,
-            height=self.hauteur,
-            aspect_ratio=None,  # Auto-détection du ratio actuel
-            x=self.position_x,  # Position temporaire
-            y=self.position_y
+            x=position_x_finale,
+            y=position_y_finale,
+            width=largeur_cible,
+            height=hauteur_cible
         )
 
         if not success:
             return False
 
-        # Récupérer la largeur réelle calculée
-        size = self._wm.get_window_size(self._hwnd)
-        if not size:
-            self.logger.error("Impossible de récupérer les dimensions après placement")
-            return False
-
-        largeur_calculee, hauteur_reelle = size
-        largeur_config = self.largeur
-
-        # Calculer la position finale
-        position_x_finale = self.position_x
-        position_y_finale = self.position_y
-
-        # Vérifier la cohérence avec la largeur de config
-        if largeur_calculee < largeur_config:
-            self.logger.error(
-                f"ERREUR: Largeur calculée ({largeur_calculee}px) < largeur config ({largeur_config}px). "
-                f"La zone de jeu sera trop petite pour le positionnement!"
-            )
-            # On continue quand même, mais on log l'erreur
-        elif largeur_calculee > largeur_config:
-            # Ajuster la position X vers la gauche pour centrer la zone de référence
-            decalage = largeur_calculee - largeur_config
-            position_x_finale = self.position_x - decalage if self.position_x is not None else -decalage
-
-            self.logger.info(
-                f"Largeur calculée ({largeur_calculee}px) > largeur config ({largeur_config}px). "
-                f"Décalage de {decalage}px vers la gauche (x: {self.position_x} -> {position_x_finale})"
-            )
-
-            # Repositionner la fenêtre
-            self._wm.move_and_resize_window(
-                self._hwnd,
-                x=position_x_finale,
-                y=position_y_finale,
-                width=largeur_calculee,
-                height=hauteur_reelle
-            )
-        else:
-            self.logger.debug(
-                f"Largeur calculée ({largeur_calculee}px) = largeur config ({largeur_config}px). Perfect!"
-            )
-
-        # Mémoriser la position attendue
-        self._position_attendue = (position_x_finale, position_y_finale, largeur_calculee, hauteur_reelle)
+        # Mémoriser la position attendue pour détecter les changements
+        self._position_attendue = (position_x_finale, position_y_finale, largeur_cible, hauteur_cible)
         self._fenetre_placee = True
+
+        if largeur_pub > 0:
+            self.logger.info(
+                f"Pub présente ({largeur_pub}px) - Décalage x: {position_x_base} -> {position_x_finale}"
+            )
+
+        self.logger.info(
+            f"Fenêtre placée: position ({position_x_finale}, {position_y_finale}), "
+            f"dimensions {largeur_cible}x{hauteur_cible}"
+        )
 
         return True
     
