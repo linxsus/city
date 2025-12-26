@@ -26,6 +26,17 @@ class EtatInconnu(Etat):
 
     etats_possibles: List[Union['Etat', str, type]] = []
 
+    def __init__(self, etats_possibles=None):
+        """
+        Initialise l'état inconnu.
+
+        Args:
+            etats_possibles: Liste optionnelle des états possibles
+        """
+        super().__init__()
+        if etats_possibles is not None:
+            self.etats_possibles = etats_possibles
+
     def verif(self, manoir: 'ManoirBase') -> bool:
         """
         Un état inconnu ne peut jamais être l'état actuel réel.
