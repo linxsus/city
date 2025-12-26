@@ -27,9 +27,8 @@ ActionBouton(manoir, "boutons/bouton_gratuit.png")
 
 Les chemins actuels utilisent `ActionSimple` avec des lambdas. Remplacer par `ActionBouton` :
 
-- [ ] `manoirs/chemins/chemin_fermer_popup_rapport.py`
-  - Actuellement : ActionSimple avec click_at(50, 50)
-  - À faire : Définir comment fermer ce popup (clic hors zone ? bouton X ?)
+- [x] `manoirs/chemins/chemin_fermer_popup_rapport.py`
+  - ✓ Conservé tel quel : utilise un clic positionnel (pas d'image)
 
 - [ ] `manoirs/chemins/chemin_fermer_popup_connexion.py`
   - Actuellement : ActionSimple avec click_image("popups/connexion_quotidienne.png")
