@@ -40,6 +40,7 @@ class SimulateurBlueStacks:
         self._fenetre_visible = scenario != 'lancement'
         self._hwnd_simule = 12345 if self._fenetre_visible else None
         self._temps_lancement = None
+        self._temps_init_termine = None  # Initialisé ici aussi
         self._delai_chargement = 3  # secondes simulées
 
     def _etat_initial(self):
@@ -65,7 +66,7 @@ class SimulateurBlueStacks:
         """Marque que temps_initialisation est terminé"""
         if self._temps_init_termine is None:
             self._temps_init_termine = time.time()
-            print(f"[SIMULATION] temps_init terminé, chargement pendant {self._delai_chargement}s...")
+            print(f"[SIMULATION] temps_init terminé, chargement pendant {self._delai_chargement}s...", flush=True)
 
     def get_etat_actuel(self):
         """Retourne l'état actuel simulé"""
@@ -73,7 +74,7 @@ class SimulateurBlueStacks:
         if self._etat_simule == 'chargement' and self._temps_init_termine:
             if time.time() - self._temps_init_termine > self._delai_chargement:
                 self._etat_simule = 'ville'
-                print("[SIMULATION] Chargement terminé -> ville")
+                print("[SIMULATION] Chargement terminé -> ville", flush=True)
         return self._etat_simule
 
     def get_hwnd(self):
@@ -168,6 +169,8 @@ def mock_etat_verif_chargement(self, manoir):
     """Mock pour EtatChargement.verif()"""
     sim = get_simulateur()
     if sim:
+        # Debug: afficher l'état actuel
+        print(f"[DEBUG] mock_etat_verif_chargement: _etat_simule={sim._etat_simule}, _temps_init_termine={sim._temps_init_termine}", flush=True)
         # D'abord marquer que temps_init est terminé (si on vérifie chargement)
         if sim._etat_simule == 'chargement':
             sim.marquer_init_termine()
