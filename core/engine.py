@@ -366,7 +366,17 @@ class Engine:
                 logger.error(f"Erreur initialisation {manoir_id}: {e}")
 
     def _changer_manoir(self, manoir_id):
-        """Change le manoir courant (PROTÉGÉ)"""
+        """Change le manoir courant (PROTÉGÉ)
+
+        Désactive l'ancien manoir (_actif = False) pour que le prochain
+        preparer_tour() déclenche _preparer_reprise_changement().
+        """
+        # Désactiver l'ancien manoir pour signaler le changement
+        if self._manoir_courant and self._manoir_courant in self.manoirs:
+            ancien_manoir = self.manoirs[self._manoir_courant]
+            ancien_manoir._actif = False
+            logger.debug(f"Manoir {self._manoir_courant} désactivé (_actif=False)")
+
         self._manoir_courant = manoir_id
         manoir = self.manoirs[manoir_id]
 

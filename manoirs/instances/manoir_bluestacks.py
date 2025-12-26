@@ -169,12 +169,18 @@ class ManoirBlueStacks(ManoirBase):
     def _reboot_bluestacks(self):
         """Reboot BlueStacks après un blocage
 
-        Reset tous les flags et la séquence, puis relance la navigation.
+        Ferme la fenêtre BlueStacks si elle existe, puis reset tous les flags
+        et la séquence pour relancer la navigation depuis l'état non_lance.
         """
         self.logger.warning(f"{self.nom}: Reboot en cours...")
         self._ajouter_historique("REBOOT: Réinitialisation complète")
 
-        # TODO: Fermer BlueStacks proprement si possible
+        # Fermer la fenêtre BlueStacks si elle existe
+        if self._hwnd:
+            self.logger.info(f"Fermeture de la fenêtre BlueStacks (hwnd={self._hwnd})")
+            self._wm.close_window(self._hwnd)
+            # Attendre un peu que la fenêtre se ferme
+            time.sleep(2)
 
         # Reset des flags
         self._heure_lancement = None
@@ -251,27 +257,46 @@ class ManoirBlueStacks(ManoirBase):
         return screenshot_path
 
     # =========================================================
-    # IMPLÉMENTATION ABSTRAITE - preparer_tour
+    # IMPLÉMENTATION - Hooks et gestion erreurs
     # =========================================================
 
-    def preparer_tour(self):
-        """Prépare le tour via le système états/chemins
+    def _hook_reprise_changement(self):
+        """Active la fenêtre et vérifie les dimensions lors de la reprise
+
+        Appelé par ManoirBase._preparer_reprise_changement() quand
+        Engine revient sur ce manoir après en avoir traité un autre.
+        """
+        self.activate()  # Active fenêtre + vérifie/replace dimensions
+
+    def _detecter_erreur(self):
+        """Détecte si le manoir est en état d'erreur (BLOQUE)
+
+        Returns:
+            bool: True si état BLOQUE
+        """
+        return self._etat_interne == EtatBlueStacks.BLOQUE
+
+    def _gerer_erreur(self):
+        """Gère l'état d'erreur - lance le reboot
+
+        Returns:
+            bool: False (manoir pas prêt)
+        """
+        self._reboot_bluestacks()
+        return False
+
+    def _preparer_alimenter_sequence(self):
+        """Alimente la séquence via le système états/chemins
 
         Logique :
-        1. BLOQUE → Reboot
-        2. Vérifier l'état actuel
-        3. Si état "ville" → PRET, appeler gestion_tour()
-        4. Sinon → Naviguer vers "ville"
-        5. Vérifier le timeout
+        1. Vérifier l'état actuel
+        2. Si état "ville" → PRET, appeler gestion_tour()
+        3. Sinon → Naviguer vers "ville"
+        4. Vérifier le timeout
 
         Returns:
             bool: True si prêt à exécuter, False sinon
         """
-        # ===== ÉTAT: BLOQUE → Reboot =====
-        if self._etat_interne == EtatBlueStacks.BLOQUE:
-            self._reboot_bluestacks()
-            return False
-
         # ===== Vérifier l'état écran actuel =====
         if not self.verifier_etat():
             # Impossible de déterminer l'état (pas de gestionnaire, etc.)
