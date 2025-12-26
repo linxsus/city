@@ -4,7 +4,7 @@
 from typing import List, Any
 from core.chemin import Chemin
 from core.etat_inconnu import EtatInconnu
-from actions.action import ActionSimple
+from actions.simple.action_bouton import ActionBouton
 from actions.action_reprise_preparer_tour import ActionReprisePreparerTour
 
 
@@ -34,18 +34,7 @@ class CheminFermerPopupConnexion(Chemin):
         Returns:
             Liste d'actions
         """
-        # Clic sur le popup connexion quotidienne
-        def clic_collecter_connexion(m):
-            result = m.click_image("popups/connexion_quotidienne.png")
-            if result:
-                m._ajouter_historique("Connexion quotidienne collectée")
-            return result if result else True  # Continue même si clic échoue
-
         return [
-            ActionSimple(
-                manoir,
-                action_func=clic_collecter_connexion,
-                nom="CollecterConnexionQuotidienne"
-            ),
+            ActionBouton(manoir, "popups/connexion_quotidienne.png"),
             ActionReprisePreparerTour(manoir),
         ]
