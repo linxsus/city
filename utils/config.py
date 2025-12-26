@@ -8,8 +8,9 @@ from pathlib import Path
 # CHEMINS
 # =====================================================
 
-# Chemin de base du projet
-BASE_DIR = Path(r"C:\Projets\automation_framework")
+# Chemin de base du projet (détecté automatiquement)
+# utils/config.py -> parent = utils -> parent = racine du projet
+BASE_DIR = Path(__file__).parent.parent
 
 # Sous-dossiers
 TEMPLATES_DIR = BASE_DIR / "templates"
