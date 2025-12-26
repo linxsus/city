@@ -169,12 +169,18 @@ class ManoirBlueStacks(ManoirBase):
     def _reboot_bluestacks(self):
         """Reboot BlueStacks après un blocage
 
-        Reset tous les flags et la séquence, puis relance la navigation.
+        Ferme la fenêtre BlueStacks si elle existe, puis reset tous les flags
+        et la séquence pour relancer la navigation depuis l'état non_lance.
         """
         self.logger.warning(f"{self.nom}: Reboot en cours...")
         self._ajouter_historique("REBOOT: Réinitialisation complète")
 
-        # TODO: Fermer BlueStacks proprement si possible
+        # Fermer la fenêtre BlueStacks si elle existe
+        if self._hwnd:
+            self.logger.info(f"Fermeture de la fenêtre BlueStacks (hwnd={self._hwnd})")
+            self._wm.close_window(self._hwnd)
+            # Attendre un peu que la fenêtre se ferme
+            time.sleep(2)
 
         # Reset des flags
         self._heure_lancement = None

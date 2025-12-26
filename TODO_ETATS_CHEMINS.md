@@ -148,11 +148,16 @@ def preparer_tour(self):
 
 ---
 
-## 9. Implémenter gestion des erreurs (TODO futur)
+## 9. Gestion des erreurs ✅
 
-- [ ] Définir les états/flags d'erreur spécifiques à chaque manoir
-- [ ] Implémenter `_detecter_erreur()` dans les sous-classes
-- [ ] Implémenter `_gerer_erreur()` pour chaque type d'erreur
+Implémenté dans ManoirBlueStacks :
+
+- [x] État d'erreur : `EtatBlueStacks.BLOQUE`
+- [x] `_detecter_erreur()` : retourne `True` si état == BLOQUE
+- [x] `_gerer_erreur()` : appelle `_reboot_bluestacks()` et retourne `False`
+- [x] `_reboot_bluestacks()` : ferme la fenêtre BlueStacks via WM_CLOSE, reset les flags
+
+ManoirVirtuel n'a pas besoin de gestion d'erreur (toujours valide).
 
 ---
 
