@@ -81,7 +81,7 @@ class CheminVilleVersCarte(Chemin):
     etat_initial = "ville_test"
     etat_sortie = "carte_test"
 
-    def fonction_actions(self) -> List[Any]:
+    def fonction_actions(self, manoir) -> List[Any]:
         return [
             ActionTest("Clic bouton carte"),
             ActionTest("Attendre chargement"),
@@ -93,7 +93,7 @@ class CheminCarteVersVille(Chemin):
     etat_initial = "carte_test"
     etat_sortie = "ville_test"
 
-    def fonction_actions(self) -> List[Any]:
+    def fonction_actions(self, manoir) -> List[Any]:
         return [
             ActionTest("Clic bouton retour"),
         ]
@@ -104,7 +104,7 @@ class CheminVilleVersPopup(Chemin):
     etat_initial = "ville_test"
     etat_sortie = ["popup_test", "ville_test"]  # Sortie incertaine
 
-    def fonction_actions(self) -> List[Any]:
+    def fonction_actions(self, manoir) -> List[Any]:
         return [
             ActionTest("Clic bouton ouvrir popup"),
         ]
@@ -204,7 +204,7 @@ class ManoirTest:
             return False
 
         chemin = chemins[0]
-        actions = chemin.generer_actions()
+        actions = chemin.generer_actions(self)
 
         for action in actions:
             self.sequence.ajouter(action)

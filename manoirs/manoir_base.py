@@ -920,7 +920,7 @@ class ManoirBase(ABC):
 
         # Ajouter les actions du premier chemin
         chemin = chemins[0]
-        actions = chemin.generer_actions()
+        actions = chemin.generer_actions(self)
 
         for action in actions:
             self.sequence.ajouter(action)
