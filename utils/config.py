@@ -17,6 +17,7 @@ LOGS_DIR = BASE_DIR / "logs"
 CAPTURES_DIR = LOGS_DIR / "captures"
 DATA_DIR = BASE_DIR / "data"
 RACCOURCIS_DIR = BASE_DIR / "raccourcis"
+CONFIG_DIR = BASE_DIR / "config"
 
 # Sous-dossiers templates
 TEMPLATES_POPUPS_DIR = TEMPLATES_DIR / "popups"
