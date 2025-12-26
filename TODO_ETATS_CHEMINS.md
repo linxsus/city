@@ -119,12 +119,14 @@ def preparer_tour(self):
 
 ---
 
-## 8. Modifier Engine pour gérer _actif
+## 8. Modifier Engine pour gérer _actif ✅
 
-- [ ] Quand Engine change de manoir actif :
-  - `ancien_manoir._actif = False`
-- [ ] Vérifier que si séquence vide, Engine redemande `preparer_tour()`
-- [ ] Supprimer le passage de `raison` (plus nécessaire avec le flag `_actif`)
+- [x] Quand Engine change de manoir actif :
+  - `ancien_manoir._actif = False` dans `_changer_manoir()`
+- [x] Vérifier que si séquence vide, Engine redemande `preparer_tour()`
+  - ✓ `preparer_tour()` vérifie `sequence.is_end()` et appelle `_preparer_alimenter_sequence()`
+- [x] Supprimer le passage de `raison` (plus nécessaire avec le flag `_actif`)
+  - ✓ Non implémenté, donc rien à supprimer
 
 ---
 
