@@ -15,6 +15,7 @@ from .sequence_actions import SequenceActions
 
 # Actions simples
 from .simple.action_attendre import ActionAttendre
+from .simple.action_bouton import ActionBouton
 from .simple.action_log import ActionLog
 
 # Actions conditionnelles et boucles
@@ -52,6 +53,7 @@ __all__ = [
     'SequenceActions',
     # Actions simples
     'ActionAttendre',
+    'ActionBouton',
     'ActionLog',
     # Actions conditionnelles et boucles
     'ActionIf',
