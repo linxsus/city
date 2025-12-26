@@ -4,10 +4,22 @@
 Tests unitaires pour la classe ManoirBlueStacks qui gère
 le cycle de vie d'une fenêtre BlueStacks via le système états/chemins.
 """
+import logging
 import sys
 import time
 import unittest
 from unittest.mock import Mock, patch, MagicMock
+
+# Configuration du logging pour voir les logs pendant les tests
+# Mettre level=logging.DEBUG pour voir tous les logs
+# Mettre level=logging.WARNING pour masquer les logs (par défaut)
+LOG_LEVEL = logging.DEBUG  # Changer en logging.WARNING pour désactiver
+
+logging.basicConfig(
+    level=LOG_LEVEL,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    stream=sys.stdout
+)
 
 # Mock des modules de dépendances avant import
 # Ces mocks sont nécessaires car les dépendances (mss, cv2, etc.) ne sont pas installées
