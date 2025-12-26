@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """Classe de base pour tous les éléments exécutables"""
 
+from utils.logger import get_module_logger
+
 
 class Item:
     """Classe de base pour tous les éléments exécutables (actions, boucles, etc.)
@@ -10,6 +12,7 @@ class Item:
         condition_func: Fonction de condition optionnelle
         resultat_condition: Cache du résultat de la condition
         executer: Flag indiquant si l'item a été exécuté
+        logger: Logger pour cette instance
     """
 
     def __init__(self, fenetre, condition_func=None):
@@ -22,6 +25,7 @@ class Item:
         self.condition_func = condition_func
         self.resultat_condition = None
         self.executer = False
+        self.logger = get_module_logger(self.__class__.__name__)
 
     def condition(self):
         """Évalue la condition avec cache
