@@ -27,25 +27,33 @@ class ActionBouton(Action):
         self.template_path = template_path
         self.offset = offset
         self.threshold = threshold
+        self._position = None
 
-    def _run(self):
-        """Trouve l'image et clique dessus
+    def condition(self):
+        """Vérifie que l'image est visible et stocke sa position
 
         Returns:
-            bool: True si l'image a été trouvée et cliquée, False sinon
+            bool: True si condition parent OK et image visible
         """
-        result = self.fenetre.click_image(
-            self.template_path,
-            threshold=self.threshold,
-            offset=self.offset
-        )
+        if not super().condition():
+            return False
+        self._position = self.fenetre.find_image(self.template_path, self.threshold)
+        return self._position is not None
 
-        if result:
-            self.logger.debug(f"Clic sur {self.template_path}")
-        else:
+    def _run(self):
+        """Clique sur la position trouvée par condition()
+
+        Returns:
+            bool: True si clic effectué, False sinon
+        """
+        if not self._position:
             self.logger.warning(f"Image non trouvée: {self.template_path}")
+            return False
 
-        return result
+        x, y = self._position
+        self.fenetre.click_at(x + self.offset[0], y + self.offset[1])
+        self.logger.debug(f"Clic sur {self.template_path}")
+        return True
 
     def __repr__(self):
         return f"ActionBouton({self.template_path})"
