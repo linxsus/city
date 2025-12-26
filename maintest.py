@@ -16,11 +16,14 @@ import sys
 import time
 import argparse
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, PropertyMock
 import threading
 
 # Ajouter le dossier au path
 sys.path.insert(0, str(Path(__file__).parent))
+
+# Importer numpy pour les mocks
+import numpy as np
 
 
 class SimulateurBlueStacks:
@@ -94,20 +97,22 @@ def mock_find_window(self):
 def mock_subprocess_run(cmd, *args, **kwargs):
     """Mock pour subprocess.run() - simule le lancement BlueStacks"""
     sim = get_simulateur()
-    if sim:
-        # Vérifier si c'est une commande BlueStacks
-        cmd_str = ' '.join(cmd) if isinstance(cmd, list) else str(cmd)
-        if 'HD-Player' in cmd_str or 'BlueStacks' in cmd_str:
+    # Vérifier si c'est une commande BlueStacks
+    cmd_str = ' '.join(cmd) if isinstance(cmd, list) else str(cmd)
+    if 'HD-Player' in cmd_str or 'BlueStacks' in cmd_str:
+        print("[SIMULATION] Lancement BlueStacks intercepté")
+        if sim:
             sim.simuler_lancement()
-            # Retourner un mock de CompletedProcess
-            result = MagicMock()
-            result.returncode = 0
-            result.stdout = b''
-            result.stderr = b''
-            return result
-    # Fallback au comportement normal pour les autres commandes
-    import subprocess
-    return subprocess._original_run(cmd, *args, **kwargs)
+        # Retourner un mock de CompletedProcess
+        result = MagicMock()
+        result.returncode = 0
+        result.stdout = b''
+        result.stderr = b''
+        return result
+    # Fallback - ne pas exécuter les autres commandes non plus en mode test
+    result = MagicMock()
+    result.returncode = 0
+    return result
 
 
 def mock_etat_verif_non_lance(self, manoir):
@@ -137,9 +142,16 @@ def mock_etat_verif_ville(self, manoir):
 def mock_capture(self, force=False):
     """Mock pour ManoirBase.capture()"""
     # Retourner une image noire simulée
-    import numpy as np
     self._last_capture = np.zeros((720, 1280, 3), dtype=np.uint8)
+    self._capture_time = time.time()
     return self._last_capture
+
+
+def mock_last_capture_getter(self):
+    """Mock pour la propriété _last_capture"""
+    if not hasattr(self, '_mock_capture'):
+        self._mock_capture = np.zeros((720, 1280, 3), dtype=np.uint8)
+    return self._mock_capture
 
 
 def mock_detect_image(self, image_path, *args, **kwargs):
@@ -194,45 +206,40 @@ def main_test():
     print("=" * 60)
     print()
 
-    # Sauvegarder subprocess.run original
-    import subprocess
-    subprocess._original_run = subprocess.run
+    # Importer les modules à patcher AVANT d'appliquer les patches
+    from manoirs.etats.etat_non_lance import EtatNonLance
+    from manoirs.etats.etat_chargement import EtatChargement
+    from manoirs.etats.etat_ville import EtatVille
 
-    # Appliquer les mocks
-    with patch('subprocess.run', mock_subprocess_run), \
+    # Importer le module qui utilise subprocess pour le patcher correctement
+    import actions.bluestacks.action_lancer_raccourci as action_module
+
+    # Appliquer tous les mocks
+    with patch.object(action_module, 'subprocess') as mock_subproc, \
          patch('manoirs.manoir_base.ManoirBase.find_window', mock_find_window), \
          patch('manoirs.manoir_base.ManoirBase.capture', mock_capture), \
-         patch('manoirs.manoir_base.ManoirBase.detect_image', mock_detect_image):
+         patch('manoirs.manoir_base.ManoirBase.detect_image', mock_detect_image), \
+         patch.object(EtatNonLance, 'verif', mock_etat_verif_non_lance), \
+         patch.object(EtatChargement, 'verif', mock_etat_verif_chargement), \
+         patch.object(EtatVille, 'verif', mock_etat_verif_ville):
 
-        # Patcher les vérifications d'état
-        try:
-            from manoirs.etats.etat_non_lance import EtatNonLance
-            from manoirs.etats.etat_chargement import EtatChargement
-            from manoirs.etats.etat_ville import EtatVille
+        # Configurer le mock de subprocess
+        mock_subproc.run = mock_subprocess_run
 
-            with patch.object(EtatNonLance, 'verif', mock_etat_verif_non_lance), \
-                 patch.object(EtatChargement, 'verif', mock_etat_verif_chargement), \
-                 patch.object(EtatVille, 'verif', mock_etat_verif_ville):
+        # Timer pour arrêter automatiquement après la durée
+        def auto_stop():
+            time.sleep(args.duree)
+            print(f"\n[TEST] Durée de {args.duree}s atteinte, arrêt...")
+            import os
+            import signal
+            os.kill(os.getpid(), signal.SIGINT)
 
-                # Timer pour arrêter automatiquement après la durée
-                def auto_stop():
-                    time.sleep(args.duree)
-                    print(f"\n[TEST] Durée de {args.duree}s atteinte, arrêt...")
-                    import os
-                    import signal
-                    os.kill(os.getpid(), signal.SIGINT)
+        timer_thread = threading.Thread(target=auto_stop, daemon=True)
+        timer_thread.start()
 
-                timer_thread = threading.Thread(target=auto_stop, daemon=True)
-                timer_thread.start()
-
-                # Lancer le main
-                import main
-                return main.main()
-
-        except ImportError as e:
-            print(f"Erreur d'import: {e}")
-            print("Certains modules d'état ne sont pas disponibles")
-            return 1
+        # Lancer le main
+        import main
+        return main.main()
 
 
 if __name__ == "__main__":
