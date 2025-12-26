@@ -13,15 +13,25 @@ chemins = "manoirs/chemins"
 # Ordre de test pour determiner_etat_actuel()
 # Les états listés ici sont testés en premier dans l'ordre
 # Les états non listés sont testés après (ordre non garanti)
+#
+# IMPORTANT: Les popups doivent être testés AVANT les états normaux
+# car ils peuvent apparaître par-dessus n'importe quel écran.
 ordre = [
-    "demarrage",
+    # 1. Popups de démarrage (haute priorité)
+    "popup_rapport",
+    "popup_connexion",
+    "popup_gratuit",
+    # 2. Autres popups
+    "popup_erreur",
+    "popup_confirmation",
+    "popup_info",
+    # 3. États normaux
+    "non_lance",
+    "chargement",
     "ville",
     "carte",
     "formation_troupe",
     "construction_batiment",
-    "popup_erreur",
-    "popup_confirmation",
-    "popup_info"
 ]
 
 # ===== CONFIGURATION PATHFINDING =====

@@ -37,9 +37,12 @@ class Chemin:
         pass
 
     @abstractmethod
-    def fonction_actions(self) -> List[Any]:
+    def fonction_actions(self, manoir: Any) -> List[Any]:
         """
         Génère la liste d'actions pour effectuer la transition.
+
+        Args:
+            manoir: Instance du manoir (pour créer les actions)
 
         Returns:
             Liste d'objets Action du framework
@@ -49,9 +52,12 @@ class Chemin:
         """
         pass
 
-    def generer_actions(self) -> List[Any]:
+    def generer_actions(self, manoir: Any) -> List[Any]:
         """
         Appelle fonction_actions pour obtenir la liste d'actions.
+
+        Args:
+            manoir: Instance du manoir (pour créer les actions)
 
         Returns:
             Liste d'objets Action du framework
@@ -59,7 +65,7 @@ class Chemin:
         Raises:
             Peut lever les exceptions de fonction_actions
         """
-        return self.fonction_actions()
+        return self.fonction_actions(manoir)
 
     def est_certain(self) -> bool:
         """

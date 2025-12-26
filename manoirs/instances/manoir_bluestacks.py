@@ -1,11 +1,16 @@
 # -*- coding: utf-8 -*-
 """Manoir BlueStacks - Classe abstraite pour gérer une fenêtre BlueStacks
 
-ManoirBlueStacks gère le cycle de vie d'une fenêtre BlueStacks :
-- Lancement de l'instance
-- Détection du chargement du jeu
-- Gestion des popups de démarrage
-- Timeout et récupération d'erreur
+ManoirBlueStacks gère le cycle de vie d'une fenêtre BlueStacks via le
+système états/chemins :
+- États : non_lance, chargement, popup_*, ville
+- Chemins : navigations automatiques entre états
+
+Navigation :
+    non_lance → chargement (via chemin_lancer_bluestacks)
+    chargement → ville/popups (via chemin_attendre_chargement)
+    popup_* → ville (via chemin_fermer_popup_*)
+    ville = état final (jeu prêt)
 
 Les sous-classes doivent implémenter gestion_tour() pour la logique métier.
 """
@@ -19,33 +24,43 @@ import actions.liste_actions as ListeActions
 
 
 class EtatBlueStacks(Enum):
-    """États possibles du manoir BlueStacks"""
-    NON_LANCE = auto()       # BlueStacks pas encore lancé
-    LANCEMENT = auto()       # Séquence de lancement en cours (non bloquant)
-    PRET = auto()            # Jeu chargé, prêt à automatiser
+    """États internes du manoir BlueStacks
+
+    Note: La navigation utilise le système états/chemins.
+    Cet enum gère uniquement l'état de blocage.
+    """
+    EN_COURS = auto()        # Navigation en cours (pas encore en ville)
+    PRET = auto()            # Jeu chargé (état "ville"), prêt à automatiser
     BLOQUE = auto()          # Trop d'échecs, reboot nécessaire
 
 
 class ManoirBlueStacks(ManoirBase):
     """Manoir BlueStacks - Gère une instance BlueStacks
 
-    Classe abstraite qui gère le cycle de vie d'une fenêtre BlueStacks.
-    Les sous-classes doivent implémenter gestion_tour() pour la logique métier.
+    Classe abstraite qui gère le cycle de vie d'une fenêtre BlueStacks
+    via le système états/chemins.
 
-    États:
-    - NON_LANCE: BlueStacks pas lancé
-    - LANCEMENT: Lancé, en attente de icone_jeu_charge.png
-    - PRET: Jeu chargé, gestion_tour() appelée
-    - BLOQUE: Timeout ou erreur, reboot au prochain tour
+    États écran (via gestionnaire) :
+    - non_lance : BlueStacks pas lancé
+    - chargement : En cours de chargement
+    - popup_rapport, popup_connexion, popup_gratuit : Popups de démarrage
+    - ville : Jeu chargé et prêt
+
+    État interne :
+    - EN_COURS : Navigation vers "ville" en cours
+    - PRET : État "ville" atteint
+    - BLOQUE : Timeout ou erreur, reboot au prochain tour
 
     Timeout:
-    - 30 minutes pour atteindre l'état PRET
-    - Inclut le temps de gestion des popups
+    - 30 minutes pour atteindre l'état "ville"
     - En cas de timeout: sauvegarde écran + log détaillé
     """
 
     # Timeout de lancement en secondes (30 minutes)
     TIMEOUT_LANCEMENT = 30 * 60
+
+    # État destination
+    ETAT_DESTINATION = "ville"
 
     def __init__(self, manoir_id="bluestacks", config=None):
         """
@@ -72,28 +87,28 @@ class ManoirBlueStacks(ManoirBase):
         self.commande_lancement = config.get("commande_lancement", [])
         self.temps_initialisation = config.get("temps_initialisation", 60)
 
-        # État
-        self._etat = EtatBlueStacks.NON_LANCE
-        self._heure_lancement = None  # Timestamp du lancement
+        # État interne (pour timeout et blocage)
+        self._etat_interne = EtatBlueStacks.EN_COURS
+        self._heure_lancement = None  # Timestamp du début de navigation
 
-        # Flag pour détecter les popups pendant la vérification
-        self._popup_detecte_pendant_lancement = False
+        # Flag pour le lancement (utilisé par les états chargement/ville)
+        self._lancement_initie = False
 
         # Historique des actions pour le debug
         self._historique_actions = []
 
     @property
     def etat(self):
-        """État actuel du manoir"""
-        return self._etat
+        """État interne du manoir (EN_COURS, PRET, BLOQUE)"""
+        return self._etat_interne
 
     @etat.setter
     def etat(self, nouvel_etat):
-        """Change l'état avec log"""
-        if nouvel_etat != self._etat:
-            self.logger.info(f"{self.nom}: {self._etat.name} -> {nouvel_etat.name}")
-            self._ajouter_historique(f"État: {self._etat.name} -> {nouvel_etat.name}")
-            self._etat = nouvel_etat
+        """Change l'état interne avec log"""
+        if nouvel_etat != self._etat_interne:
+            self.logger.info(f"{self.nom}: {self._etat_interne.name} -> {nouvel_etat.name}")
+            self._ajouter_historique(f"État interne: {self._etat_interne.name} -> {nouvel_etat.name}")
+            self._etat_interne = nouvel_etat
 
     # =========================================================
     # HISTORIQUE DES ACTIONS (pour debug)
@@ -125,29 +140,20 @@ class ManoirBlueStacks(ManoirBase):
     # =========================================================
 
     def capture(self, force=False):
-        """Capture l'écran - silencieux si manoir pas prêt
-
-        Autorise la capture pendant LANCEMENT car les actions en ont besoin.
-        """
-        if self._etat in (EtatBlueStacks.NON_LANCE, EtatBlueStacks.BLOQUE):
+        """Capture l'écran - silencieux si manoir bloqué"""
+        if self._etat_interne == EtatBlueStacks.BLOQUE:
             return None
         return super().capture(force)
 
     def detect_image(self, template_path, threshold=None, region=None):
-        """Détecte une image - silencieux si manoir pas prêt
-
-        Autorise la détection pendant LANCEMENT car les actions en ont besoin.
-        """
-        if self._etat in (EtatBlueStacks.NON_LANCE, EtatBlueStacks.BLOQUE):
+        """Détecte une image - silencieux si manoir bloqué"""
+        if self._etat_interne == EtatBlueStacks.BLOQUE:
             return False
         return super().detect_image(template_path, threshold, region)
 
     def find_image(self, template_path, threshold=None, region=None):
-        """Trouve une image - silencieux si manoir pas prêt
-
-        Autorise la recherche pendant LANCEMENT car les actions en ont besoin.
-        """
-        if self._etat in (EtatBlueStacks.NON_LANCE, EtatBlueStacks.BLOQUE):
+        """Trouve une image - silencieux si manoir bloqué"""
+        if self._etat_interne == EtatBlueStacks.BLOQUE:
             return None
         return super().find_image(template_path, threshold, region)
 
@@ -163,43 +169,43 @@ class ManoirBlueStacks(ManoirBase):
     def _reboot_bluestacks(self):
         """Reboot BlueStacks après un blocage
 
-        Reset tous les flags et la séquence, puis repasse en NON_LANCE
-        pour relancer le processus de lancement.
+        Reset tous les flags et la séquence, puis relance la navigation.
         """
         self.logger.warning(f"{self.nom}: Reboot en cours...")
         self._ajouter_historique("REBOOT: Réinitialisation complète")
 
         # TODO: Fermer BlueStacks proprement si possible
-        # Pour l'instant on se contente de relancer
 
         # Reset des flags
         self._heure_lancement = None
         self._hwnd = None
         self._rect = None
+        self._lancement_initie = False
+        self.etat_actuel = None  # Force re-détection
 
         # Vider la séquence et l'historique
         self.sequence.clear()
         self._historique_actions.clear()
 
-        # Passer à NON_LANCE pour relancer
-        self.etat = EtatBlueStacks.NON_LANCE
+        # Repasser en EN_COURS pour relancer
+        self.etat = EtatBlueStacks.EN_COURS
 
     # =========================================================
     # GESTION DU TIMEOUT
     # =========================================================
 
     def get_temps_depuis_lancement(self):
-        """Retourne le temps écoulé depuis le lancement
+        """Retourne le temps écoulé depuis le début de la navigation
 
         Returns:
-            float: Temps en secondes, ou 0 si pas lancé
+            float: Temps en secondes, ou 0 si pas commencé
         """
         if self._heure_lancement is None:
             return 0
         return time.time() - self._heure_lancement
 
     def est_timeout_atteint(self):
-        """Vérifie si le timeout de lancement est atteint
+        """Vérifie si le timeout est atteint
 
         Returns:
             bool: True si timeout atteint
@@ -212,7 +218,7 @@ class ManoirBlueStacks(ManoirBase):
         Returns:
             bool: True si état PRET
         """
-        return self._etat == EtatBlueStacks.PRET
+        return self._etat_interne == EtatBlueStacks.PRET
 
     def sauvegarder_etat_timeout(self):
         """Sauvegarde l'état complet lors d'un timeout
@@ -236,7 +242,9 @@ class ManoirBlueStacks(ManoirBase):
         self.logger.error("=== FIN HISTORIQUE ===")
 
         # Logger l'état actuel
-        self.logger.error(f"État: {self._etat.name}")
+        etat_nom = self.etat_actuel.nom if self.etat_actuel else "inconnu"
+        self.logger.error(f"État écran: {etat_nom}")
+        self.logger.error(f"État interne: {self._etat_interne.name}")
         self.logger.error(f"Temps depuis lancement: {self.get_temps_depuis_lancement():.1f}s")
         self.logger.error(f"Séquence: {self.sequence}")
 
@@ -247,120 +255,61 @@ class ManoirBlueStacks(ManoirBase):
     # =========================================================
 
     def preparer_tour(self):
-        """Prépare le tour et alimente la séquence
+        """Prépare le tour via le système états/chemins
 
-        Logique non bloquante :
-        - NON_LANCE → Construit la séquence de lancement, passe en LANCEMENT
-        - LANCEMENT → Laisse la séquence s'exécuter (ActionWhile gère la boucle)
-        - PRET → Active la fenêtre et appelle gestion_tour()
-        - BLOQUE → Reboot
+        Logique :
+        1. BLOQUE → Reboot
+        2. Vérifier l'état actuel
+        3. Si état "ville" → PRET, appeler gestion_tour()
+        4. Sinon → Naviguer vers "ville"
+        5. Vérifier le timeout
 
         Returns:
             bool: True si prêt à exécuter, False sinon
         """
         # ===== ÉTAT: BLOQUE → Reboot =====
-        if self._etat == EtatBlueStacks.BLOQUE:
+        if self._etat_interne == EtatBlueStacks.BLOQUE:
             self._reboot_bluestacks()
             return False
 
-        # ===== ÉTAT: NON_LANCE → Construire séquence de lancement =====
-        if self._etat == EtatBlueStacks.NON_LANCE:
-            self._heure_lancement = time.time()
-            self._ajouter_historique("Lancement initié")
-            self._construire_sequence_lancement()
-            self.etat = EtatBlueStacks.LANCEMENT
-            self.logger.info(f"{self.nom}: Séquence de lancement initiée")
-            return True
+        # ===== Vérifier l'état écran actuel =====
+        if not self.verifier_etat():
+            # Impossible de déterminer l'état (pas de gestionnaire, etc.)
+            self.logger.warning("Impossible de déterminer l'état actuel")
+            return False
 
-        # ===== ÉTAT: LANCEMENT → Laisser la séquence s'exécuter =====
-        if self._etat == EtatBlueStacks.LANCEMENT:
-            # La séquence ActionWhile gère tout
-            # signaler_jeu_charge() fera passer en état PRET
-            return True
+        etat_nom = self.etat_actuel.nom if self.etat_actuel else "inconnu"
+        self._ajouter_historique(f"État détecté: {etat_nom}")
 
-        # ===== ÉTAT: PRET → Appeler gestion_tour() =====
-        if self._etat == EtatBlueStacks.PRET:
+        # ===== ÉTAT ÉCRAN: ville → PRET =====
+        if etat_nom == self.ETAT_DESTINATION:
+            if self._etat_interne != EtatBlueStacks.PRET:
+                self._ajouter_historique("Destination atteinte - passage en PRET")
+                self.etat = EtatBlueStacks.PRET
+                self._heure_lancement = None  # Reset le timer
+                self.logger.info(f"{self.nom}: Jeu chargé et prêt !")
+
             self.activate()
             self.gestion_tour()
             return True
 
-        return False
+        # ===== Pas encore en "ville" → Navigation =====
+        # Démarrer le timer si pas encore fait
+        if self._heure_lancement is None:
+            self._heure_lancement = time.time()
+            self._ajouter_historique("Navigation vers ville initiée")
+            self.logger.info(f"{self.nom}: Navigation vers {self.ETAT_DESTINATION}...")
 
-    def _construire_sequence_lancement(self):
-        """Construit la séquence d'actions pour le lancement du jeu
+        # Vérifier le timeout
+        if self.est_timeout_atteint():
+            self._ajouter_historique(f"TIMEOUT: {self.TIMEOUT_LANCEMENT // 60} minutes écoulées")
+            self.sauvegarder_etat_timeout()
+            self.etat = EtatBlueStacks.BLOQUE
+            return False
 
-        Séquence optimisée :
-        1. ActionLancerRaccourci - Lance BlueStacks (skip si déjà ouvert)
-        2. ActionVerifierPretRapide - Vérification rapide si déjà prêt (skip attente si OUI)
-        3. ActionAttendre - Attend le temps d'initialisation (seulement si pas déjà prêt)
-        4. ActionWhile - Boucle tant que pas prêt et pas timeout :
-            - ActionVerifierPret - Vérifie icone_jeu_charge.png
-            - ActionIf popup1 → ajouter action fermer popup1
-            - ActionIf popup2 → ajouter action fermer popup2
-            - ...
-            - ActionVerifierTimeout - Vérifie le timeout
-        """
-        self.sequence.clear()
-
-        # 1. Lancer BlueStacks (skip si déjà ouvert)
-        action_lancer = ListeActions.ActionLancerRaccourci(self)
-
-        # 2. Vérification rapide si déjà prêt (évite l'attente inutile)
-        action_verif_rapide = ListeActions.ActionVerifierPretRapide(self)
-
-        # 3. Attendre l'initialisation (seulement si pas déjà prêt)
-        action_attendre = ListeActions.ActionAttendre(self, self.temps_initialisation)
-
-        # 3. Boucle de vérification : tant que pas prêt ET pas timeout
-        # Condition : le jeu n'est pas encore prêt
-        condition_continuer = lambda m: not m.est_jeu_pret() and not m.est_timeout_atteint()
-
-        # Actions dans la boucle
-        actions_boucle = [
-            # Vérifier si le jeu est prêt
-            ListeActions.ActionVerifierPret(self),
-
-            # Vérifier les popups (ActionIf ajoute l'action si condition vraie)
-            ListeActions.ActionIf(
-                self,
-                condition_func=lambda m: m.detect_image("popups/rapport_developpement.png"),
-                actions_si_vrai=ListeActions.ActionFermerRapportDeveloppement(self)
-            ),
-            ListeActions.ActionIf(
-                self,
-                condition_func=lambda m: m.detect_image("popups/connexion_quotidienne.png"),
-                actions_si_vrai=ListeActions.ActionCollecterConnexionQuotidienne(self)
-            ),
-            ListeActions.ActionIf(
-                self,
-                condition_func=lambda m: m.detect_image("boutons/bouton_gratuit.png"),
-                actions_si_vrai=ListeActions.ActionClicBoutonGratuit(self)
-            ),
-
-            # Vérifier le timeout
-            ListeActions.ActionVerifierTimeout(self),
-        ]
-
-        # Créer la boucle While
-        boucle_lancement = ListeActions.ActionWhile(
-            self,
-            condition_func=condition_continuer,
-            actions=actions_boucle,
-            max_iterations=1000,  # Sécurité
-            nom_boucle="lancement_bluestacks"
-        )
-
-        # Ajouter à la séquence optimisée
-        self.sequence.add([
-            action_lancer,
-            action_verif_rapide,  # Vérification rapide pour éviter l'attente si déjà prêt
-            action_attendre,
-            boucle_lancement,
-        ])
-
-        self.logger.debug(
-            f"Séquence de lancement: {self.sequence.remaining()} actions"
-        )
+        # Naviguer vers la destination
+        self.naviguer_vers(self.ETAT_DESTINATION)
+        return True
 
     def signaler_blocage(self):
         """Appelé par Engine quand trop d'échecs consécutifs"""
@@ -369,52 +318,45 @@ class ManoirBlueStacks(ManoirBase):
         self._stats['erreurs_detectees'] += 1
         self.etat = EtatBlueStacks.BLOQUE
 
-    def signaler_popup_detecte(self):
-        """Appelé quand un popup est détecté pendant le lancement
-
-        Marque qu'un popup a été détecté, ce qui déclenchera un reset
-        de la vérification d'icône car le jeu n'est pas encore stable.
-        """
-        if self._etat == EtatBlueStacks.LANCEMENT:
-            self._popup_detecte_pendant_lancement = True
-            self._ajouter_historique("Popup détecté pendant lancement")
-
-    def reset_flag_popup(self):
-        """Réinitialise le flag de détection de popup"""
-        self._popup_detecte_pendant_lancement = False
+    # =========================================================
+    # MÉTHODES LEGACY (compatibilité avec anciennes actions)
+    # =========================================================
 
     def signaler_jeu_charge(self):
-        """Appelé par ActionVerifierPret quand le jeu est vraiment prêt (après 2 vérifications)
+        """LEGACY: Appelé par ActionVerifierPret
 
-        Fait la transition vers l'état PRET.
-        Casse la boucle ActionWhile en cours.
+        Maintenant géré par preparer_tour() qui détecte l'état "ville".
+        Conservé pour compatibilité.
         """
-        if self._etat != EtatBlueStacks.PRET:
-            self._ajouter_historique("Jeu chargé et stable - passage en PRET")
+        if self._etat_interne != EtatBlueStacks.PRET:
             self.etat = EtatBlueStacks.PRET
-            self.logger.info(f"{self.nom}: Jeu chargé et prêt !")
-
-            # Casser la boucle de lancement si elle existe
-            for loop_id, boucle in list(self.boucles_actives.items()):
-                if getattr(boucle, 'nom_boucle', None) == "lancement_bluestacks":
-                    boucle.doit_casser = True
-                    self.logger.debug("Boucle de lancement interrompue")
-                    break
+            self.logger.info(f"{self.nom}: Jeu chargé (legacy signal)")
 
     def signaler_timeout(self):
-        """Appelé par ActionVerifierTimeout quand le timeout est atteint
+        """LEGACY: Appelé par ActionVerifierTimeout
 
-        Sauvegarde l'état et passe en BLOQUE.
+        Maintenant géré par preparer_tour() qui vérifie le timeout.
+        Conservé pour compatibilité.
         """
-        self._ajouter_historique(f"TIMEOUT: {self.TIMEOUT_LANCEMENT // 60} minutes écoulées")
-        self.sauvegarder_etat_timeout()
-        self.etat = EtatBlueStacks.BLOQUE
+        if self._etat_interne != EtatBlueStacks.BLOQUE:
+            self.sauvegarder_etat_timeout()
+            self.etat = EtatBlueStacks.BLOQUE
 
-        # Casser la boucle de lancement
-        for loop_id, boucle in list(self.boucles_actives.items()):
-            if getattr(boucle, 'nom_boucle', None) == "lancement_bluestacks":
-                boucle.doit_casser = True
-                break
+    def signaler_popup_detecte(self):
+        """LEGACY: Appelé quand un popup est détecté
+
+        Maintenant géré automatiquement par les états popup_*.
+        Conservé pour compatibilité.
+        """
+        self._ajouter_historique("Popup détecté")
+
+    def reset_flag_popup(self):
+        """LEGACY: Réinitialise le flag popup
+
+        Plus utilisé avec le nouveau système.
+        Conservé pour compatibilité.
+        """
+        pass
 
     # =========================================================
     # MÉTHODE ABSTRAITE - À implémenter par les sous-classes
@@ -424,7 +366,7 @@ class ManoirBlueStacks(ManoirBase):
     def gestion_tour(self):
         """Logique métier du manoir - À implémenter
 
-        Appelée quand le jeu est PRET.
+        Appelée quand le jeu est PRET (état "ville").
         Doit alimenter la séquence avec les actions à exécuter.
         """
         pass
@@ -434,12 +376,14 @@ class ManoirBlueStacks(ManoirBase):
         pass
 
     def initialiser_sequence(self):
-        """Initialise la séquence - vide car gérée par preparer_tour()
-
-        La séquence de lancement est construite dans _construire_sequence_lancement()
-        quand l'état passe de NON_LANCE à LANCEMENT.
-        """
+        """Initialise la séquence - vide car gérée par preparer_tour()"""
         pass
+
+    def reset(self):
+        """Reset le manoir - surcharge pour reset du flag lancement"""
+        super().reset()
+        self._lancement_initie = False
+        self._heure_lancement = None
 
     # =========================================================
     # INFORMATIONS
@@ -447,12 +391,14 @@ class ManoirBlueStacks(ManoirBase):
 
     def get_status(self):
         """Retourne le statut du manoir"""
+        etat_ecran = self.etat_actuel.nom if self.etat_actuel else "inconnu"
         status = {
             'manoir_id': self.manoir_id,
             'nom': self.nom,
-            'etat': self._etat.name,
+            'etat_interne': self._etat_interne.name,
+            'etat_ecran': etat_ecran,
             'fenetre_ouverte': self.est_fenetre_ouverte(),
-            'jeu_charge': self._etat == EtatBlueStacks.PRET,
+            'jeu_charge': self._etat_interne == EtatBlueStacks.PRET,
             'temps_lancement': self.get_temps_depuis_lancement(),
             'titre': self.titre_bluestacks,
         }
@@ -460,4 +406,5 @@ class ManoirBlueStacks(ManoirBase):
         return status
 
     def __repr__(self):
-        return f"ManoirBlueStacks('{self.manoir_id}', {self._etat.name})"
+        etat_ecran = self.etat_actuel.nom if self.etat_actuel else "?"
+        return f"ManoirBlueStacks('{self.manoir_id}', {self._etat_interne.name}, écran={etat_ecran})"
