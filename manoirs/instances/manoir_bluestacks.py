@@ -251,8 +251,16 @@ class ManoirBlueStacks(ManoirBase):
         return screenshot_path
 
     # =========================================================
-    # IMPLÉMENTATION - Gestion erreurs et alimentation séquence
+    # IMPLÉMENTATION - Hooks et gestion erreurs
     # =========================================================
+
+    def _hook_reprise_changement(self):
+        """Active la fenêtre et vérifie les dimensions lors de la reprise
+
+        Appelé par ManoirBase._preparer_reprise_changement() quand
+        Engine revient sur ce manoir après en avoir traité un autre.
+        """
+        self.activate()  # Active fenêtre + vérifie/replace dimensions
 
     def _detecter_erreur(self):
         """Détecte si le manoir est en état d'erreur (BLOQUE)

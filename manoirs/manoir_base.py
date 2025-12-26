@@ -1055,14 +1055,33 @@ class ManoirBase(ABC):
         """Prépare le manoir après un changement de manoir par Engine
 
         Invalide le cache de capture (l'écran a pu changer pendant
-        qu'un autre manoir était actif) puis alimente la séquence.
+        qu'un autre manoir était actif), appelle le hook pour les
+        sous-classes, puis alimente la séquence si nécessaire.
 
         Returns:
             bool: True si prêt à exécuter
         """
         self.logger.debug(f"{self.nom}: Reprise après changement de manoir")
         self.invalidate_capture()
-        return self._preparer_alimenter_sequence()
+
+        # Hook pour les sous-classes (activation fenêtre, vérif dimensions, etc.)
+        self._hook_reprise_changement()
+
+        # Alimenter la séquence si vide
+        if self.sequence.is_end():
+            return self._preparer_alimenter_sequence()
+        return True
+
+    def _hook_reprise_changement(self):
+        """Hook appelé lors de la reprise après un changement de manoir
+
+        À surcharger dans les sous-classes pour ajouter des actions
+        spécifiques à la reprise (activation fenêtre, vérification
+        dimensions, etc.).
+
+        Implémentation par défaut : ne fait rien.
+        """
+        pass
 
     @abstractmethod
     def _preparer_alimenter_sequence(self):
