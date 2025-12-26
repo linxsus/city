@@ -138,6 +138,19 @@ def preparer_tour(self):
 
 ---
 
+## 10. Vérifier les appels activate() redondants
+
+Maintenant que `_hook_reprise_changement()` appelle `activate()`, vérifier si ces appels sont encore nécessaires :
+
+- [ ] `manoir_bluestacks.py:303` - dans `_preparer_alimenter_sequence()` quand état = destination
+  - Peut-être redondant avec le hook ?
+- [ ] `action_verifier_pret.py:61` - action legacy
+  - À supprimer si plus utilisée ?
+- [ ] `action_verifier_pret_rapide.py:126` - action legacy
+  - À supprimer si plus utilisée ?
+
+---
+
 ## Référence - Fichiers clés
 
 | Fichier | Rôle |
