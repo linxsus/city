@@ -19,6 +19,8 @@ if TYPE_CHECKING:
     from core.gestionnaire_etats import GestionnaireEtats
     from core.etat import Etat
 
+from core.etat_inconnu import EtatInconnu
+
 from utils.config import (
     DEFAULT_IMAGE_THRESHOLD,
     CAPTURES_DIR,
@@ -101,6 +103,8 @@ class ManoirBase(ABC):
         # Gestion des états (écrans) - injecté par l'Engine
         self._gestionnaire: Optional['GestionnaireEtats'] = None
         self.etat_actuel: Optional['Etat'] = None
+        # États à tester après une reprise (chemin incertain)
+        self._etats_a_tester_apres_reprise: Optional[list] = None
 
         # Handle de la fenêtre Windows
         self._hwnd = None
@@ -871,11 +875,23 @@ class ManoirBase(ABC):
     def _determiner_et_stocker_etat(self) -> bool:
         """Détermine l'état actuel et le stocke (PROTÉGÉ)
 
+        Si _etats_a_tester_apres_reprise est défini (après un chemin incertain),
+        seuls ces états sont testés. Sinon, tous les états sont testés.
+
         Returns:
             bool: True si un état a été trouvé
         """
         try:
-            self.etat_actuel = self._gestionnaire.determiner_etat_actuel(self)
+            # Utiliser les états restreints si définis (après chemin incertain)
+            etats_a_tester = self._etats_a_tester_apres_reprise
+            self._etats_a_tester_apres_reprise = None  # Consommer la liste
+
+            if etats_a_tester:
+                self.logger.debug(f"Test restreint aux états: {etats_a_tester}")
+
+            self.etat_actuel = self._gestionnaire.determiner_etat_actuel(
+                self, liste_etats=etats_a_tester
+            )
             self.logger.info(f"État déterminé: {self.etat_actuel.nom}")
             return True
         except AucunEtatTrouve:
@@ -927,8 +943,14 @@ class ManoirBase(ABC):
 
         self.logger.debug(f"Navigation: {chemin} ({len(actions)} actions)")
 
-        # Si chemin incomplet, ajouter ActionReprisePreparerTour
+        # Si chemin incomplet, stocker les états possibles et ajouter ActionReprisePreparerTour
         if not complet:
+            # Extraire les etats_possibles du EtatInconnu pour la prochaine détection
+            if isinstance(chemin.etat_sortie, EtatInconnu) and chemin.etat_sortie.etats_possibles:
+                self._etats_a_tester_apres_reprise = chemin.etat_sortie.etats_possibles
+                noms = [e.nom if hasattr(e, 'nom') else str(e) for e in self._etats_a_tester_apres_reprise]
+                self.logger.debug(f"États à tester après reprise: {noms}")
+
             if not self._sequence_contient_reprise():
                 self.sequence.ajouter(ActionReprisePreparerTour(self))
                 self.logger.debug("Chemin incomplet, ActionReprisePreparerTour ajoutée")
