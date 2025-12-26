@@ -161,16 +161,22 @@ ManoirVirtuel n'a pas besoin de gestion d'erreur (toujours valide).
 
 ---
 
-## 10. Vérifier les appels activate() redondants
+## 10. Appels activate() - Analyse ✅
 
-Maintenant que `_hook_reprise_changement()` appelle `activate()`, vérifier si ces appels sont encore nécessaires :
+Analyse des appels `activate()` maintenant que `_hook_reprise_changement()` l'appelle :
 
-- [ ] `manoir_bluestacks.py:303` - dans `_preparer_alimenter_sequence()` quand état = destination
-  - Peut-être redondant avec le hook ?
-- [ ] `action_verifier_pret.py:61` - action legacy
-  - À supprimer si plus utilisée ?
-- [ ] `action_verifier_pret_rapide.py:126` - action legacy
-  - À supprimer si plus utilisée ?
+- [x] `manoir_bluestacks.py:317` - dans `_preparer_alimenter_sequence()` quand état = destination
+  - ✓ **Partiellement redondant** : si on vient d'un changement de manoir, le hook l'a déjà appelé
+  - ✓ **Nécessaire** : si le manoir continue sans changement, c'est le seul appel
+  - ✓ **Conservé** : activate() est idempotent, double appel sans danger
+
+- [x] `action_verifier_pret.py:61` - action legacy
+  - ✓ **Non utilisée** : le nouveau système états/chemins remplace cette action
+  - ✓ **Conservée** pour compatibilité
+
+- [x] `action_verifier_pret_rapide.py:126` - action legacy
+  - ✓ **Non utilisée** : le nouveau système états/chemins remplace cette action
+  - ✓ **Conservée** pour compatibilité
 
 ---
 
