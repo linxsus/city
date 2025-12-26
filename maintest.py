@@ -168,11 +168,11 @@ def mock_etat_verif_chargement(self, manoir):
     """Mock pour EtatChargement.verif()"""
     sim = get_simulateur()
     if sim:
-        etat = sim.get_etat_actuel()
-        if etat == 'chargement':
-            # Marquer que temps_init est terminé (première vérification de chargement)
+        # D'abord marquer que temps_init est terminé (si on vérifie chargement)
+        if sim._etat_simule == 'chargement':
             sim.marquer_init_termine()
-            return True
+        # Ensuite vérifier l'état (qui peut avoir changé vers ville)
+        return sim.get_etat_actuel() == 'chargement'
     return False
 
 
