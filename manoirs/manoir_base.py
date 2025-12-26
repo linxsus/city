@@ -973,6 +973,25 @@ class ManoirBase(ABC):
                 return True
         return False
 
+    def ajouter_action_longue(self, action_longue):
+        """Ajoute une ActionLongue après navigation vers l'état requis si nécessaire
+
+        Si l'ActionLongue a un etat_requis défini et que l'état actuel est différent,
+        navigue d'abord vers cet état avant d'ajouter l'action à la séquence.
+
+        Args:
+            action_longue: Instance d'ActionLongue à ajouter
+        """
+        if action_longue.etat_requis:
+            etat_requis_nom = getattr(action_longue.etat_requis, 'nom', action_longue.etat_requis)
+            etat_actuel_nom = getattr(self.etat_actuel, 'nom', None)
+
+            if etat_actuel_nom != etat_requis_nom:
+                self.logger.debug(f"Navigation vers {etat_requis_nom} pour {action_longue.nom}")
+                self.naviguer_vers(action_longue.etat_requis)
+
+        self.sequence.ajouter(action_longue)
+
     # =========================================================
     # MÉTHODES ABSTRAITES
     # =========================================================

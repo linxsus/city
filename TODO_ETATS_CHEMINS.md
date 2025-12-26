@@ -75,9 +75,9 @@ ActionLongue(manoir, [...], nom="tuer_mercenaire", etat_requis="ville")
 
 ---
 
-## 6. Modifier ManoirBase pour gérer `etat_requis`
+## 6. Modifier ManoirBase pour gérer `etat_requis` ✅
 
-- [ ] Ajouter méthode `ajouter_action_longue(action_longue)` dans `ManoirBase`
+- [x] Ajouter méthode `ajouter_action_longue(action_longue)` dans `ManoirBase`
   - Vérifie si `action_longue.etat_requis` est défini
   - Si oui, compare avec `self.etat_actuel`
   - Si différent, appelle `self.naviguer_vers(action_longue.etat_requis)`
