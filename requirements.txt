@@ -1,6 +1,19 @@
 # Automation Framework - Dépendances Python
 # Installation: pip install -r requirements.txt
 
+# =====================================================
+# PyTorch - Choisir UNE option selon votre configuration
+# =====================================================
+# Option CPU (plus léger, pas besoin de GPU):
+# pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+
+# Option GPU CUDA 12.1 (nécessite GPU NVIDIA compatible):
+# pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
+# =====================================================
+# Dépendances principales
+# =====================================================
+
 # Capture d'écran
 mss>=9.0.0
 
@@ -16,9 +29,11 @@ pyautogui>=0.9.54
 pywin32>=306; sys_platform == 'win32'
 pynput>=1.7.6
 
-# OCR - Choisir une option:
-# Option 1: EasyOCR (recommandé, supporte GPU)
-# easyocr>=1.7.0
+# =====================================================
+# OCR - Choisir UNE option
+# =====================================================
+# Option 1: EasyOCR (recommandé, supporte GPU, nécessite PyTorch)
+easyocr>=1.7.0
 
 # Option 2: Tesseract (léger, CPU only)
 # Installer Tesseract séparément: https://github.com/UB-Mannheim/tesseract/wiki
@@ -27,8 +42,5 @@ pynput>=1.7.6
 # =====================================================
 # Dépendances de développement / Tests
 # =====================================================
-# Installation: pip install -r requirements.txt
-
-# Tests
 pytest>=7.4.0
 pytest-cov>=4.1.0

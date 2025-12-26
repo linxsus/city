@@ -13,6 +13,10 @@ authors = [
     {name = "Xavier"}
 ]
 
+# Note: PyTorch doit être installé séparément avec la bonne version (CPU ou CUDA)
+# CPU: pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+# GPU: pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
 dependencies = [
     "mss>=9.0.0",
     "opencv-python>=4.8.0",
@@ -21,15 +25,13 @@ dependencies = [
     "pyautogui>=0.9.54",
     "pynput>=1.7.6",
     "pywin32>=306; sys_platform == 'win32'",
+    "easyocr>=1.7.0",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=7.4.0",
     "pytest-cov>=4.1.0",
-]
-ocr-easyocr = [
-    "easyocr>=1.7.0",
 ]
 ocr-tesseract = [
     "pytesseract>=0.3.10",
