@@ -244,6 +244,9 @@ def main_test():
     )
     args = parser.parse_args()
 
+    # Nettoyer sys.argv pour que main.py ne voie pas nos arguments
+    sys.argv = [sys.argv[0]]
+
     # Créer le simulateur
     _simulateur = SimulateurBlueStacks(scenario=args.scenario)
     _simulateur._delai_chargement = args.delai_chargement
