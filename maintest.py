@@ -134,11 +134,12 @@ def mock_etat_verif_ville(self, manoir):
     return False
 
 
-def mock_capture_screen(self, region=None):
-    """Mock pour ManoirBase.capture_screen()"""
+def mock_capture(self, force=False):
+    """Mock pour ManoirBase.capture()"""
     # Retourner une image noire simulée
     import numpy as np
-    return np.zeros((720, 1280, 3), dtype=np.uint8)
+    self._last_capture = np.zeros((720, 1280, 3), dtype=np.uint8)
+    return self._last_capture
 
 
 def mock_detect_image(self, image_path, *args, **kwargs):
@@ -200,7 +201,7 @@ def main_test():
     # Appliquer les mocks
     with patch('subprocess.run', mock_subprocess_run), \
          patch('manoirs.manoir_base.ManoirBase.find_window', mock_find_window), \
-         patch('manoirs.manoir_base.ManoirBase.capture_screen', mock_capture_screen), \
+         patch('manoirs.manoir_base.ManoirBase.capture', mock_capture), \
          patch('manoirs.manoir_base.ManoirBase.detect_image', mock_detect_image):
 
         # Patcher les vérifications d'état
