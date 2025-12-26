@@ -196,6 +196,12 @@ class GestionnaireEtats:
                     chemin.etat_sortie = [
                         self._resoudre_reference(e) for e in chemin.etat_sortie
                     ]
+                elif isinstance(chemin.etat_sortie, EtatInconnu):
+                    # Résoudre les etats_possibles à l'intérieur de l'EtatInconnu
+                    if chemin.etat_sortie.etats_possibles:
+                        chemin.etat_sortie.etats_possibles = [
+                            self._resoudre_reference(e) for e in chemin.etat_sortie.etats_possibles
+                        ]
                 else:
                     chemin.etat_sortie = self._resoudre_reference(chemin.etat_sortie)
 
