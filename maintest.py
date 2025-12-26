@@ -225,6 +225,12 @@ def main_test():
         default=3,
         help='Délai simulé pour le chargement en secondes (default: 3)'
     )
+    parser.add_argument(
+        '--temps-init',
+        type=int,
+        default=5,
+        help='Temps d\'initialisation BlueStacks en secondes (default: 5, prod: 300)'
+    )
     args = parser.parse_args()
 
     # Créer le simulateur
@@ -237,8 +243,15 @@ def main_test():
     print(f"Scénario: {args.scenario}")
     print(f"Durée: {args.duree}s")
     print(f"Délai chargement: {args.delai_chargement}s")
+    print(f"Temps init BlueStacks: {args.temps_init}s")
     print("=" * 60)
     print()
+
+    # Patcher la config pour réduire temps_initialisation
+    import manoirs.config_manoirs as config_module
+    for manoir_config in config_module.MANOIRS_CONFIG.values():
+        if "temps_initialisation" in manoir_config:
+            manoir_config["temps_initialisation"] = args.temps_init
 
     # Importer les modules à patcher AVANT d'appliquer les patches
     from manoirs.etats.etat_non_lance import EtatNonLance
