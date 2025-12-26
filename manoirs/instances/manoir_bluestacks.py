@@ -344,46 +344,6 @@ class ManoirBlueStacks(ManoirBase):
         self.etat = EtatBlueStacks.BLOQUE
 
     # =========================================================
-    # MÉTHODES LEGACY (compatibilité avec anciennes actions)
-    # =========================================================
-
-    def signaler_jeu_charge(self):
-        """LEGACY: Appelé par ActionVerifierPret
-
-        Maintenant géré par preparer_tour() qui détecte l'état "ville".
-        Conservé pour compatibilité.
-        """
-        if self._etat_interne != EtatBlueStacks.PRET:
-            self.etat = EtatBlueStacks.PRET
-            self.logger.info(f"{self.nom}: Jeu chargé (legacy signal)")
-
-    def signaler_timeout(self):
-        """LEGACY: Appelé par ActionVerifierTimeout
-
-        Maintenant géré par preparer_tour() qui vérifie le timeout.
-        Conservé pour compatibilité.
-        """
-        if self._etat_interne != EtatBlueStacks.BLOQUE:
-            self.sauvegarder_etat_timeout()
-            self.etat = EtatBlueStacks.BLOQUE
-
-    def signaler_popup_detecte(self):
-        """LEGACY: Appelé quand un popup est détecté
-
-        Maintenant géré automatiquement par les états popup_*.
-        Conservé pour compatibilité.
-        """
-        self._ajouter_historique("Popup détecté")
-
-    def reset_flag_popup(self):
-        """LEGACY: Réinitialise le flag popup
-
-        Plus utilisé avec le nouveau système.
-        Conservé pour compatibilité.
-        """
-        pass
-
-    # =========================================================
     # MÉTHODE ABSTRAITE - À implémenter par les sous-classes
     # =========================================================
 
