@@ -23,18 +23,18 @@ class SequenceActions:
         self.fin = False
     
     def add(self, new, position=None):
-        """Ajoute une ou plusieurs actions à la séquence 
-        
+        """Ajoute une ou plusieurs actions à la séquence
+
         Args:
             new: Action unique ou liste d'actions
             position: Position d'insertion (None = à la fin)
-        
+
         """
         if not isinstance(new, list):
             new = [new]
-        
+
         for act in new:
-            
+
             if position is None:
                 self.actions.append(act)
             else:
@@ -42,11 +42,14 @@ class SequenceActions:
                 pos = max(self.index, min(position, len(self.actions)))
                 self.actions.insert(pos, act)
                 position += 1
-        
-        
+
+
         # Réinitialiser le flag fin si on ajoute des actions
         if not self.is_end():
             self.fin = False
+
+    # Alias français pour compatibilité
+    ajouter = add
     
     def add_next(self, new):
         """Ajoute des actions juste après la position actuelle
