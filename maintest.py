@@ -157,34 +157,33 @@ class MockPopen:
         return 0
 
 
-def mock_etat_verif_non_lance(self, manoir):
-    """Mock pour EtatNonLance.verif()"""
+def mock_determiner_etat_actuel(self, manoir, liste_etats=None):
+    """Mock pour GestionnaireEtats.determiner_etat_actuel()"""
     sim = get_simulateur()
     if sim:
-        return sim.get_etat_actuel() == 'non_lance'
-    return True
-
-
-def mock_etat_verif_chargement(self, manoir):
-    """Mock pour EtatChargement.verif()"""
-    sim = get_simulateur()
-    if sim:
-        # Debug: afficher l'état actuel
-        print(f"[DEBUG] mock_etat_verif_chargement: _etat_simule={sim._etat_simule}, _temps_init_termine={sim._temps_init_termine}", flush=True)
-        # D'abord marquer que temps_init est terminé (si on vérifie chargement)
+        # Si on est en chargement, marquer que temps_init est terminé
         if sim._etat_simule == 'chargement':
             sim.marquer_init_termine()
-        # Ensuite vérifier l'état (qui peut avoir changé vers ville)
-        return sim.get_etat_actuel() == 'chargement'
-    return False
 
+        # Obtenir l'état actuel simulé
+        etat_nom = sim.get_etat_actuel()
+        print(f"[SIMULATION] État déterminé: {etat_nom}", flush=True)
 
-def mock_etat_verif_ville(self, manoir):
-    """Mock pour EtatVille.verif()"""
-    sim = get_simulateur()
-    if sim:
-        return sim.get_etat_actuel() == 'ville'
-    return False
+        # Retourner l'instance d'état correspondante
+        try:
+            return self.obtenir_etat(etat_nom)
+        except Exception:
+            # Fallback si l'état n'existe pas
+            for etat in self._etats.values():
+                if etat.nom == etat_nom:
+                    return etat
+            # Retourner le premier état inconnu
+            for etat in self._etats.values():
+                if hasattr(etat, 'etats_possibles'):
+                    return etat
+
+    # Appeler la méthode originale si pas de simulateur
+    return self._original_determiner_etat_actuel(manoir, liste_etats)
 
 
 def mock_capture(self, force=False):
@@ -270,22 +269,19 @@ def main_test():
         if "temps_initialisation" in manoir_config:
             manoir_config["temps_initialisation"] = args.temps_init
 
-    # Importer les modules à patcher AVANT d'appliquer les patches
-    from manoirs.etats.etat_non_lance import EtatNonLance
-    from manoirs.etats.etat_chargement import EtatChargement
-    from manoirs.etats.etat_ville import EtatVille
-
     # Importer le module qui utilise subprocess pour le patcher correctement
     import actions.bluestacks.action_lancer_raccourci as action_module
+    from core.gestionnaire_etats import GestionnaireEtats
+
+    # Sauvegarder la méthode originale
+    GestionnaireEtats._original_determiner_etat_actuel = GestionnaireEtats.determiner_etat_actuel
 
     # Appliquer tous les mocks
     with patch.object(action_module, 'subprocess') as mock_subproc, \
          patch('manoirs.manoir_base.ManoirBase.find_window', mock_find_window), \
          patch('manoirs.manoir_base.ManoirBase.capture', mock_capture), \
          patch('manoirs.manoir_base.ManoirBase.detect_image', mock_detect_image), \
-         patch.object(EtatNonLance, 'verif', mock_etat_verif_non_lance), \
-         patch.object(EtatChargement, 'verif', mock_etat_verif_chargement), \
-         patch.object(EtatVille, 'verif', mock_etat_verif_ville):
+         patch.object(GestionnaireEtats, 'determiner_etat_actuel', mock_determiner_etat_actuel):
 
         # Configurer le mock de subprocess
         mock_subproc.run = mock_subprocess_run
