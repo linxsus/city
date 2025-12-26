@@ -20,10 +20,12 @@ from utils.config import (
     PAUSE_ENTRE_FENETRES,
     PAUSE_UTILISATEUR_ACTIF,
     TEMPS_INACTIVITE_REQUIS,
+    CONFIG_DIR,
 )
 from core.simple_scheduler import get_simple_scheduler
 from core.message_bus import get_message_bus
 from core.user_activity_detector import get_activity_detector
+from core.gestionnaire_etats import GestionnaireEtats
 
 logger = get_module_logger("Engine")
 
@@ -69,6 +71,9 @@ class Engine:
         self.scheduler = get_simple_scheduler()
         self.bus = get_message_bus()
         self.activity = get_activity_detector()
+
+        # Gestionnaire d'états (créé au démarrage)
+        self._gestionnaire_etats: Optional[GestionnaireEtats] = None
 
         # État interne
         self._manoir_courant: Optional[str] = None
@@ -334,8 +339,21 @@ class Engine:
 
     def _initialiser_manoirs(self):
         """Initialise tous les manoirs (PROTÉGÉ)"""
+        # Créer le gestionnaire d'états partagé
+        try:
+            chemin_config = CONFIG_DIR / "etat-chemin.toml"
+            self._gestionnaire_etats = GestionnaireEtats(str(chemin_config))
+            logger.info("Gestionnaire d'états créé")
+        except Exception as e:
+            logger.warning(f"Gestionnaire d'états non disponible: {e}")
+            self._gestionnaire_etats = None
+
         for manoir_id, manoir in self.manoirs.items():
             try:
+                # Injecter le gestionnaire d'états
+                if self._gestionnaire_etats:
+                    manoir.set_gestionnaire(self._gestionnaire_etats)
+
                 # Définir les timers
                 manoir.definir_timers()
 
@@ -417,6 +435,21 @@ class Engine:
                     logger.debug(f"Exécution: {nom}")
 
                     result = action.execute()
+
+                    # VÉRIFIER SI REPRISE PREPARER_TOUR DEMANDÉE (chemin incertain)
+                    if getattr(action, 'demande_reprise', False):
+                        logger.debug(f"{manoir_id}: Reprise preparer_tour demandée")
+                        if result:
+                            actions_executees += 1
+                            self.stats['actions_executees'] += 1
+                            self._echecs_consecutifs[manoir_id] = 0
+                            manoir.incrementer_stat('actions_executees')
+                        # Rappeler preparer_tour pour recalculer le chemin
+                        try:
+                            manoir.preparer_tour()
+                        except Exception as e:
+                            logger.error(f"Erreur reprise preparer_tour: {e}")
+                        continue  # Continuer avec la nouvelle séquence
 
                     # VÉRIFIER SI ROTATION DEMANDÉE (attente non bloquante)
                     if manoir.doit_tourner():

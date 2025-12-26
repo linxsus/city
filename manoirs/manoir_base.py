@@ -8,10 +8,16 @@ ManoirBase définit l'interface commune pour tous les manoirs
 - Les interactions (clics, saisie)
 - La gestion des erreurs
 - L'état et les variables
+- La navigation entre états (écrans)
 """
 import time
 from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import TYPE_CHECKING, Optional, Union
+
+if TYPE_CHECKING:
+    from core.gestionnaire_etats import GestionnaireEtats
+    from core.etat import Etat
 
 from utils.config import (
     DEFAULT_IMAGE_THRESHOLD,
@@ -31,6 +37,8 @@ from core.slot_manager import get_slot_manager
 from core.timer_manager import get_timer_manager
 from core.window_state_manager import get_window_state_manager
 from core.message_bus import get_message_bus
+from core.exceptions import AucunEtatTrouve
+from actions.action_reprise_preparer_tour import ActionReprisePreparerTour
 
 
 class ManoirBase(ABC):
@@ -89,7 +97,11 @@ class ManoirBase(ABC):
         self.variables = {}
         self.boucles_actives = {}
         self._etats_boucles = {}
-        
+
+        # Gestion des états (écrans) - injecté par l'Engine
+        self._gestionnaire: Optional['GestionnaireEtats'] = None
+        self.etat_actuel: Optional['Etat'] = None
+
         # Handle de la fenêtre Windows
         self._hwnd = None
         self._rect = None
@@ -816,9 +828,129 @@ class ManoirBase(ABC):
             timer_nom: Nom du timer
         """
         self._tm.mark_executed(timer_nom, self.manoir_id)
-        
-        
-    
+
+    # =========================================================
+    # GESTION DES ÉTATS (ÉCRANS) ET NAVIGATION
+    # =========================================================
+
+    def set_gestionnaire(self, gestionnaire: 'GestionnaireEtats') -> None:
+        """Injecte le gestionnaire d'états (appelé par l'Engine)
+
+        Args:
+            gestionnaire: Instance du GestionnaireEtats partagé
+        """
+        self._gestionnaire = gestionnaire
+        self.logger.debug("Gestionnaire d'états injecté")
+
+    def verifier_etat(self) -> bool:
+        """Vérifie si l'état stocké correspond à l'état réel
+
+        Si l'état stocké est incorrect ou None, appelle determiner_etat_actuel()
+        pour le mettre à jour.
+
+        Returns:
+            bool: True si l'état est valide (stocké ou redéterminé)
+        """
+        if self._gestionnaire is None:
+            self.logger.warning("Gestionnaire d'états non configuré")
+            return False
+
+        # Si pas d'état stocké, le déterminer
+        if self.etat_actuel is None:
+            return self._determiner_et_stocker_etat()
+
+        # Vérifier si l'état stocké est correct
+        if self.etat_actuel.verif(self):
+            self.logger.debug(f"État vérifié: {self.etat_actuel.nom}")
+            return True
+
+        # État incorrect, redéterminer
+        self.logger.info(f"État {self.etat_actuel.nom} incorrect, redétermination...")
+        return self._determiner_et_stocker_etat()
+
+    def _determiner_et_stocker_etat(self) -> bool:
+        """Détermine l'état actuel et le stocke (PROTÉGÉ)
+
+        Returns:
+            bool: True si un état a été trouvé
+        """
+        try:
+            self.etat_actuel = self._gestionnaire.determiner_etat_actuel(self)
+            self.logger.info(f"État déterminé: {self.etat_actuel.nom}")
+            return True
+        except AucunEtatTrouve:
+            self.logger.warning("Aucun état trouvé")
+            self.etat_actuel = None
+            return False
+
+    def naviguer_vers(self, destination: Union['Etat', str]) -> bool:
+        """Ajoute les actions de navigation vers une destination à la séquence
+
+        Utilise le pathfinding pour trouver le chemin depuis l'état actuel.
+        Si le chemin est incomplet (sortie incertaine), ajoute une
+        ActionReprisePreparerTour à la fin.
+
+        Args:
+            destination: État de destination (instance ou nom)
+
+        Returns:
+            bool: True si chemin complet, False si incomplet ou impossible
+
+        Notes:
+            - Si retourne False avec chemin incomplet, arrêter d'ajouter des actions
+            - La reprise sera gérée automatiquement par l'Engine
+        """
+        if self._gestionnaire is None:
+            self.logger.warning("Gestionnaire d'états non configuré")
+            return False
+
+        if self.etat_actuel is None:
+            self.logger.warning("État actuel inconnu, impossible de naviguer")
+            return False
+
+        # Trouver le chemin
+        chemins, complet = self._gestionnaire.trouver_chemin(
+            self.etat_actuel, destination
+        )
+
+        if not chemins:
+            dest_nom = destination if isinstance(destination, str) else destination.nom
+            self.logger.warning(f"Aucun chemin trouvé vers {dest_nom}")
+            return False
+
+        # Ajouter les actions du premier chemin
+        chemin = chemins[0]
+        actions = chemin.generer_actions()
+
+        for action in actions:
+            self.sequence.ajouter(action)
+
+        self.logger.debug(f"Navigation: {chemin} ({len(actions)} actions)")
+
+        # Si chemin incomplet, ajouter ActionReprisePreparerTour
+        if not complet:
+            if not self._sequence_contient_reprise():
+                self.sequence.ajouter(ActionReprisePreparerTour(self))
+                self.logger.debug("Chemin incomplet, ActionReprisePreparerTour ajoutée")
+            return False
+
+        # Mettre à jour l'état attendu après navigation
+        if chemin.etat_sortie is not None and hasattr(chemin.etat_sortie, 'nom'):
+            self.etat_actuel = chemin.etat_sortie
+
+        return True
+
+    def _sequence_contient_reprise(self) -> bool:
+        """Vérifie si la séquence contient déjà une ActionReprisePreparerTour (PROTÉGÉ)
+
+        Returns:
+            bool: True si une ActionReprisePreparerTour est présente
+        """
+        for action in self.sequence:
+            if isinstance(action, ActionReprisePreparerTour):
+                return True
+        return False
+
     # =========================================================
     # MÉTHODES ABSTRAITES
     # =========================================================
@@ -980,6 +1112,7 @@ class ManoirBase(ABC):
         self.sequence.clear()
         self.slots_prioritaires.clear()
         self.slots_normaux.clear()
+        self.etat_actuel = None  # Réinitialiser l'état écran
         self.invalidate_capture()
         self.logger.info("Manoir réinitialisé")
 

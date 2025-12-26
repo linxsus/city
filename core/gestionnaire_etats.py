@@ -7,7 +7,10 @@ Gère le graphe d'états, le pathfinding et la détermination d'état.
 import os
 import importlib
 import importlib.util
-from typing import Dict, List, Tuple, Union, Optional, Any
+from typing import Dict, List, Tuple, Union, Optional, Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from manoirs.manoir_base import ManoirBase
 from collections import deque
 from pathlib import Path
 
@@ -57,7 +60,11 @@ class GestionnaireEtats:
         self._priorites: List[str] = []
         self._config: Dict[str, Any] = {}
 
+        # Chemin de base par défaut (parent.parent du fichier config)
         self._base_path = Path(chemin_config).parent.parent
+        # Chemins des dossiers (peuvent être surchargés par la config)
+        self._chemin_etats: Optional[Path] = None
+        self._chemin_chemins: Optional[Path] = None
 
         self._charger_configuration(chemin_config)
         self._scanner_etats()
@@ -78,6 +85,14 @@ class GestionnaireEtats:
                 niveau = self._config['logging'].get('niveau', 'INFO')
                 self._logger = get_module_logger('GestionnaireEtats', niveau)
 
+            # Charger les chemins des dossiers (optionnels)
+            if 'chemins_dossiers' in self._config:
+                chemins_cfg = self._config['chemins_dossiers']
+                if 'etats' in chemins_cfg:
+                    self._chemin_etats = self._base_path / chemins_cfg['etats']
+                if 'chemins' in chemins_cfg:
+                    self._chemin_chemins = self._base_path / chemins_cfg['chemins']
+
             self._logger.info(f"Configuration chargée: {chemin_config}")
 
         except FileNotFoundError:
@@ -87,7 +102,8 @@ class GestionnaireEtats:
 
     def _scanner_etats(self) -> None:
         """Scanne le répertoire 'etats/' et instancie toutes les classes Etat."""
-        repertoire_etats = self._base_path / 'etats'
+        # Utiliser le chemin configuré ou le chemin par défaut
+        repertoire_etats = self._chemin_etats or (self._base_path / 'etats')
 
         if not repertoire_etats.exists():
             self._logger.warning(f"Répertoire des états introuvable: {repertoire_etats}")
@@ -100,18 +116,19 @@ class GestionnaireEtats:
                 raise ErreurValidation(f"Nom d'état dupliqué: {instance.nom}")
             self._etats[instance.nom] = instance
 
-        self._logger.info(f"Scan du répertoire 'etats/': {len(self._etats)} états trouvés")
+        self._logger.info(f"Scan du répertoire '{repertoire_etats}': {len(self._etats)} états trouvés")
 
     def _scanner_chemins(self) -> None:
         """Scanne le répertoire 'chemins/' et instancie toutes les classes Chemin."""
-        repertoire_chemins = self._base_path / 'chemins'
+        # Utiliser le chemin configuré ou le chemin par défaut
+        repertoire_chemins = self._chemin_chemins or (self._base_path / 'chemins')
 
         if not repertoire_chemins.exists():
             self._logger.warning(f"Répertoire des chemins introuvable: {repertoire_chemins}")
             return
 
         self._chemins = self._scanner_modules(str(repertoire_chemins), Chemin)
-        self._logger.info(f"Scan du répertoire 'chemins/': {len(self._chemins)} chemins trouvés")
+        self._logger.info(f"Scan du répertoire '{repertoire_chemins}': {len(self._chemins)} chemins trouvés")
 
     def _scanner_modules(self, repertoire: str, classe_base: type) -> List[Any]:
         """
@@ -369,12 +386,14 @@ class GestionnaireEtats:
 
     def determiner_etat_actuel(
         self,
+        manoir: 'ManoirBase',
         liste_etats: Optional[List[Union[Etat, str]]] = None
     ) -> Etat:
         """
         Teste les états pour déterminer l'état actuel du système.
 
         Args:
+            manoir: Instance du manoir pour accéder aux méthodes de détection
             liste_etats: Liste d'états à tester (None = tous les états)
 
         Returns:
@@ -406,7 +425,7 @@ class GestionnaireEtats:
         etats_a_tester.sort(key=lambda e: priorite_key(e))
 
         for etat in etats_a_tester:
-            if etat.verif():
+            if etat.verif(manoir):
                 self._logger.info(f"État actuel déterminé: {etat.nom}")
                 return etat
 
