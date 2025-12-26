@@ -4,7 +4,7 @@
 from typing import List, Any
 from core.chemin import Chemin
 from core.etat_inconnu import EtatInconnu
-from actions.action import ActionSimple
+from actions.simple.action_bouton import ActionBouton
 from actions.action_reprise_preparer_tour import ActionReprisePreparerTour
 
 
@@ -34,18 +34,7 @@ class CheminFermerPopupGratuit(Chemin):
         Returns:
             Liste d'actions
         """
-        # Clic sur le bouton gratuit
-        def clic_bouton_gratuit(m):
-            result = m.click_image("boutons/bouton_gratuit.png")
-            if result:
-                m._ajouter_historique("Bouton gratuit cliqué")
-            return result if result else True  # Continue même si clic échoue
-
         return [
-            ActionSimple(
-                manoir,
-                action_func=clic_bouton_gratuit,
-                nom="ClicBoutonGratuit"
-            ),
+            ActionBouton(manoir, "boutons/bouton_gratuit.png"),
             ActionReprisePreparerTour(manoir),
         ]

@@ -23,20 +23,18 @@ ActionBouton(manoir, "boutons/bouton_gratuit.png")
 
 ---
 
-## 2. Refactorer les chemins pour utiliser `ActionBouton`
+## 2. Refactorer les chemins pour utiliser `ActionBouton` ✅
 
 Les chemins actuels utilisent `ActionSimple` avec des lambdas. Remplacer par `ActionBouton` :
 
 - [x] `manoirs/chemins/chemin_fermer_popup_rapport.py`
   - ✓ Conservé tel quel : utilise un clic positionnel (pas d'image)
 
-- [ ] `manoirs/chemins/chemin_fermer_popup_connexion.py`
-  - Actuellement : ActionSimple avec click_image("popups/connexion_quotidienne.png")
-  - À faire : ActionBouton(manoir, "popups/connexion_quotidienne.png")
+- [x] `manoirs/chemins/chemin_fermer_popup_connexion.py`
+  - ✓ Refactoré avec ActionBouton
 
-- [ ] `manoirs/chemins/chemin_fermer_popup_gratuit.py`
-  - Actuellement : ActionSimple avec click_image("boutons/bouton_gratuit.png")
-  - À faire : ActionBouton(manoir, "boutons/bouton_gratuit.png")
+- [x] `manoirs/chemins/chemin_fermer_popup_gratuit.py`
+  - ✓ Refactoré avec ActionBouton
 
 ---
 
