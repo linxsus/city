@@ -23,3 +23,12 @@ pynput>=1.7.6
 # Option 2: Tesseract (léger, CPU only)
 # Installer Tesseract séparément: https://github.com/UB-Mannheim/tesseract/wiki
 # pytesseract>=0.3.10
+
+# =====================================================
+# Dépendances de développement / Tests
+# =====================================================
+# Installation: pip install -r requirements.txt
+
+# Tests
+pytest>=7.4.0
+pytest-cov>=4.1.0
