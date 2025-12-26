@@ -102,6 +102,12 @@ call pip install "pynput>=1.7.6"
 echo   - EasyOCR (reconnaissance de texte - GPU accelere)...
 call pip install "easyocr>=1.7.0"
 
+echo   - pytest (tests unitaires)...
+call pip install "pytest>=7.4.0"
+
+echo   - pytest-cov (couverture de code)...
+call pip install "pytest-cov>=4.1.0"
+
 if %errorlevel% neq 0 (
     echo ERREUR: Echec de l'installation des dependances
     pause
@@ -118,6 +124,7 @@ echo Environnement : automatisation (GPU)
 echo Python        : 3.12
 echo PyTorch       : CUDA 12.1
 echo OCR           : EasyOCR (GPU accelere)
+echo Tests         : pytest + pytest-cov
 echo.
 echo Pour verifier que le GPU est detecte :
 echo   1. conda activate automatisation
@@ -128,6 +135,10 @@ echo Pour utiliser cet environnement :
 echo   1. Ouvrez un nouveau terminal Anaconda Prompt
 echo   2. Tapez : conda activate automatisation
 echo   3. Lancez : python main.py
+echo.
+echo Pour lancer les tests :
+echo   pytest
+echo   pytest --cov=manoirs --cov-report=term-missing
 echo.
 echo ========================================================================
 pause
