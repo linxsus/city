@@ -18,3 +18,6 @@ ENV/
 # OS
 .DS_Store
 Thumbs.db
+
+# Generated directories (Windows path artifacts)
+C:\\Projets\\automation_framework/
