@@ -23,18 +23,39 @@ ActionBouton(manoir, "boutons/bouton_gratuit.png")
 
 ---
 
-## 2. Refactorer les chemins pour utiliser `ActionBouton` ✅
+## 2. Classe Popup unifiée ✅
 
-Les chemins actuels utilisent `ActionSimple` avec des lambdas. Remplacer par `ActionBouton` :
+Créer une classe `Popup` qui hérite de `Etat` et génère automatiquement son `Chemin` de fermeture.
 
-- [x] `manoirs/chemins/chemin_fermer_popup_rapport.py`
-  - ✓ Conservé tel quel : utilise un clic positionnel (pas d'image)
+- [x] Créer `core/popup.py` avec classes `Popup` et `CheminPopup`
+  - `Popup` hérite de `Etat`
+  - Attributs: `image_detection`, `image_fermeture`, `position_fermeture`, `position_relative`, `etats_possibles_apres`
+  - Méthode `generer_chemin()` retourne un `CheminPopup`
+  - `CheminPopup` génère automatiquement les actions (ActionBouton ou clic positionnel)
 
-- [x] `manoirs/chemins/chemin_fermer_popup_connexion.py`
-  - ✓ Refactoré avec ActionBouton
+- [x] Modifier `GestionnaireEtats._scanner_etats()` pour auto-générer les chemins
+  - Détecte les instances de `Popup`
+  - Appelle `generer_chemin()` et ajoute le chemin à `_chemins`
 
-- [x] `manoirs/chemins/chemin_fermer_popup_gratuit.py`
-  - ✓ Refactoré avec ActionBouton
+- [x] Migrer les popups existants vers la nouvelle classe
+  - `etat_popup_gratuit.py` → hérite de `Popup`
+  - `etat_popup_connexion.py` → hérite de `Popup`
+  - `etat_popup_rapport.py` → hérite de `Popup` (avec `position_fermeture`)
+
+- [x] Supprimer les anciens fichiers chemins manuels
+  - ✓ `chemin_fermer_popup_rapport.py` supprimé
+  - ✓ `chemin_fermer_popup_connexion.py` supprimé
+  - ✓ `chemin_fermer_popup_gratuit.py` supprimé
+
+```python
+# Exemple d'utilisation - définir un popup
+class EtatPopupGratuit(Popup):
+    nom = "popup_gratuit"
+    image_detection = "boutons/bouton_gratuit.png"
+    etats_possibles_apres = ["ville", "popup_rapport", "popup_connexion"]
+
+# Le chemin est généré automatiquement par GestionnaireEtats
+```
 
 ---
 
@@ -154,8 +175,9 @@ Maintenant que `_hook_reprise_changement()` appelle `activate()`, vérifier si c
 |---------|------|
 | `core/etat.py` | Classe de base Etat avec verif(manoir) |
 | `core/chemin.py` | Classe de base Chemin avec fonction_actions(manoir) |
+| `core/popup.py` | Classe Popup (hérite Etat) + CheminPopup (auto-généré) |
 | `core/etat_inconnu.py` | EtatInconnu avec etats_possibles |
-| `core/gestionnaire_etats.py` | Pathfinding BFS + détection d'état |
+| `core/gestionnaire_etats.py` | Pathfinding BFS + détection d'état + auto-génération chemins Popup |
 | `manoirs/manoir_base.py` | naviguer_vers(), verifier_etat(), _etats_a_tester_apres_reprise |
 | `manoirs/instances/manoir_bluestacks.py` | Refactoré pour utiliser le nouveau système |
 | `config/etat-chemin.toml` | Configuration des priorités et dossiers |
@@ -167,14 +189,14 @@ Maintenant que `_hook_reprise_changement()` appelle `activate()`, vérifier si c
 
 Dossier : `manoirs/etats/`
 
-| État | Fichier | Détection |
-|------|---------|-----------|
-| non_lance | etat_non_lance.py | Fenêtre BlueStacks absente |
-| chargement | etat_chargement.py | Fenêtre présente + _lancement_initie + pas icone_jeu_charge |
-| ville | etat_ville.py | icone_jeu_charge.png visible |
-| popup_rapport | etat_popup_rapport.py | popups/rapport_developpement.png visible |
-| popup_connexion | etat_popup_connexion.py | popups/connexion_quotidienne.png visible |
-| popup_gratuit | etat_popup_gratuit.py | boutons/bouton_gratuit.png visible |
+| État | Fichier | Type | Détection |
+|------|---------|------|-----------|
+| non_lance | etat_non_lance.py | Etat | Fenêtre BlueStacks absente |
+| chargement | etat_chargement.py | Etat | Fenêtre présente + _lancement_initie + pas icone_jeu_charge |
+| ville | etat_ville.py | Etat | icone_jeu_charge.png visible |
+| popup_rapport | etat_popup_rapport.py | Popup | popups/rapport_developpement.png visible |
+| popup_connexion | etat_popup_connexion.py | Popup | popups/connexion_quotidienne.png visible |
+| popup_gratuit | etat_popup_gratuit.py | Popup | boutons/bouton_gratuit.png visible |
 
 ---
 
@@ -186,9 +208,16 @@ Dossier : `manoirs/chemins/`
 |--------|------------------|---------|
 | chemin_lancer_bluestacks | non_lance → chargement | ActionLancerRaccourci, set _lancement_initie=True |
 | chemin_attendre_chargement | chargement → EtatInconnu[ville, popups] | ActionAttendre(5s), ActionReprisePreparerTour |
-| chemin_fermer_popup_rapport | popup_rapport → EtatInconnu | Clic pour fermer |
-| chemin_fermer_popup_connexion | popup_connexion → EtatInconnu | Clic sur popup |
-| chemin_fermer_popup_gratuit | popup_gratuit → EtatInconnu | Clic sur bouton gratuit |
+
+### Chemins auto-générés (Popup)
+
+Les chemins pour les popups sont générés automatiquement par `GestionnaireEtats` à partir des classes `Popup` :
+
+| Popup | Initial → Sortie | Fermeture |
+|-------|------------------|-----------|
+| popup_rapport | popup_rapport → EtatInconnu | Clic positionnel (50, 50) relatif |
+| popup_connexion | popup_connexion → EtatInconnu | ActionBouton sur image de détection |
+| popup_gratuit | popup_gratuit → EtatInconnu | ActionBouton sur bouton gratuit |
 
 ---
 

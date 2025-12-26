@@ -22,6 +22,7 @@ except ImportError:
 from core.etat import Etat, SingletonMeta
 from core.etat_inconnu import EtatInconnu
 from core.chemin import Chemin
+from core.popup import Popup, CheminPopup
 from core.exceptions import (
     ErreurConfiguration,
     ErreurValidation,
@@ -111,12 +112,21 @@ class GestionnaireEtats:
 
         instances = self._scanner_modules(str(repertoire_etats), Etat)
 
+        chemins_popup_generes = 0
         for instance in instances:
             if instance.nom in self._etats:
                 raise ErreurValidation(f"Nom d'état dupliqué: {instance.nom}")
             self._etats[instance.nom] = instance
 
+            # Générer automatiquement le chemin pour les Popup
+            if isinstance(instance, Popup):
+                chemin_popup = instance.generer_chemin()
+                self._chemins.append(chemin_popup)
+                chemins_popup_generes += 1
+
         self._logger.info(f"Scan du répertoire '{repertoire_etats}': {len(self._etats)} états trouvés")
+        if chemins_popup_generes > 0:
+            self._logger.info(f"Chemins popup auto-générés: {chemins_popup_generes}")
 
     def _scanner_chemins(self) -> None:
         """Scanne le répertoire 'chemins/' et instancie toutes les classes Chemin."""
@@ -162,7 +172,9 @@ class GestionnaireEtats:
                         attr is not classe_base and
                         attr is not Etat and
                         attr is not EtatInconnu and
-                        attr is not Chemin):
+                        attr is not Chemin and
+                        attr is not Popup and
+                        attr is not CheminPopup):
                         try:
                             instance = attr()
                             instances.append(instance)
