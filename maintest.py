@@ -15,6 +15,7 @@ Usage:
 import sys
 import time
 import argparse
+import subprocess
 from pathlib import Path
 from unittest.mock import patch, MagicMock, PropertyMock
 import threading
@@ -100,7 +101,7 @@ def mock_subprocess_run(cmd, *args, **kwargs):
     # Vérifier si c'est une commande BlueStacks
     cmd_str = ' '.join(cmd) if isinstance(cmd, list) else str(cmd)
     if 'HD-Player' in cmd_str or 'BlueStacks' in cmd_str:
-        print("[SIMULATION] Lancement BlueStacks intercepté")
+        print("[SIMULATION] Lancement BlueStacks intercepté (run)")
         if sim:
             sim.simuler_lancement()
         # Retourner un mock de CompletedProcess
@@ -113,6 +114,39 @@ def mock_subprocess_run(cmd, *args, **kwargs):
     result = MagicMock()
     result.returncode = 0
     return result
+
+
+class MockPopen:
+    """Mock pour subprocess.Popen - simule un processus en cours"""
+
+    def __init__(self, cmd, *args, **kwargs):
+        self.cmd = cmd
+        self.pid = 99999
+        self._returncode = None
+        self._started = False
+
+        # Vérifier si c'est une commande BlueStacks
+        cmd_str = ' '.join(cmd) if isinstance(cmd, list) else str(cmd)
+        if 'HD-Player' in cmd_str or 'BlueStacks' in cmd_str:
+            print("[SIMULATION] Lancement BlueStacks intercepté (Popen)")
+            sim = get_simulateur()
+            if sim:
+                sim.simuler_lancement()
+            self._started = True
+
+    def poll(self):
+        """Retourne None si le processus est en cours, sinon le code retour"""
+        if self._started:
+            return None  # Processus en cours
+        return 0
+
+    def communicate(self, input=None, timeout=None):
+        """Retourne (stdout, stderr)"""
+        return (b'', b'')
+
+    def wait(self, timeout=None):
+        """Attend la fin du processus"""
+        return 0
 
 
 def mock_etat_verif_non_lance(self, manoir):
@@ -225,6 +259,8 @@ def main_test():
 
         # Configurer le mock de subprocess
         mock_subproc.run = mock_subprocess_run
+        mock_subproc.Popen = MockPopen
+        mock_subproc.PIPE = subprocess.PIPE
 
         # Timer pour arrêter automatiquement après la durée
         def auto_stop():
