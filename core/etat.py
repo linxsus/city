@@ -15,10 +15,16 @@ class SingletonMeta(type):
     """
     Métaclasse garantissant le pattern Singleton pour les classes Etat.
     Chaque classe dérivée ne peut avoir qu'une seule instance.
+
+    Exception: EtatInconnu n'est pas un Singleton car chaque chemin
+    peut avoir ses propres etats_possibles.
     """
     _instances = {}
 
     def __call__(cls, *args, **kwargs):
+        # EtatInconnu n'est pas un Singleton - créer une nouvelle instance à chaque fois
+        if cls.__name__ == 'EtatInconnu':
+            return super().__call__(*args, **kwargs)
         if cls not in cls._instances:
             instance = super().__call__(*args, **kwargs)
             cls._instances[cls] = instance
