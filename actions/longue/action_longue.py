@@ -22,20 +22,24 @@ class ActionLongue(Item):
         ], nom="tuer_mercenaire")
     """
     
-    def __init__(self, fenetre, actions, nom=None, condition_func=None,maintenant=False):
+    def __init__(self, fenetre, actions, nom=None, condition_func=None,
+                 maintenant=False, etat_requis=None):
         """
         Args:
             fenetre: Instance de FenetreBase
             actions: Liste d'actions composant la séquence
             nom: Nom optionnel pour le logging
             condition_func: Condition optionnelle pour exécuter la séquence
-            maintenan: True import la liste a l'indexe actuell de fenetre.sequenceAction
-                       False import la liste a la fin de fenetre.sequenceAction'
+            maintenant: True import la liste a l'indexe actuel de fenetre.sequenceAction
+                        False import la liste a la fin de fenetre.sequenceAction
+            etat_requis: État dans lequel le manoir doit être pour exécuter
+                         (le manoir navigue vers cet état avant d'ajouter l'action)
         """
         super().__init__(fenetre, condition_func)
         self.actions = actions if isinstance(actions, list) else [actions]
         self.nom = nom or "ActionLongue"
-        self.maintenant=maintenant
+        self.maintenant = maintenant
+        self.etat_requis = etat_requis
     
     def _run(self):
         """Ajoute toutes les sous-actions à la séquence (PROTÉGÉ)

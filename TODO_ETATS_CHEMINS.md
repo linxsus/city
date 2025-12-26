@@ -5,17 +5,19 @@ Le système de base est implémenté. Il reste quelques tâches pour finaliser l
 
 ---
 
-## 1. Créer `ActionBouton`
+## 1. Créer `ActionBouton` ✅
 
-- [ ] Créer `actions/simple/action_bouton.py`
+- [x] Créer `actions/simple/action_bouton.py`
   - Clic sur une image (template_path)
   - Hérite de Action
   - Paramètres : fenetre, template_path, offset=(0,0), threshold=None
+  - `condition()` vérifie si l'image est visible et stocke la position
+  - `_run()` clique sur la position stockée (1 seule détection)
 
-- [ ] Ajouter l'export dans `actions/liste_actions.py`
+- [x] Ajouter l'export dans `actions/liste_actions.py`
 
 ```python
-# Exemple d'utilisation attendue
+# Exemple d'utilisation
 ActionBouton(manoir, "boutons/bouton_gratuit.png")
 ```
 
@@ -57,6 +59,38 @@ Le dossier `actions/popups/` n'existe pas. Ces actions étaient référencées d
 - [ ] Vérifier que les popups sont bien fermés
 - [ ] Vérifier que le timeout fonctionne toujours
 - [ ] Vérifier que `_etats_a_tester_apres_reprise` limite bien les états testés
+
+---
+
+## 5. ActionLongue avec `etat_requis` ✅
+
+- [x] Ajouter paramètre `etat_requis` à `ActionLongue`
+  - État dans lequel le manoir doit être pour exécuter l'action longue
+  - Le manoir vérifie et navigue vers cet état avant d'ajouter l'action
+
+```python
+# Exemple d'utilisation
+ActionLongue(manoir, [...], nom="tuer_mercenaire", etat_requis="ville")
+```
+
+---
+
+## 6. Modifier ManoirBase pour gérer `etat_requis`
+
+- [ ] Ajouter méthode `ajouter_action_longue(action_longue)` dans `ManoirBase`
+  - Vérifie si `action_longue.etat_requis` est défini
+  - Si oui, compare avec `self.etat_actuel`
+  - Si différent, appelle `self.naviguer_vers(action_longue.etat_requis)`
+  - Puis ajoute l'action à la séquence
+
+```python
+# Logique attendue dans ManoirBase
+def ajouter_action_longue(self, action_longue):
+    if action_longue.etat_requis:
+        if self.etat_actuel != action_longue.etat_requis:
+            self.naviguer_vers(action_longue.etat_requis)
+    self.sequence.ajouter(action_longue)
+```
 
 ---
 
