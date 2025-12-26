@@ -94,6 +94,48 @@ def ajouter_action_longue(self, action_longue):
 
 ---
 
+## 7. Refactorer preparer_tour dans ManoirBase ✅
+
+- [x] Restructurer `preparer_tour()` avec dispatch selon contexte
+  - `_detecter_erreur()` → `_gerer_erreur()` (erreur détectée)
+  - `_actif == False` → `_preparer_reprise_changement()` (changement de manoir)
+  - `sequence.is_end()` → `_preparer_alimenter_sequence()` (séquence vide)
+- [x] Ajouter `_actif = False` dans `__init__` et `reset()`
+- [x] Adapter `ManoirBlueStacks` avec les nouvelles méthodes
+- [x] Adapter `ManoirVirtuel` avec `_preparer_alimenter_sequence()`
+
+```python
+# Structure de preparer_tour
+def preparer_tour(self):
+    if self._detecter_erreur():
+        return self._gerer_erreur()
+    if not self._actif:
+        self._actif = True
+        return self._preparer_reprise_changement()
+    if self.sequence.is_end():
+        return self._preparer_alimenter_sequence()
+    return True
+```
+
+---
+
+## 8. Modifier Engine pour gérer _actif
+
+- [ ] Quand Engine change de manoir actif :
+  - `ancien_manoir._actif = False`
+- [ ] Vérifier que si séquence vide, Engine redemande `preparer_tour()`
+- [ ] Supprimer le passage de `raison` (plus nécessaire avec le flag `_actif`)
+
+---
+
+## 9. Implémenter gestion des erreurs (TODO futur)
+
+- [ ] Définir les états/flags d'erreur spécifiques à chaque manoir
+- [ ] Implémenter `_detecter_erreur()` dans les sous-classes
+- [ ] Implémenter `_gerer_erreur()` pour chaque type d'erreur
+
+---
+
 ## Référence - Fichiers clés
 
 | Fichier | Rôle |

@@ -106,6 +106,10 @@ class ManoirBase(ABC):
         # États à tester après une reprise (chemin incertain)
         self._etats_a_tester_apres_reprise: Optional[list] = None
 
+        # Flag d'activation - False par défaut, Engine le gère
+        # Permet de détecter la reprise après changement de manoir
+        self._actif = False
+
         # Handle de la fenêtre Windows
         self._hwnd = None
         self._rect = None
@@ -993,23 +997,91 @@ class ManoirBase(ABC):
         self.sequence.ajouter(action_longue)
 
     # =========================================================
-    # MÉTHODES ABSTRAITES
+    # PREPARER_TOUR - Point d'entrée principal
     # =========================================================
-    
-    @abstractmethod
+
     def preparer_tour(self):
-        """Prépare le tour et alimente la séquence
-        
+        """Point d'entrée principal - dispatch selon le contexte
+
+        Appelé par Engine pour préparer le tour du manoir.
+        Dispatch vers la bonne fonction selon le contexte :
+        1. Erreur détectée → gestion erreur
+        2. Reprise après changement de manoir → _preparer_reprise_changement
+        3. Séquence vide → _preparer_alimenter_sequence
+
+        Returns:
+            bool: True si prêt à exécuter, False sinon
+        """
+        # 1. Détection erreur (TODO: implémenter dans sous-classes)
+        if self._detecter_erreur():
+            return self._gerer_erreur()
+
+        # 2. Reprise après changement de manoir
+        if not self._actif:
+            self._actif = True
+            return self._preparer_reprise_changement()
+
+        # 3. Séquence vide → alimenter
+        if self.sequence.is_end():
+            return self._preparer_alimenter_sequence()
+
+        # 4. Séquence déjà remplie → continuer
+        return True
+
+    def _detecter_erreur(self):
+        """Détecte si le manoir est en erreur
+
+        À surcharger dans les sous-classes pour implémenter la détection.
+
+        Returns:
+            bool: True si erreur détectée
+        """
+        # TODO: Implémenter la logique de détection d'erreur
+        return False
+
+    def _gerer_erreur(self):
+        """Gère l'état d'erreur du manoir
+
+        À surcharger dans les sous-classes pour implémenter la gestion.
+
+        Returns:
+            bool: False (manoir pas prêt en cas d'erreur)
+        """
+        # TODO: Implémenter la logique de gestion d'erreur
+        self.logger.warning(f"{self.nom}: Erreur détectée (gestion non implémentée)")
+        return False
+
+    def _preparer_reprise_changement(self):
+        """Prépare le manoir après un changement de manoir par Engine
+
+        Invalide le cache de capture (l'écran a pu changer pendant
+        qu'un autre manoir était actif) puis alimente la séquence.
+
+        Returns:
+            bool: True si prêt à exécuter
+        """
+        self.logger.debug(f"{self.nom}: Reprise après changement de manoir")
+        self.invalidate_capture()
+        return self._preparer_alimenter_sequence()
+
+    @abstractmethod
+    def _preparer_alimenter_sequence(self):
+        """Alimente la séquence avec les actions à exécuter
+
         À implémenter dans les sous-classes.
         Doit gérer:
-        - L'état de la fenêtre (lancement, chargement, blocage)
-        - L'alimentation de la séquence selon les timers
-        
+        - La vérification/navigation vers l'état destination
+        - L'alimentation de la séquence selon la logique métier
+
         Returns:
             bool: True si prêt à exécuter, False sinon
         """
         pass
-    
+
+    # =========================================================
+    # MÉTHODES ABSTRAITES
+    # =========================================================
+
     @abstractmethod
     def definir_timers(self):
         """Définit les timers pour cette fenêtre
@@ -1154,6 +1226,7 @@ class ManoirBase(ABC):
         self.slots_prioritaires.clear()
         self.slots_normaux.clear()
         self.etat_actuel = None  # Réinitialiser l'état écran
+        self._actif = False  # Réinitialiser le flag d'activation
         self.invalidate_capture()
         self.logger.info("Manoir réinitialisé")
 

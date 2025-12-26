@@ -251,27 +251,38 @@ class ManoirBlueStacks(ManoirBase):
         return screenshot_path
 
     # =========================================================
-    # IMPLÉMENTATION ABSTRAITE - preparer_tour
+    # IMPLÉMENTATION - Gestion erreurs et alimentation séquence
     # =========================================================
 
-    def preparer_tour(self):
-        """Prépare le tour via le système états/chemins
+    def _detecter_erreur(self):
+        """Détecte si le manoir est en état d'erreur (BLOQUE)
+
+        Returns:
+            bool: True si état BLOQUE
+        """
+        return self._etat_interne == EtatBlueStacks.BLOQUE
+
+    def _gerer_erreur(self):
+        """Gère l'état d'erreur - lance le reboot
+
+        Returns:
+            bool: False (manoir pas prêt)
+        """
+        self._reboot_bluestacks()
+        return False
+
+    def _preparer_alimenter_sequence(self):
+        """Alimente la séquence via le système états/chemins
 
         Logique :
-        1. BLOQUE → Reboot
-        2. Vérifier l'état actuel
-        3. Si état "ville" → PRET, appeler gestion_tour()
-        4. Sinon → Naviguer vers "ville"
-        5. Vérifier le timeout
+        1. Vérifier l'état actuel
+        2. Si état "ville" → PRET, appeler gestion_tour()
+        3. Sinon → Naviguer vers "ville"
+        4. Vérifier le timeout
 
         Returns:
             bool: True si prêt à exécuter, False sinon
         """
-        # ===== ÉTAT: BLOQUE → Reboot =====
-        if self._etat_interne == EtatBlueStacks.BLOQUE:
-            self._reboot_bluestacks()
-            return False
-
         # ===== Vérifier l'état écran actuel =====
         if not self.verifier_etat():
             # Impossible de déterminer l'état (pas de gestionnaire, etc.)

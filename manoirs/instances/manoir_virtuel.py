@@ -97,9 +97,9 @@ class ManoirVirtuel(ManoirBase):
     # =========================================================
     # IMPLÉMENTATION ABSTRAITE
     # =========================================================
-    
-    def preparer_tour(self):
-        """Prépare le tour - toujours prêt
+
+    def _preparer_alimenter_sequence(self):
+        """Alimente la séquence - toujours prêt
 
         Returns:
             bool: Toujours True (manoir virtuel toujours prêt)
