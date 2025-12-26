@@ -1,5 +1,12 @@
 # Configuration du système de gestion d'états et chemins
-# Version 1.0
+# Version 1.1
+
+# ===== CHEMINS DES DOSSIERS =====
+[chemins_dossiers]
+# Chemin relatif au dossier du projet pour les états
+etats = "manoirs/etats"
+# Chemin relatif au dossier du projet pour les chemins
+chemins = "manoirs/chemins"
 
 # ===== PRIORITÉS DE TEST DES ÉTATS =====
 [priorites]

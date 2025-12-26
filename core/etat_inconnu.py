@@ -9,6 +9,7 @@ from core.etat import Etat
 
 if TYPE_CHECKING:
     from core.etat import Etat
+    from manoirs.manoir_base import ManoirBase
 
 
 class EtatInconnu(Etat):
@@ -25,9 +26,12 @@ class EtatInconnu(Etat):
 
     etats_possibles: List[Union['Etat', str, type]] = []
 
-    def verif(self) -> bool:
+    def verif(self, manoir: 'ManoirBase') -> bool:
         """
         Un état inconnu ne peut jamais être l'état actuel réel.
+
+        Args:
+            manoir: Instance du manoir (non utilisé)
 
         Returns:
             Toujours False
