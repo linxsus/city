@@ -1,0 +1,33 @@
+"""
+Chemin généré automatiquement par le Générateur de Classes.
+{{ description | default("", true) }}
+"""
+
+from typing import Any
+
+from core.chemin import Chemin
+{% if etats_sortie_possibles %}
+from core.etat_inconnu import EtatInconnu
+{% endif %}
+{% for import_line in imports %}
+{{ import_line }}
+{% endfor %}
+
+
+class {{ nom_classe }}(Chemin):
+    """Chemin: {{ etat_initial }} -> {{ etat_sortie }}"""
+
+    etat_initial = "{{ etat_initial }}"
+{% if etats_sortie_possibles %}
+    etat_sortie = EtatInconnu(etats_possibles={{ etats_sortie_tous | tojson }})
+{% else %}
+    etat_sortie = "{{ etat_sortie }}"
+{% endif %}
+
+    def fonction_actions(self, manoir) -> list[Any]:
+        """Retourne la séquence d'actions du chemin."""
+        return [
+{% for action in actions %}
+            {{ action.code }},
+{% endfor %}
+        ]

@@ -1,0 +1,22 @@
+<header class="header">
+    <nav class="nav container">
+        <a href="/" class="logo">
+            <span class="logo-icon">🏗️</span>
+            <span class="logo-text">Générateur</span>
+        </a>
+
+        <ul class="nav-links">
+            <li><a href="/etat">États</a></li>
+            <li><a href="/chemin">Chemins</a></li>
+            <li><a href="/docs" target="_blank">API Docs</a></li>
+        </ul>
+
+        <div class="nav-status">
+            {% if claude_available %}
+            <span class="status status-ok" title="API Claude configurée">🤖 IA Active</span>
+            {% else %}
+            <span class="status status-warning" title="API Claude non configurée">🤖 IA Inactive</span>
+            {% endif %}
+        </div>
+    </nav>
+</header>

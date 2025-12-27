@@ -1,0 +1,151 @@
+/**
+ * Client API pour le Générateur de Classes
+ */
+
+const API = {
+    baseUrl: '/api',
+
+    /**
+     * Effectue une requête API
+     */
+    async request(endpoint, options = {}) {
+        const url = `${this.baseUrl}${endpoint}`;
+        const config = {
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers,
+            },
+            ...options,
+        };
+
+        if (options.body && typeof options.body === 'object') {
+            config.body = JSON.stringify(options.body);
+        }
+
+        try {
+            const response = await fetch(url, config);
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('API Error:', error);
+            return {
+                success: false,
+                error: {
+                    code: 'NETWORK_ERROR',
+                    message: error.message,
+                },
+            };
+        }
+    },
+
+    /**
+     * Upload une image
+     */
+    async uploadImage(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await fetch(`${this.baseUrl}/images/upload`, {
+                method: 'POST',
+                body: formData,
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('Upload Error:', error);
+            return {
+                success: false,
+                error: {
+                    code: 'UPLOAD_ERROR',
+                    message: error.message,
+                },
+            };
+        }
+    },
+
+    // === États ===
+
+    async getGroups() {
+        return this.request('/etats/groups');
+    },
+
+    async getExistingStates() {
+        return this.request('/etats/existing');
+    },
+
+    async validateEtat(data) {
+        return this.request('/etats/validate', {
+            method: 'POST',
+            body: data,
+        });
+    },
+
+    async previewEtat(data) {
+        return this.request('/etats/preview', {
+            method: 'POST',
+            body: data,
+        });
+    },
+
+    async createEtat(data) {
+        return this.request('/etats/create', {
+            method: 'POST',
+            body: data,
+        });
+    },
+
+    // === Chemins ===
+
+    async getAvailableStates() {
+        return this.request('/chemins/states');
+    },
+
+    async suggestExitStates(etatSortie) {
+        return this.request(`/chemins/suggest-exits?etat_sortie=${encodeURIComponent(etatSortie)}`, {
+            method: 'POST',
+        });
+    },
+
+    async validateChemin(data) {
+        return this.request('/chemins/validate', {
+            method: 'POST',
+            body: data,
+        });
+    },
+
+    async previewChemin(data) {
+        return this.request('/chemins/preview', {
+            method: 'POST',
+            body: data,
+        });
+    },
+
+    async createChemin(data) {
+        return this.request('/chemins/create', {
+            method: 'POST',
+            body: data,
+        });
+    },
+
+    // === IA ===
+
+    async getIAStatus() {
+        return this.request('/ia/status');
+    },
+
+    async analyzeImage(imagePath, contexte = null) {
+        const params = new URLSearchParams({ image_path: imagePath });
+        if (contexte) {
+            params.append('contexte', contexte);
+        }
+        return this.request(`/ia/analyze?${params}`, {
+            method: 'POST',
+        });
+    },
+
+    async detectButtons(imagePath) {
+        return this.request(`/ia/detect-buttons?image_path=${encodeURIComponent(imagePath)}`, {
+            method: 'POST',
+        });
+    },
+};

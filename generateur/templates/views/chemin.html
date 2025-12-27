@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Générateur de Classes</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body>
+    {% include "partials/header.html" %}
+
+    <main class="container">
+        <div class="page-header">
+            <h1>Créer un Chemin</h1>
+            <p>Définissez une transition entre deux états avec une séquence d'actions</p>
+        </div>
+
+        <form id="chemin-form" class="form-grid">
+            <!-- Section États -->
+            <section class="form-section">
+                <h2>1. États</h2>
+
+                <div class="form-group">
+                    <label for="etat-initial">État initial <span class="required">*</span></label>
+                    <select id="etat-initial" name="etat_initial" required>
+                        <option value="">Chargement...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="etat-sortie">État de sortie <span class="required">*</span></label>
+                    <select id="etat-sortie" name="etat_sortie" required>
+                        <option value="">Chargement...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>États de sortie possibles (popups, erreurs)</label>
+                    <div class="checkbox-list" id="etats-sortie-possibles">
+                        <!-- Rempli dynamiquement -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section Actions -->
+            <section class="form-section">
+                <h2>2. Actions</h2>
+
+                <div id="actions-list" class="actions-list">
+                    <!-- Actions ajoutées dynamiquement -->
+                </div>
+
+                <div class="add-action-bar">
+                    <button type="button" class="btn btn-secondary" data-action="ActionBouton">
+                        + Clic Image
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-action="ActionAttendre">
+                        + Attendre
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-action="ActionTexte">
+                        + Clic Texte
+                    </button>
+                </div>
+            </section>
+
+            <!-- Section Configuration -->
+            <section class="form-section">
+                <h2>3. Configuration</h2>
+
+                <div class="form-group">
+                    <label for="nom-chemin">Nom du chemin</label>
+                    <input type="text" id="nom-chemin" name="nom"
+                           placeholder="Généré automatiquement">
+                    <small class="form-help">Laissez vide pour générer automatiquement</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="description-chemin">Description (optionnel)</label>
+                    <textarea id="description-chemin" name="description" rows="2"
+                              placeholder="Description de ce chemin..."></textarea>
+                </div>
+            </section>
+
+            <!-- Section Prévisualisation -->
+            <section class="form-section full-width">
+                <h2>4. Prévisualisation</h2>
+
+                <div class="preview-container">
+                    <div class="preview-header">
+                        <span class="preview-filename" id="preview-filename">chemin_xxx.py</span>
+                        <button type="button" class="btn btn-secondary btn-small" id="btn-preview">
+                            Actualiser
+                        </button>
+                    </div>
+                    <pre class="code-preview" id="code-preview"><code>// Le code sera affiché ici après configuration</code></pre>
+                </div>
+            </section>
+
+            <!-- Actions -->
+            <section class="form-actions full-width">
+                <button type="button" class="btn btn-secondary" id="btn-validate">Valider</button>
+                <button type="submit" class="btn btn-primary" id="btn-generate">Générer le code</button>
+            </section>
+        </form>
+
+        <!-- Modal Action -->
+        <div class="modal hidden" id="action-modal">
+            <div class="modal-content">
+                <h3 id="action-modal-title">Ajouter une action</h3>
+                <div id="action-modal-body">
+                    <!-- Formulaire d'action dynamique -->
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeActionModal()">Annuler</button>
+                    <button type="button" class="btn btn-primary" id="btn-save-action">Ajouter</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal résultat -->
+        <div class="modal hidden" id="result-modal">
+            <div class="modal-content">
+                <h3 id="result-title">Résultat</h3>
+                <div id="result-body"></div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-primary" onclick="closeModal()">Fermer</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    {% include "partials/footer.html" %}
+
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/views/chemin-view.js"></script>
+</body>
+</html>

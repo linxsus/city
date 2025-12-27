@@ -1,0 +1,32 @@
+"""
+État généré automatiquement par le Générateur de Classes.
+{{ description | default("", true) }}
+"""
+
+from core.etat import Etat
+
+
+class {{ nom_classe }}(Etat):
+    """État: {{ nom }}"""
+
+    nom = "{{ nom }}"
+    groupes = {{ groupes | tojson }}
+    priorite = {{ priorite }}
+
+    def verif(self, manoir) -> bool:
+        """Vérifie si l'état est actif."""
+{% if methode_verif == "image" %}
+        return manoir.detect_image(
+            "{{ template_path }}",
+            threshold={{ threshold }}
+        )
+{% elif methode_verif == "texte" %}
+        return manoir.detect_text("{{ texte_ocr }}")
+{% elif methode_verif == "combinaison" %}
+        image_ok = manoir.detect_image(
+            "{{ template_path }}",
+            threshold={{ threshold }}
+        )
+        texte_ok = manoir.detect_text("{{ texte_ocr }}")
+        return image_ok and texte_ok
+{% endif %}

@@ -1,0 +1,29 @@
+# Générateur de Classes - Dépendances
+
+# Backend Web
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+python-multipart>=0.0.6
+jinja2>=3.1.0
+python-dotenv>=1.0.0
+
+# Validation
+pydantic>=2.5.0
+
+# API Claude
+anthropic>=0.40.0
+
+# Traitement d'images
+opencv-python>=4.9.0
+pillow>=10.2.0
+
+# OCR
+pytesseract>=0.3.10
+
+# Base de données (sessions)
+aiosqlite>=0.19.0
+
+# Tests
+pytest>=7.4.0
+pytest-asyncio>=0.23.0
+httpx>=0.26.0
