@@ -1,0 +1,35 @@
+"""ActionLongue générée: {{ nom }}"""
+
+from actions.longue.action_longue import ActionLongue
+{% for imp in imports %}
+{{ imp }}
+{% endfor %}
+
+
+class {{ nom_classe }}(ActionLongue):
+    """{{ description or 'Action longue personnalisée.' }}
+
+    Cette action regroupe plusieurs sous-actions en une unité atomique.
+    La boucle principale ne peut s'interrompre qu'entre les ActionLongue,
+    pas au milieu de leur exécution.
+
+    Exemple:
+        {{ nom_classe }}(fenetre)
+    """
+
+    def __init__(self, fenetre, nom="{{ nom }}"{% if etat_requis %}, etat_requis="{{ etat_requis }}"{% endif %}{% if maintenant %}, maintenant=True{% endif %}):
+        actions_list = [
+{{ blocks_code }}
+        ]
+
+        super().__init__(
+            fenetre,
+            actions_list,
+            nom=nom,
+            {% if etat_requis %}
+            etat_requis=etat_requis,
+            {% endif %}
+            {% if maintenant %}
+            maintenant=maintenant,
+            {% endif %}
+        )

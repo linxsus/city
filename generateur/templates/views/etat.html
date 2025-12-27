@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Générateur de Classes</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body>
+    {% include "partials/header.html" %}
+
+    <main class="container">
+        <div class="page-header">
+            <h1>Créer un État</h1>
+            <p>Définissez un écran ou une situation détectable dans le jeu</p>
+        </div>
+
+        <form id="etat-form" class="form-grid">
+            <!-- Section Upload Image -->
+            <section class="form-section">
+                <h2>1. Image Source</h2>
+
+                <div class="upload-zone" id="upload-zone">
+                    <input type="file" id="image-input" accept="image/png,image/jpeg" hidden>
+                    <div class="upload-content">
+                        <span class="upload-icon">📷</span>
+                        <p>Glissez une image ici ou <button type="button" class="btn-link" onclick="document.getElementById('image-input').click()">parcourez</button></p>
+                        <small>PNG ou JPG, max 10 Mo</small>
+                    </div>
+                </div>
+
+                <div id="image-preview-container" class="hidden">
+                    <div class="image-editor" id="image-editor">
+                        <canvas id="image-canvas"></canvas>
+                    </div>
+                    <div class="editor-toolbar">
+                        <button type="button" class="btn btn-secondary" id="btn-reset-selection">Réinitialiser</button>
+                        {% if claude_available %}
+                        <button type="button" class="btn btn-primary" id="btn-suggest-ia">🤖 Suggestions IA</button>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <input type="hidden" name="image_source" id="image-source">
+                <input type="hidden" name="region_x" id="region-x">
+                <input type="hidden" name="region_y" id="region-y">
+                <input type="hidden" name="region_width" id="region-width">
+                <input type="hidden" name="region_height" id="region-height">
+            </section>
+
+            <!-- Section Configuration -->
+            <section class="form-section">
+                <h2>2. Configuration</h2>
+
+                <div class="form-group">
+                    <label for="nom">Nom de l'état <span class="required">*</span></label>
+                    <input type="text" id="nom" name="nom" required
+                           pattern="^[a-z][a-z0-9_]*$"
+                           placeholder="ex: ville_principale"
+                           title="Lettres minuscules, chiffres et underscores uniquement">
+                    <small class="form-help">Format snake_case (ex: popup_connexion)</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="methode-verif">Méthode de vérification</label>
+                    <select id="methode-verif" name="methode_verif">
+                        <option value="image">Image seule</option>
+                        <option value="texte">Texte seul (OCR)</option>
+                        <option value="combinaison">Image ET Texte</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="texte-ocr-group" style="display: none;">
+                    <label for="texte-ocr">Texte à détecter</label>
+                    <input type="text" id="texte-ocr" name="texte_ocr"
+                           placeholder="ex: Menu Principal">
+                </div>
+
+                <div class="form-group">
+                    <label for="groupes">Groupes</label>
+                    <div class="tags-input" id="groupes-container">
+                        <input type="text" id="groupes-input" placeholder="Ajouter un groupe...">
+                    </div>
+                    <input type="hidden" name="groupes" id="groupes">
+                    <small class="form-help">Groupes suggérés: <span id="groupes-suggestions"></span></small>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="priorite">Priorité</label>
+                        <input type="number" id="priorite" name="priorite"
+                               value="0" min="-100" max="100">
+                        <small class="form-help">0=normal, 80-100=popup</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="threshold">Seuil de détection</label>
+                        <input type="range" id="threshold" name="threshold"
+                               value="0.8" min="0.5" max="1.0" step="0.05">
+                        <output for="threshold" id="threshold-value">0.80</output>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Description (optionnel)</label>
+                    <textarea id="description" name="description" rows="2"
+                              placeholder="Description de cet état..."></textarea>
+                </div>
+            </section>
+
+            <!-- Section Prévisualisation -->
+            <section class="form-section full-width">
+                <h2>3. Prévisualisation</h2>
+
+                <div class="preview-container">
+                    <div class="preview-header">
+                        <span class="preview-filename" id="preview-filename">etat_xxx.py</span>
+                        <button type="button" class="btn btn-secondary btn-small" id="btn-preview">
+                            Actualiser
+                        </button>
+                    </div>
+                    <pre class="code-preview" id="code-preview"><code>// Le code sera affiché ici après configuration</code></pre>
+                </div>
+            </section>
+
+            <!-- Actions -->
+            <section class="form-actions full-width">
+                <button type="button" class="btn btn-secondary" id="btn-validate">Valider</button>
+                <button type="submit" class="btn btn-primary" id="btn-generate">Générer le code</button>
+            </section>
+        </form>
+
+        <!-- Modal résultat -->
+        <div class="modal hidden" id="result-modal">
+            <div class="modal-content">
+                <h3 id="result-title">Résultat</h3>
+                <div id="result-body"></div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-primary" onclick="closeModal()">Fermer</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    {% include "partials/footer.html" %}
+
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/components/image-editor.js"></script>
+    <script src="/static/js/views/etat-view.js"></script>
+</body>
+</html>

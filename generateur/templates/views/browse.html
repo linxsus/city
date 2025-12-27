@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Générateur de Classes</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <link rel="stylesheet" href="/static/css/browse.css">
+</head>
+<body>
+    {% include "partials/header.html" %}
+
+    <main class="container">
+        <div class="page-header">
+            <h1>Explorer les éléments existants</h1>
+            <p>Visualisez et gérez les états, chemins et templates du framework</p>
+        </div>
+
+        <!-- Résumé -->
+        <section class="summary-cards" id="summary-section">
+            <div class="summary-card" data-tab="etats">
+                <div class="summary-icon">📊</div>
+                <div class="summary-info">
+                    <span class="summary-count" id="count-etats">-</span>
+                    <span class="summary-label">États</span>
+                </div>
+            </div>
+            <div class="summary-card" data-tab="chemins">
+                <div class="summary-icon">🔀</div>
+                <div class="summary-info">
+                    <span class="summary-count" id="count-chemins">-</span>
+                    <span class="summary-label">Chemins</span>
+                </div>
+            </div>
+            <div class="summary-card" data-tab="templates">
+                <div class="summary-icon">🖼️</div>
+                <div class="summary-info">
+                    <span class="summary-count" id="count-templates">-</span>
+                    <span class="summary-label">Templates</span>
+                </div>
+            </div>
+            <div class="summary-card" data-tab="actions">
+                <div class="summary-icon">⚡</div>
+                <div class="summary-info">
+                    <span class="summary-count" id="count-actions">-</span>
+                    <span class="summary-label">Actions</span>
+                </div>
+            </div>
+            <div class="summary-card" data-tab="groupes">
+                <div class="summary-icon">🏷️</div>
+                <div class="summary-info">
+                    <span class="summary-count" id="count-groupes">-</span>
+                    <span class="summary-label">Groupes</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tabs de navigation -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="etats">États</button>
+            <button class="tab-btn" data-tab="chemins">Chemins</button>
+            <button class="tab-btn" data-tab="actions">Actions</button>
+            <button class="tab-btn" data-tab="templates">Templates</button>
+            <button class="tab-btn" data-tab="groupes">Groupes</button>
+        </div>
+
+        <!-- Barre de recherche et filtres -->
+        <div class="search-bar">
+            <input type="text" id="search-input" placeholder="Rechercher...">
+            <select id="filter-group" class="filter-select">
+                <option value="">Tous les groupes</option>
+            </select>
+            <button class="btn btn-secondary" id="btn-refresh">🔄 Actualiser</button>
+        </div>
+
+        <!-- Contenu des tabs -->
+        <div class="tab-content active" id="tab-etats">
+            <div class="elements-grid" id="grid-etats">
+                <div class="loading">Chargement des états...</div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab-chemins">
+            <div class="elements-grid" id="grid-chemins">
+                <div class="loading">Chargement des chemins...</div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab-actions">
+            <div class="elements-grid" id="grid-actions">
+                <div class="loading">Chargement des actions...</div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab-templates">
+            <div class="templates-toolbar">
+                <button class="btn btn-warning" id="btn-orphans">Orphelins</button>
+                <button class="btn btn-danger" id="btn-missing">Manquants</button>
+            </div>
+            <div class="elements-grid templates-grid" id="grid-templates">
+                <div class="loading">Chargement des templates...</div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab-groupes">
+            <div class="groupes-list" id="list-groupes">
+                <div class="loading">Chargement des groupes...</div>
+            </div>
+        </div>
+
+        <!-- Modal détail -->
+        <div class="modal hidden" id="detail-modal">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h3 id="detail-title">Détail</h3>
+                    <button class="modal-close" onclick="closeDetailModal()">&times;</button>
+                </div>
+                <div id="detail-body"></div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-danger" id="btn-delete-element">🗑️ Supprimer</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeDetailModal()">Fermer</button>
+                    <button type="button" class="btn btn-primary" id="btn-edit-element">Modifier</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal code source -->
+        <div class="modal hidden" id="code-modal">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h3 id="code-title">Code Source</h3>
+                    <button class="modal-close" onclick="closeCodeModal()">&times;</button>
+                </div>
+                <pre class="code-preview" id="code-content"><code></code></pre>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="btn-copy-code">📋 Copier</button>
+                    <button type="button" class="btn btn-primary" onclick="closeCodeModal()">Fermer</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    {% include "partials/footer.html" %}
+
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/views/browse-view.js"></script>
+</body>
+</html>

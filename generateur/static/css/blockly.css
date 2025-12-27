@@ -1,0 +1,151 @@
+/* ==========================================================================
+   Styles Blockly pour ActionLongue
+   ========================================================================== */
+
+/* Layout principal */
+.container-fluid {
+    max-width: 100%;
+    padding: 0 var(--spacing-md);
+}
+
+.action-longue-layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: var(--spacing-lg);
+    height: calc(100vh - 180px);
+    min-height: 500px;
+}
+
+/* Panneau de configuration */
+.config-panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    overflow-y: auto;
+}
+
+.config-panel .form-section {
+    padding: var(--spacing-md);
+}
+
+.config-panel .form-section h2 {
+    font-size: 1rem;
+    margin-bottom: var(--spacing-md);
+}
+
+.quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+}
+
+.form-actions-vertical {
+    margin-top: auto;
+    padding: var(--spacing-md);
+}
+
+.btn-large {
+    width: 100%;
+    padding: var(--spacing-md);
+    font-size: 1.1rem;
+}
+
+/* Zone Blockly */
+.blockly-container {
+    background-color: var(--color-bg-light);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    position: relative;
+}
+
+#blockly-div {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+/* Prévisualisation code */
+.code-preview-small {
+    max-height: 200px;
+    overflow-y: auto;
+    font-size: 0.75rem;
+    background-color: var(--color-bg);
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-md);
+    margin-top: var(--spacing-md);
+}
+
+.code-preview-small code {
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+/* Modal large pour le code généré */
+.modal-large {
+    max-width: 800px;
+    width: 95%;
+}
+
+.modal-large pre {
+    max-height: 400px;
+    overflow-y: auto;
+    background-color: var(--color-bg);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+}
+
+/* Thème sombre pour Blockly */
+.blocklyMainBackground {
+    fill: var(--color-bg) !important;
+}
+
+.blocklyToolboxDiv {
+    background-color: var(--color-bg-light) !important;
+}
+
+.blocklyTreeRow:not(.blocklyTreeSelected):hover {
+    background-color: var(--color-bg-lighter) !important;
+}
+
+.blocklyFlyoutBackground {
+    fill: var(--color-bg-light) !important;
+}
+
+.blocklyScrollbarBackground {
+    fill: var(--color-bg-lighter) !important;
+}
+
+.blocklyScrollbarHandle {
+    fill: var(--color-border) !important;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .action-longue-layout {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+        height: auto;
+    }
+
+    .config-panel {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .config-panel .form-section {
+        flex: 1;
+        min-width: 250px;
+    }
+
+    .blockly-container {
+        height: 500px;
+    }
+
+    #blockly-div {
+        position: relative;
+        height: 100%;
+    }
+}

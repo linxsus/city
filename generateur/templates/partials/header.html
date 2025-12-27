@@ -1,0 +1,30 @@
+<header class="header">
+    <nav class="nav container">
+        <a href="/" class="logo">
+            <span class="logo-icon">🏗️</span>
+            <span class="logo-text">Générateur</span>
+        </a>
+
+        <ul class="nav-links">
+            <li><a href="/browse">Explorer</a></li>
+            <li><a href="/etat">États</a></li>
+            <li><a href="/chemin">Chemins</a></li>
+            <li class="nav-dropdown">
+                <a href="#" class="nav-dropdown-toggle">Actions ▾</a>
+                <ul class="nav-dropdown-menu">
+                    <li><a href="/action">Action Simple</a></li>
+                    <li><a href="/action-longue">Action Longue</a></li>
+                </ul>
+            </li>
+            <li><a href="/docs" target="_blank">API Docs</a></li>
+        </ul>
+
+        <div class="nav-status">
+            {% if claude_available %}
+            <span class="status status-ok" title="API Claude configurée">🤖 IA Active</span>
+            {% else %}
+            <span class="status status-warning" title="API Claude non configurée">🤖 IA Inactive</span>
+            {% endif %}
+        </div>
+    </nav>
+</header>

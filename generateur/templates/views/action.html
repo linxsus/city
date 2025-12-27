@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Générateur de Classes</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        .code-editor {
+            width: 100%;
+            min-height: 150px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            padding: 12px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            resize: vertical;
+        }
+
+        .code-editor:focus {
+            outline: none;
+            border-color: var(--color-primary);
+        }
+
+        .param-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: var(--spacing-sm);
+            align-items: center;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .param-row input {
+            padding: var(--spacing-sm);
+        }
+
+        .btn-remove {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            background: var(--color-error);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+        }
+
+        .help-text {
+            font-size: 0.85em;
+            color: var(--color-text-muted);
+            margin-top: 4px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-sm);
+        }
+    </style>
+</head>
+<body>
+    {% include "partials/header.html" %}
+
+    <main class="container">
+        <div class="page-header">
+            <h1>Créer une Action Simple</h1>
+            <p>Définissez une action atomique personnalisée</p>
+        </div>
+
+        <div class="content-grid">
+            <!-- Formulaire -->
+            <section class="form-section">
+                <form id="action-form">
+                    <!-- Informations de base -->
+                    <div class="form-card">
+                        <h3>Informations de base</h3>
+
+                        <div class="form-group">
+                            <label for="nom">Nom de l'action *</label>
+                            <input type="text" id="nom" name="nom"
+                                   placeholder="ex: cliquer_position"
+                                   pattern="^[a-z][a-z0-9_]*$"
+                                   required>
+                            <span class="help-text">Nom en snake_case (ex: mon_action)</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="description">Description</label>
+                            <textarea id="description" name="description" rows="2"
+                                      placeholder="Description de ce que fait l'action"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Paramètres du constructeur -->
+                    <div class="form-card">
+                        <div class="section-header">
+                            <h3>Paramètres du constructeur</h3>
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="addParameter()">+ Ajouter</button>
+                        </div>
+                        <p class="help-text">Paramètres supplémentaires pour le __init__ (fenetre est automatique)</p>
+
+                        <div id="params-container">
+                            <!-- Paramètres dynamiques -->
+                        </div>
+                    </div>
+
+                    <!-- Condition (optionnelle) -->
+                    <div class="form-card">
+                        <h3>Condition (optionnelle)</h3>
+                        <p class="help-text">Code Python retournant True/False. Utilisez self.fenetre pour accéder à la fenêtre.</p>
+
+                        <textarea id="condition-code" class="code-editor"
+                                  placeholder="# Exemple:
+# return self.fenetre.detect_image('template.png')
+# ou
+# return True"></textarea>
+                    </div>
+
+                    <!-- Code _run() -->
+                    <div class="form-card">
+                        <h3>Code d'exécution (_run) *</h3>
+                        <p class="help-text">Code Python à exécuter. Doit retourner True (succès) ou False (échec).</p>
+
+                        <textarea id="run-code" class="code-editor" required
+                                  placeholder="# Exemple:
+# x, y = self.position
+# self.fenetre.click_at(x, y)
+# return True"></textarea>
+                    </div>
+
+                    <!-- Gestion des erreurs -->
+                    <div class="form-card">
+                        <h3>Gestion des erreurs (optionnel)</h3>
+
+                        <div class="form-group">
+                            <label for="erreurs-apres">Erreurs à vérifier après succès</label>
+                            <input type="text" id="erreurs-apres"
+                                   placeholder="ErreurPopup, ErreurConnexion">
+                            <span class="help-text">Classes d'erreur séparées par des virgules</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="erreurs-echec">Erreurs à vérifier si échec</label>
+                            <input type="text" id="erreurs-echec"
+                                   placeholder="ErreurTimeout">
+                            <span class="help-text">Classes d'erreur séparées par des virgules</span>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="previewCode()">Prévisualiser</button>
+                        <button type="submit" class="btn btn-primary">Générer</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Prévisualisation -->
+            <aside class="preview-section">
+                <div class="preview-card">
+                    <h3>Prévisualisation du code</h3>
+                    <div class="preview-filename" id="preview-filename">action_*.py</div>
+                    <pre class="code-preview" id="code-preview"><code>Le code généré apparaîtra ici...</code></pre>
+                </div>
+            </aside>
+        </div>
+
+        <!-- Modal résultat -->
+        <div class="modal hidden" id="result-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="result-title">Résultat</h3>
+                    <button class="modal-close" onclick="closeResultModal()">&times;</button>
+                </div>
+                <div id="result-body"></div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-primary" onclick="closeResultModal()">OK</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    {% include "partials/footer.html" %}
+
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/views/action-view.js"></script>
+</body>
+</html>

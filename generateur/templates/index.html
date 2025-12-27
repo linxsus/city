@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Générateur de Classes</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body>
+    {% include "partials/header.html" %}
+
+    <main class="container">
+        <section class="hero">
+            <h1>Générateur de Classes</h1>
+            <p class="subtitle">Créez facilement vos États, Chemins et Actions pour le framework d'automatisation</p>
+
+            {% if not claude_available %}
+            <div class="alert alert-warning">
+                <strong>⚠ API Claude non configurée</strong><br>
+                Les suggestions IA sont désactivées. Ajoutez votre clé API dans le fichier <code>.env</code>
+            </div>
+            {% endif %}
+        </section>
+
+        <section class="cards">
+            <a href="/browse" class="card card-highlight">
+                <div class="card-icon">📂</div>
+                <h2>Explorer</h2>
+                <p>Visualisez et gérez les états, chemins et templates existants du framework</p>
+                <span class="card-action">Explorer →</span>
+            </a>
+
+            <a href="/etat" class="card">
+                <div class="card-icon">🎯</div>
+                <h2>Créer un État</h2>
+                <p>Définissez un écran ou une situation du jeu avec sa méthode de détection (image ou texte)</p>
+                <span class="card-action">Commencer →</span>
+            </a>
+
+            <a href="/chemin" class="card">
+                <div class="card-icon">🔀</div>
+                <h2>Créer un Chemin</h2>
+                <p>Définissez une transition entre deux états avec une séquence d'actions</p>
+                <span class="card-action">Commencer →</span>
+            </a>
+
+            <a href="/action-longue" class="card">
+                <div class="card-icon">⚡</div>
+                <h2>Action Longue</h2>
+                <p>Créez des actions complexes avec des structures de contrôle (Blockly)</p>
+                <span class="card-action">Commencer →</span>
+            </a>
+        </section>
+
+        <section class="info">
+            <h2>Comment ça marche ?</h2>
+            <ol class="steps">
+                <li>
+                    <strong>Uploadez une capture d'écran</strong>
+                    <p>Prenez une capture du jeu depuis BlueStacks</p>
+                </li>
+                <li>
+                    <strong>Sélectionnez la zone caractéristique</strong>
+                    <p>L'IA peut vous aider à identifier les éléments distinctifs</p>
+                </li>
+                <li>
+                    <strong>Configurez les paramètres</strong>
+                    <p>Nom, groupes, priorité, seuil de détection...</p>
+                </li>
+                <li>
+                    <strong>Générez le code</strong>
+                    <p>Le code Python est créé automatiquement, prêt à être utilisé</p>
+                </li>
+            </ol>
+        </section>
+    </main>
+
+    {% include "partials/footer.html" %}
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
