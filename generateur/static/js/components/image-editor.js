@@ -33,18 +33,36 @@ class ImageEditor {
     async loadImage(src) {
         return new Promise((resolve, reject) => {
             this.image = new Image();
+            this.image.crossOrigin = 'anonymous';
             this.image.onload = () => {
-                // Adapter la taille du canvas
-                const maxWidth = this.canvas.parentElement.clientWidth - 20;
-                this.scale = Math.min(1, maxWidth / this.image.width);
+                // Attendre que le conteneur soit visible pour obtenir les dimensions
+                requestAnimationFrame(() => {
+                    // Adapter la taille du canvas
+                    const containerWidth = this.canvas.parentElement.clientWidth;
+                    const maxWidth = Math.max(containerWidth - 20, 400);
+                    this.scale = Math.min(1, maxWidth / this.image.width);
 
-                this.canvas.width = this.image.width * this.scale;
-                this.canvas.height = this.image.height * this.scale;
+                    this.canvas.width = this.image.width * this.scale;
+                    this.canvas.height = this.image.height * this.scale;
 
-                this.render();
-                resolve();
+                    // S'assurer que le canvas a une taille minimale
+                    if (this.canvas.width < 100) {
+                        this.canvas.width = this.image.width;
+                        this.canvas.height = this.image.height;
+                        this.scale = 1;
+                    }
+
+                    console.log('Canvas dimensions:', this.canvas.width, 'x', this.canvas.height);
+                    console.log('Scale:', this.scale);
+
+                    this.render();
+                    resolve();
+                });
             };
-            this.image.onerror = reject;
+            this.image.onerror = (err) => {
+                console.error('Image load error:', err);
+                reject(err);
+            };
             this.image.src = src;
         });
     }
@@ -258,15 +276,19 @@ class ImageEditor {
     }
 
     onMouseDown(e) {
+        e.preventDefault();
         const rect = this.canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
+
+        console.log('MouseDown at:', x, y);
 
         // Vérifier si on clique sur une poignée
         const handle = this.getHandleAt(x, y);
         if (handle) {
             this.isResizing = true;
             this.resizeHandle = handle;
+            console.log('Resizing handle:', handle.type);
             return;
         }
 
@@ -275,6 +297,7 @@ class ImageEditor {
             this.isDragging = true;
             this.isMoving = true;
             this.dragStart = { x: x - this.selection.x, y: y - this.selection.y };
+            console.log('Moving selection');
             return;
         }
 
@@ -282,11 +305,13 @@ class ImageEditor {
         for (const s of this.suggestions) {
             if (x >= s.x && x <= s.x + s.width && y >= s.y && y <= s.y + s.height) {
                 this.setSelection(s);
+                console.log('Selected suggestion');
                 return;
             }
         }
 
         // Nouvelle sélection
+        console.log('Starting new selection at:', x, y);
         this.selection = { x, y, width: 0, height: 0 };
         this.isDragging = true;
         this.isMoving = false;
@@ -319,12 +344,15 @@ class ImageEditor {
                 // Nouvelle sélection (dessiner un rectangle)
                 this.selection.width = x - this.dragStart.x;
                 this.selection.height = y - this.dragStart.y;
+                console.log('Drawing selection:', this.selection.width, 'x', this.selection.height);
             }
             this.render();
         }
     }
 
     onMouseUp() {
+        console.log('MouseUp - isDragging:', this.isDragging, 'selection:', this.selection);
+
         if (this.isDragging || this.isResizing) {
             // Normaliser la sélection (width/height positifs)
             if (this.selection) {
@@ -337,9 +365,12 @@ class ImageEditor {
                     this.selection.height = Math.abs(this.selection.height);
                 }
 
+                console.log('Final selection:', this.selection.width, 'x', this.selection.height);
+
                 // Vérifier la taille minimale
                 if (this.selection.width < this.options.minWidth ||
                     this.selection.height < this.options.minHeight) {
+                    console.log('Selection too small, clearing');
                     this.selection = null;
                 }
             }
