@@ -65,31 +65,42 @@ BLUESTACKS_SEUIL_RATIO_PUB = 0.70
 # =====================================================
 
 MANOIRS_CONFIG = {
-    # Manoir principal - Compte principal avec BlueStacks
-    "principal": {
-        "nom": "Manoir Principal",
-        "titre_bluestacks": "principal",  # Titre de votre fenêtre BlueStacks
-        "type": "principal",
+    # Manoir principal - Compte principal avec BlueStacks (DÉSACTIVÉ)
+    # "principal": {
+    #     "nom": "Manoir Principal",
+    #     "titre_bluestacks": "principal",
+    #     "type": "principal",
+    #     "priorite": 50,
+    #     "largeur": 600,
+    #     "hauteur": 1040,
+    #     "position_x": 0,
+    #     "position_y": 0,
+    #     "commande_lancement": [
+    #         BLUESTACKS_PLAYER,
+    #         "--instance",
+    #         "Nougat32_1",
+    #         "--cmd",
+    #         "launchAppWithBsx",
+    #         "--package",
+    #         "com.yottagames.mafiawar",
+    #         "--source",
+    #         "desktop_shortcut",
+    #     ],
+    #     "temps_initialisation": 300,
+    # },
+
+    # Exemple Manoir Scrcpy - Appareil Android via USB
+    "android": {
+        "nom": "Android Principal",
+        "type": "scrcpy",
         "priorite": 50,
-        "largeur": 600,
-        "hauteur": 1040,
-        # Position de la fenêtre (x, y) - None pour ne pas modifier
-        "position_x": 0,
-        "position_y": 0,
-        # Commande de lancement BlueStacks
-        "commande_lancement": [
-            BLUESTACKS_PLAYER,
-            "--instance",
-            "Nougat32_1",  # Votre instance BlueStacks
-            "--cmd",
-            "launchAppWithBsx",
-            "--package",
-            "com.yottagames.mafiawar",
-            "--source",
-            "desktop_shortcut",
-        ],
-        # Temps d'attente après lancement (secondes)
-        "temps_initialisation": 300,
+        # Dimensions de référence (scrcpy avec -m 1024)
+        "largeur": 1024,
+        "hauteur": 576,
+        # Options scrcpy
+        "scrcpy_max_size": 1024,
+        # Serial appareil (None pour auto-détection)
+        "device_serial": None,
     },
 }
 
