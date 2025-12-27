@@ -1,23 +1,4 @@
 {
   "last_save": 1765135685.899679,
-  "states": [
-    {
-      "fenetre_id": "virtuelle1",
-      "etat": "actif",
-      "heure_fin_exclusion": 0,
-      "compteur_relances": 0,
-      "derniere_relance": 0,
-      "derniere_activite": 0,
-      "message_erreur": null
-    },
-    {
-      "fenetre_id": "virtuelle2",
-      "etat": "actif",
-      "heure_fin_exclusion": 0,
-      "compteur_relances": 0,
-      "derniere_relance": 0,
-      "derniere_activite": 0,
-      "message_erreur": null
-    }
-  ]
+  "states": []
 }

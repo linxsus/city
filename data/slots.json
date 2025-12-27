@@ -1,27 +1,5 @@
 {
   "last_save": 1765135685.898682,
-  "nb_slots": {
-    "virtuelle1": 1,
-    "virtuelle2": 1
-  },
-  "slots": {
-    "virtuelle1": [
-      {
-        "fenetre_id": "virtuelle1",
-        "slot_index": 0,
-        "heure_liberation": 0,
-        "actif": false,
-        "type_action": null
-      }
-    ],
-    "virtuelle2": [
-      {
-        "fenetre_id": "virtuelle2",
-        "slot_index": 0,
-        "heure_liberation": 0,
-        "actif": false,
-        "type_action": null
-      }
-    ]
-  }
+  "slots_config": {},
+  "slots": {}
 }

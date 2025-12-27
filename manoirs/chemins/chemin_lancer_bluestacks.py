@@ -4,6 +4,7 @@
 from typing import List, Any
 from core.chemin import Chemin
 from actions.bluestacks.action_lancer_raccourci import ActionLancerRaccourci
+from actions.simple.action_attendre import ActionAttendre
 
 
 class CheminLancerBluestacks(Chemin):
@@ -14,6 +15,7 @@ class CheminLancerBluestacks(Chemin):
     Actions :
     1. Met le flag _lancement_initie à True
     2. Lance BlueStacks via raccourci
+    3. Attend temps_initialisation (300s) de façon non-bloquante
     """
     etat_initial = "non_lance"
     etat_sortie = "chargement"
@@ -32,4 +34,5 @@ class CheminLancerBluestacks(Chemin):
 
         return [
             ActionLancerRaccourci(manoir),
+            ActionAttendre(manoir, manoir.temps_initialisation),
         ]

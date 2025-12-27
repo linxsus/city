@@ -156,17 +156,24 @@ def get_manoir_logger(nom_manoir):
     return logger
 
 
-def get_module_logger(module_name):
+def get_module_logger(module_name, level=None):
     """Crée un logger pour un module (Engine, RecoveryManager, etc.)
 
     Args:
         module_name: Nom du module
+        level: Niveau de log optionnel (str ou int)
 
     Returns:
         logging.Logger: Logger configuré pour ce module
     """
     logger_name = f'automation_framework.{module_name}'
     logger = logging.getLogger(logger_name)
+
+    # Appliquer le niveau si spécifié
+    if level is not None:
+        if isinstance(level, str):
+            level = getattr(logging, level.upper(), logging.DEBUG)
+        logger.setLevel(level)
 
     # Hérite de la config du logger parent
     logger.propagate = True

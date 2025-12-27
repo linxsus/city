@@ -972,7 +972,8 @@ class ManoirBase(ABC):
         Returns:
             bool: True si une ActionReprisePreparerTour est présente
         """
-        for action in self.sequence:
+        # Utiliser get_futures() pour ne pas consommer la séquence
+        for action in self.sequence.get_futures():
             if isinstance(action, ActionReprisePreparerTour):
                 return True
         return False
