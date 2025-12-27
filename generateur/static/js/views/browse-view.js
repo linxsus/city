@@ -444,15 +444,18 @@ async function showEtatDetail(nom) {
 
     document.getElementById('btn-edit-element').textContent = '📋 Dupliquer';
     document.getElementById('btn-edit-element').onclick = () => {
-        // Redirect to etat page with pre-filled data
-        const params = new URLSearchParams({
-            duplicate: etat.nom,
+        // Store complete data in sessionStorage (URL has size limits)
+        const duplicateData = {
             nom: etat.nom + '_copie',
-            groupes: etat.groupes.join(','),
+            groupes: etat.groupes,
             priorite: etat.priorite,
             methode_verif: etat.methode_verif,
-        });
-        window.location.href = `/etat?${params.toString()}`;
+            templates: etat.templates,
+            textes: etat.textes,
+            source: etat.nom,
+        };
+        sessionStorage.setItem('duplicate_etat', JSON.stringify(duplicateData));
+        window.location.href = '/etat?duplicate=' + encodeURIComponent(etat.nom);
     };
 
     elements.detailModal.classList.remove('hidden');
@@ -508,13 +511,17 @@ async function showCheminDetail(nom) {
 
     document.getElementById('btn-edit-element').textContent = '📋 Dupliquer';
     document.getElementById('btn-edit-element').onclick = () => {
-        // Redirect to chemin page with pre-filled data
-        const params = new URLSearchParams({
-            duplicate: chemin.nom,
+        // Store complete data in sessionStorage
+        const duplicateData = {
+            nom: chemin.nom + '_copie',
             etat_initial: chemin.etat_initial,
             etat_sortie: chemin.etat_sortie,
-        });
-        window.location.href = `/chemin?${params.toString()}`;
+            templates: chemin.templates,
+            code_source: chemin.code_source,
+            source: chemin.nom,
+        };
+        sessionStorage.setItem('duplicate_chemin', JSON.stringify(duplicateData));
+        window.location.href = '/chemin?duplicate=' + encodeURIComponent(chemin.nom);
     };
 
     elements.detailModal.classList.remove('hidden');

@@ -56,35 +56,72 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /**
- * Charge les données depuis les paramètres URL (pour duplication)
+ * Charge les données depuis sessionStorage (pour duplication)
  */
 function loadFromUrlParams() {
     const params = new URLSearchParams(window.location.search);
 
-    if (params.has('duplicate')) {
-        showNotification(`Duplication de l'état "${params.get('duplicate')}"`, 'info');
+    if (!params.has('duplicate')) return;
+
+    // Récupérer les données de duplication depuis sessionStorage
+    const stored = sessionStorage.getItem('duplicate_etat');
+    if (!stored) {
+        showNotification('Données de duplication non trouvées', 'warning');
+        return;
     }
 
-    // Pré-remplir le nom
-    if (params.has('nom')) {
-        document.getElementById('nom').value = params.get('nom');
-    }
+    try {
+        const data = JSON.parse(stored);
+        sessionStorage.removeItem('duplicate_etat'); // Nettoyer après lecture
 
-    // Pré-remplir les groupes
-    if (params.has('groupes')) {
-        const groupes = params.get('groupes').split(',').filter(g => g);
-        groupes.forEach(g => addGroup(g));
-    }
+        showNotification(`Duplication de l'état "${data.source}"`, 'info');
 
-    // Pré-remplir la priorité
-    if (params.has('priorite')) {
-        document.getElementById('priorite').value = params.get('priorite');
-    }
+        // Pré-remplir le nom (forcé différent)
+        if (data.nom) {
+            document.getElementById('nom').value = data.nom;
+        }
 
-    // Pré-remplir la méthode de vérification
-    if (params.has('methode_verif')) {
-        document.getElementById('methode-verif').value = params.get('methode_verif');
-        updateVerificationMethod();
+        // Pré-remplir les groupes
+        if (data.groupes && data.groupes.length > 0) {
+            data.groupes.forEach(g => addGroup(g));
+        }
+
+        // Pré-remplir la priorité
+        if (data.priorite !== undefined) {
+            document.getElementById('priorite').value = data.priorite;
+        }
+
+        // Pré-remplir la méthode de vérification
+        if (data.methode_verif) {
+            document.getElementById('methode-verif').value = data.methode_verif;
+            updateVerificationMethod();
+        }
+
+        // Afficher les templates/textes utilisés dans une info
+        let infoMsg = [];
+        if (data.templates && data.templates.length > 0) {
+            infoMsg.push(`Templates: ${data.templates.join(', ')}`);
+        }
+        if (data.textes && data.textes.length > 0) {
+            infoMsg.push(`Textes OCR: ${data.textes.join(', ')}`);
+        }
+        if (infoMsg.length > 0) {
+            // Afficher l'info dans la zone de prévisualisation
+            setTimeout(() => {
+                const preview = document.getElementById('code-preview');
+                if (preview) {
+                    preview.innerHTML = `<div style="padding: 1rem; color: var(--color-text-muted);">
+                        <p><strong>État source:</strong> ${data.source}</p>
+                        <p>${infoMsg.join('<br>')}</p>
+                        <p style="margin-top: 1rem;"><em>Chargez une image et sélectionnez la zone de détection pour générer le nouvel état.</em></p>
+                    </div>`;
+                }
+            }, 100);
+        }
+
+    } catch (e) {
+        console.error('Erreur parsing données duplication:', e);
+        showNotification('Erreur lors de la duplication', 'error');
     }
 }
 

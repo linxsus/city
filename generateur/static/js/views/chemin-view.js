@@ -2,6 +2,13 @@
  * Vue de création de chemin
  */
 
+// Fonction utilitaire fallback
+if (typeof formatCode === 'undefined') {
+    window.formatCode = function(code) {
+        return code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    };
+}
+
 let actions = [];
 let availableStates = [];
 
@@ -13,26 +20,68 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /**
- * Charge les données depuis les paramètres URL (pour duplication)
+ * Charge les données depuis sessionStorage (pour duplication)
  */
 function loadFromUrlParams() {
     const params = new URLSearchParams(window.location.search);
 
-    if (params.has('duplicate')) {
+    if (!params.has('duplicate')) return;
+
+    // Récupérer les données de duplication depuis sessionStorage
+    const stored = sessionStorage.getItem('duplicate_chemin');
+    if (!stored) {
         if (typeof showNotification !== 'undefined') {
-            showNotification(`Duplication du chemin "${params.get('duplicate')}"`, 'info');
+            showNotification('Données de duplication non trouvées', 'warning');
         }
+        return;
     }
 
-    // Pré-remplir l'état initial
-    if (params.has('etat_initial')) {
-        document.getElementById('etat-initial').value = params.get('etat_initial');
-    }
+    try {
+        const data = JSON.parse(stored);
+        sessionStorage.removeItem('duplicate_chemin'); // Nettoyer après lecture
 
-    // Pré-remplir l'état de sortie
-    if (params.has('etat_sortie')) {
-        document.getElementById('etat-sortie').value = params.get('etat_sortie');
-        loadExitSuggestions();
+        if (typeof showNotification !== 'undefined') {
+            showNotification(`Duplication du chemin "${data.source}"`, 'info');
+        }
+
+        // Pré-remplir le nom
+        if (data.nom) {
+            document.getElementById('nom-chemin').value = data.nom;
+        }
+
+        // Pré-remplir l'état initial
+        if (data.etat_initial) {
+            document.getElementById('etat-initial').value = data.etat_initial;
+        }
+
+        // Pré-remplir l'état de sortie
+        if (data.etat_sortie) {
+            document.getElementById('etat-sortie').value = data.etat_sortie;
+            loadExitSuggestions();
+        }
+
+        // Afficher le code source original dans la prévisualisation
+        if (data.code_source) {
+            setTimeout(() => {
+                const preview = document.getElementById('code-preview');
+                const filename = document.getElementById('preview-filename');
+                if (preview && filename) {
+                    filename.textContent = `Code original: ${data.source}`;
+                    preview.innerHTML = `<code>${formatCode(data.code_source)}</code>`;
+                }
+            }, 100);
+        }
+
+        // Afficher info sur les templates utilisés
+        if (data.templates && data.templates.length > 0) {
+            console.log('Templates du chemin source:', data.templates);
+        }
+
+    } catch (e) {
+        console.error('Erreur parsing données duplication:', e);
+        if (typeof showNotification !== 'undefined') {
+            showNotification('Erreur lors de la duplication', 'error');
+        }
     }
 }
 
