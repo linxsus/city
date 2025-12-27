@@ -69,6 +69,7 @@ class GestionnaireEtats:
 
         self._charger_configuration(chemin_config)
         self._scanner_etats()
+        self._resoudre_groupes_sortie()
         self._scanner_chemins()
         self._resoudre_references()
         self._valider_coherence()
@@ -128,6 +129,101 @@ class GestionnaireEtats:
         if chemins_popup_generes > 0:
             self._logger.info(f"Chemins popup auto-générés: {chemins_popup_generes}")
 
+    def _resoudre_groupes_sortie(self) -> None:
+        """
+        Résout les groupes de sortie pour les popups à partir de la config TOML.
+
+        Pour chaque popup, calcule les états de sortie possibles en fonction:
+        1. Du/des groupe(s) auquel(s) il appartient (ou groupe par défaut)
+        2. De ses etats_possibles_extra (états supplémentaires)
+
+        Les états de sortie d'un popup dans un groupe = racine + autres popups du groupe
+
+        Raises:
+            ErreurValidation: Si un popup listé dans le TOML n'existe pas
+        """
+        config_groupes = self._config.get('groupes_sortie', {})
+
+        if not config_groupes:
+            self._logger.warning("Aucune configuration [groupes_sortie] trouvée")
+            return
+
+        groupe_defaut = config_groupes.get('defaut', 'ville')
+
+        # Construire la map popup_nom → liste de groupes
+        popup_vers_groupes: Dict[str, List[str]] = {}
+
+        for nom_groupe, config_groupe in config_groupes.items():
+            if nom_groupe == 'defaut':
+                continue
+            if not isinstance(config_groupe, dict):
+                continue
+
+            racine = config_groupe.get('racine')
+            popups_du_groupe = config_groupe.get('popups', [])
+
+            # Valider que tous les popups listés existent
+            for popup_nom in popups_du_groupe:
+                if popup_nom not in self._etats:
+                    raise ErreurValidation(
+                        f"Popup '{popup_nom}' listé dans groupe '{nom_groupe}' n'existe pas"
+                    )
+                etat = self._etats[popup_nom]
+                if not isinstance(etat, Popup):
+                    raise ErreurValidation(
+                        f"État '{popup_nom}' listé dans groupe '{nom_groupe}' n'est pas un Popup"
+                    )
+
+            # Associer chaque popup à ce groupe
+            for popup_nom in popups_du_groupe:
+                if popup_nom not in popup_vers_groupes:
+                    popup_vers_groupes[popup_nom] = []
+                popup_vers_groupes[popup_nom].append(nom_groupe)
+
+        # Pour chaque CheminPopup, calculer les états de sortie
+        for chemin in self._chemins:
+            if not isinstance(chemin, CheminPopup):
+                continue
+
+            popup = chemin.popup
+            popup_nom = popup.nom
+
+            # Trouver les groupes de ce popup (ou groupe par défaut)
+            groupes = popup_vers_groupes.get(popup_nom, [groupe_defaut])
+
+            # Calculer les états de sortie
+            etats_sortie = set()
+
+            for nom_groupe in groupes:
+                config_groupe = config_groupes.get(nom_groupe, {})
+                if not isinstance(config_groupe, dict):
+                    # Groupe par défaut qui n'est pas configuré - juste la racine
+                    etats_sortie.add(nom_groupe)
+                    continue
+
+                # Ajouter la racine
+                racine = config_groupe.get('racine')
+                if racine:
+                    etats_sortie.add(racine)
+
+                # Ajouter les autres popups du groupe (sauf lui-même)
+                for autre_popup in config_groupe.get('popups', []):
+                    if autre_popup != popup_nom:
+                        etats_sortie.add(autre_popup)
+
+            # Ajouter les états extra du popup
+            for etat_extra in popup.etats_possibles_extra:
+                etats_sortie.add(etat_extra)
+
+            # Mettre à jour l'etat_sortie du CheminPopup
+            chemin.etat_sortie = EtatInconnu(etats_possibles=list(etats_sortie))
+
+            self._logger.debug(
+                f"Popup '{popup_nom}' → états sortie: {list(etats_sortie)}"
+            )
+
+        self._logger.info(f"Groupes de sortie résolus pour {len(popup_vers_groupes)} popups")
+
     def _scanner_chemins(self) -> None:
         """Scanne le répertoire 'chemins/' et instancie toutes les classes Chemin."""
         # Utiliser le chemin configuré ou le chemin par défaut
@@ -137,8 +233,10 @@ class GestionnaireEtats:
             self._logger.warning(f"Répertoire des chemins introuvable: {repertoire_chemins}")
             return
 
-        self._chemins = self._scanner_modules(str(repertoire_chemins), Chemin)
-        self._logger.info(f"Scan du répertoire '{repertoire_chemins}': {len(self._chemins)} chemins trouvés")
+        # Étendre la liste existante (préserve les CheminPopup auto-générés)
+        chemins_manuels = self._scanner_modules(str(repertoire_chemins), Chemin)
+        self._chemins.extend(chemins_manuels)
+        self._logger.info(f"Scan du répertoire '{repertoire_chemins}': {len(chemins_manuels)} chemins manuels trouvés")
 
     def _scanner_modules(self, repertoire: str, classe_base: type) -> List[Any]:
         """
