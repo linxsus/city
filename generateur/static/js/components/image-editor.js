@@ -148,38 +148,57 @@ class ImageEditor {
 
         // Dessiner la sélection courante (en vert)
         if (this.selection) {
-            const s = this.selection;
+            // Normaliser les coordonnées pour le rendu (gérer les dimensions négatives)
+            let x = this.selection.x;
+            let y = this.selection.y;
+            let w = this.selection.width;
+            let h = this.selection.height;
 
-            // Overlay semi-transparent
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            if (w < 0) {
+                x = x + w;
+                w = Math.abs(w);
+            }
+            if (h < 0) {
+                y = y + h;
+                h = Math.abs(h);
+            }
 
-            // Découper la zone sélectionnée
-            this.ctx.clearRect(s.x, s.y, s.width, s.height);
-            this.ctx.drawImage(
-                this.image,
-                s.x / this.scale, s.y / this.scale,
-                s.width / this.scale, s.height / this.scale,
-                s.x, s.y, s.width, s.height
-            );
+            // Ne dessiner que si la sélection a une taille minimale
+            if (w > 2 && h > 2) {
+                // Overlay semi-transparent
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-            // Bordure de sélection
-            this.ctx.strokeStyle = this.options.selectionColor;
-            this.ctx.lineWidth = 2;
-            this.ctx.strokeRect(s.x, s.y, s.width, s.height);
+                // Découper la zone sélectionnée
+                this.ctx.clearRect(x, y, w, h);
+                this.ctx.drawImage(
+                    this.image,
+                    x / this.scale, y / this.scale,
+                    w / this.scale, h / this.scale,
+                    x, y, w, h
+                );
 
-            // Poignées de redimensionnement
-            this.drawHandles();
+                // Bordure de sélection
+                this.ctx.strokeStyle = this.options.selectionColor;
+                this.ctx.lineWidth = 2;
+                this.ctx.strokeRect(x, y, w, h);
 
-            // Dimensions
-            const realSel = this.getSelection();
-            this.ctx.fillStyle = this.options.selectionColor;
-            this.ctx.font = '12px monospace';
-            this.ctx.fillText(
-                `${realSel.width} x ${realSel.height}`,
-                s.x + s.width + 5,
-                s.y + s.height / 2
-            );
+                // Poignées de redimensionnement (seulement si pas en train de dessiner)
+                if (!this.isDragging || this.isMoving) {
+                    this.drawHandles();
+                }
+
+                // Dimensions
+                const realW = Math.round(w / this.scale);
+                const realH = Math.round(h / this.scale);
+                this.ctx.fillStyle = this.options.selectionColor;
+                this.ctx.font = '12px monospace';
+                this.ctx.fillText(
+                    `${realW} x ${realH}`,
+                    x + w + 5,
+                    y + h / 2
+                );
+            }
         }
     }
 

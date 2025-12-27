@@ -22,7 +22,12 @@ function initializeForm() {
     const uploadZone = document.getElementById('upload-zone');
     const imageInput = document.getElementById('image-input');
 
-    uploadZone.addEventListener('click', () => imageInput.click());
+    uploadZone.addEventListener('click', (e) => {
+        // Éviter le double clic si on clique sur le bouton
+        if (e.target.tagName !== 'BUTTON') {
+            imageInput.click();
+        }
+    });
     uploadZone.addEventListener('dragover', (e) => {
         e.preventDefault();
         uploadZone.classList.add('dragover');
