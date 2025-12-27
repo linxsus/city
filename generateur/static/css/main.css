@@ -747,6 +747,37 @@ output {
     }
 }
 
+/* Template Preview */
+.template-preview {
+    margin: var(--spacing-md) 0;
+    padding: var(--spacing-md);
+    background-color: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    text-align: center;
+}
+
+.template-preview img {
+    max-width: 100%;
+    max-height: 150px;
+    object-fit: contain;
+    border-radius: var(--radius-sm);
+}
+
+/* Select with optgroup */
+select optgroup {
+    background-color: var(--color-bg-lighter);
+    color: var(--color-text-muted);
+    font-style: normal;
+    font-weight: 600;
+}
+
+select option {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    padding: var(--spacing-sm);
+}
+
 /* Utilities */
 .hidden {
     display: none !important;

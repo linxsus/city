@@ -148,4 +148,10 @@ const API = {
             method: 'POST',
         });
     },
+
+    // === Images/Templates ===
+
+    async getTemplatesList() {
+        return this.request('/images/templates-list');
+    },
 };

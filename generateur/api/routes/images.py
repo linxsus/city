@@ -180,6 +180,48 @@ async def cleanup_upload(path: str) -> APIResponse:
     )
 
 
+@router.get("/templates-list")
+async def list_templates() -> APIResponse:
+    """Liste tous les templates disponibles dans le framework."""
+    templates = []
+
+    if FRAMEWORK_TEMPLATES_DIR.exists():
+        for file_path in FRAMEWORK_TEMPLATES_DIR.rglob("*.png"):
+            try:
+                # Chemin relatif par rapport au dossier templates
+                relative_path = file_path.relative_to(FRAMEWORK_TEMPLATES_DIR)
+                templates.append({
+                    "path": str(relative_path).replace("\\", "/"),
+                    "name": file_path.name,
+                    "folder": str(relative_path.parent).replace("\\", "/") if relative_path.parent != Path(".") else "",
+                })
+            except ValueError:
+                pass
+
+        # Ajouter aussi les .jpg
+        for file_path in FRAMEWORK_TEMPLATES_DIR.rglob("*.jpg"):
+            try:
+                relative_path = file_path.relative_to(FRAMEWORK_TEMPLATES_DIR)
+                templates.append({
+                    "path": str(relative_path).replace("\\", "/"),
+                    "name": file_path.name,
+                    "folder": str(relative_path.parent).replace("\\", "/") if relative_path.parent != Path(".") else "",
+                })
+            except ValueError:
+                pass
+
+    # Trier par dossier puis par nom
+    templates.sort(key=lambda t: (t["folder"], t["name"]))
+
+    return APIResponse(
+        success=True,
+        data={
+            "templates": templates,
+            "base_path": str(FRAMEWORK_TEMPLATES_DIR),
+        },
+    )
+
+
 @router.get("/templates/{path:path}")
 async def serve_template(path: str):
     """Sert un template existant du framework."""

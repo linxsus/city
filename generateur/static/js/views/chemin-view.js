@@ -92,7 +92,7 @@ async function loadExitSuggestions() {
 /**
  * Ouvre le modal d'ajout d'action
  */
-function openActionModal(actionType) {
+async function openActionModal(actionType) {
     const modal = document.getElementById('action-modal');
     const title = document.getElementById('action-modal-title');
     const body = document.getElementById('action-modal-body');
@@ -106,8 +106,17 @@ function openActionModal(actionType) {
             formHtml = `
                 <input type="hidden" id="action-type" value="ActionBouton">
                 <div class="form-group">
-                    <label for="action-template">Chemin du template *</label>
-                    <input type="text" id="action-template" required placeholder="ex: boutons/ok.png">
+                    <label for="action-template-select">Sélectionner un template existant</label>
+                    <select id="action-template-select" onchange="onTemplateSelect()">
+                        <option value="">Chargement...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="action-template">Ou entrer le chemin manuellement *</label>
+                    <input type="text" id="action-template" placeholder="ex: boutons/ok.png">
+                </div>
+                <div id="template-preview" class="template-preview hidden">
+                    <img id="template-preview-img" alt="Aperçu du template" />
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -159,6 +168,68 @@ function openActionModal(actionType) {
 
     body.innerHTML = formHtml;
     modal.classList.remove('hidden');
+
+    // Charger les templates si c'est un ActionBouton
+    if (actionType === 'ActionBouton') {
+        loadTemplatesList();
+    }
+}
+
+/**
+ * Charge la liste des templates disponibles
+ */
+async function loadTemplatesList() {
+    const select = document.getElementById('action-template-select');
+    if (!select) return;
+
+    const result = await API.getTemplatesList();
+
+    if (result.success) {
+        const templates = result.data.templates;
+
+        // Grouper par dossier
+        const grouped = {};
+        templates.forEach(t => {
+            const folder = t.folder || '(racine)';
+            if (!grouped[folder]) grouped[folder] = [];
+            grouped[folder].push(t);
+        });
+
+        // Construire les options avec optgroup
+        let html = '<option value="">-- Sélectionner un template --</option>';
+
+        Object.keys(grouped).sort().forEach(folder => {
+            html += `<optgroup label="${folder}">`;
+            grouped[folder].forEach(t => {
+                html += `<option value="${t.path}">${t.name}</option>`;
+            });
+            html += '</optgroup>';
+        });
+
+        select.innerHTML = html;
+    } else {
+        select.innerHTML = '<option value="">Erreur de chargement</option>';
+    }
+}
+
+/**
+ * Gère la sélection d'un template dans la liste
+ */
+function onTemplateSelect() {
+    const select = document.getElementById('action-template-select');
+    const input = document.getElementById('action-template');
+    const preview = document.getElementById('template-preview');
+    const previewImg = document.getElementById('template-preview-img');
+
+    if (select.value) {
+        input.value = select.value;
+
+        // Afficher la prévisualisation
+        previewImg.src = `/api/images/templates/${encodeURIComponent(select.value)}`;
+        preview.classList.remove('hidden');
+    } else {
+        preview.classList.add('hidden');
+    }
 }
 
 /**
