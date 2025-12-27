@@ -28,19 +28,21 @@ class Popup(Etat):
         image_detection: Chemin vers l'image pour détecter le popup
         image_fermeture: Image à cliquer pour fermer (si None, utilise image_detection)
         position_fermeture: Position (x, y) alternative au clic image
-        etats_possibles_apres: États possibles après fermeture du popup
+        etats_possibles_extra: États supplémentaires possibles après fermeture
+                               (en plus de ceux définis par le groupe dans le TOML)
 
     Notes:
         - Si image_fermeture est None, on clique sur image_detection
         - Si position_fermeture est défini, il a priorité sur l'image
-        - etats_possibles_apres par défaut: ["ville"]
+        - Les états de sortie sont calculés automatiquement par le GestionnaireEtats
+          à partir des groupes définis dans le TOML + etats_possibles_extra
     """
 
     image_detection: str = None
     image_fermeture: Optional[str] = None
     position_fermeture: Optional[tuple] = None
     position_relative: bool = False
-    etats_possibles_apres: List[str] = ["ville"]
+    etats_possibles_extra: List[str] = []
 
     def __init__(self):
         """Initialise le popup."""
@@ -90,13 +92,16 @@ class CheminPopup(Chemin):
 
         Args:
             popup: Instance du Popup à fermer
+
+        Note:
+            etat_sortie est initialisé vide et sera défini par
+            GestionnaireEtats._resoudre_groupes_sortie() après le scan
         """
         super().__init__()
         self.popup = popup
         self.etat_initial = popup.nom
-        self.etat_sortie = EtatInconnu(
-            etats_possibles=popup.etats_possibles_apres
-        )
+        # etat_sortie sera défini par GestionnaireEtats._resoudre_groupes_sortie()
+        self.etat_sortie = EtatInconnu(etats_possibles=[])
 
     def fonction_actions(self, manoir: Any) -> List[Any]:
         """

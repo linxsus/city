@@ -42,6 +42,19 @@ max_profondeur = 20
 # Timeout en secondes pour la recherche
 timeout_secondes = 5
 
+# ===== GROUPES DE SORTIE POPUP =====
+# Définit les groupes pour les états de sortie des popups
+# Chaque popup d'un groupe peut mener à la racine ou à tout autre popup du groupe
+[groupes_sortie]
+# Groupe par défaut pour les popups non listés dans aucun groupe
+defaut = "ville"
+
+[groupes_sortie.ville]
+# État racine du groupe (toujours inclus dans les états de sortie)
+racine = "ville"
+# Popups appartenant à ce groupe
+popups = ["popup_connexion", "popup_rapport", "popup_gratuit"]
+
 # ===== LOGGING =====
 [logging]
 # Niveau de détail des logs spécifique au gestionnaire
