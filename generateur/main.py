@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from .api.routes import chemins_router, etats_router, ia_router, images_router
+from .api.routes.actions import router as actions_router
 from .config import DEBUG, HOST, PORT, STATIC_DIR, TEMPLATES_DIR, is_claude_available
 
 # Créer l'application FastAPI
@@ -33,6 +34,7 @@ app.include_router(etats_router, prefix="/api")
 app.include_router(chemins_router, prefix="/api")
 app.include_router(images_router, prefix="/api")
 app.include_router(ia_router, prefix="/api")
+app.include_router(actions_router, prefix="/api")
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -69,6 +71,19 @@ async def chemin_page(request: Request):
         {
             "request": request,
             "title": "Créer un Chemin",
+            "claude_available": is_claude_available(),
+        },
+    )
+
+
+@app.get("/action-longue", response_class=HTMLResponse)
+async def action_longue_page(request: Request):
+    """Page de création d'ActionLongue avec Blockly."""
+    return templates.TemplateResponse(
+        "views/action-longue.html",
+        {
+            "request": request,
+            "title": "Créer une ActionLongue",
             "claude_available": is_claude_available(),
         },
     )
