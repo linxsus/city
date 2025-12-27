@@ -206,6 +206,128 @@ class ActionTexteSchema(BaseModel):
     offset_y: int = Field(default=0, description="Décalage Y")
 
 
+class ActionCreate(BaseModel):
+    """Données pour créer une nouvelle Action simple."""
+    nom: str = Field(
+        ...,
+        min_length=1,
+        max_length=50,
+        pattern=r'^[a-z][a-z0-9_]*$',
+        description="Nom unique de l'action (snake_case)"
+    )
+    description: str | None = Field(
+        default=None,
+        description="Description de l'action"
+    )
+    condition_code: str | None = Field(
+        default=None,
+        description="Code Python pour la condition (optionnel)"
+    )
+    run_code: str = Field(
+        ...,
+        description="Code Python pour _run()"
+    )
+    parametres: list[dict[str, Any]] = Field(
+        default_factory=list,
+        description="Paramètres du constructeur [{name, type, default}]"
+    )
+    erreurs_verif_apres: list[str] = Field(
+        default_factory=list,
+        description="Erreurs à vérifier après succès"
+    )
+    erreurs_si_echec: list[str] = Field(
+        default_factory=list,
+        description="Erreurs à vérifier si échec"
+    )
+
+
+class ActionSchema(ActionCreate):
+    """Action complète avec métadonnées."""
+    nom_classe: str = Field(
+        ...,
+        description="Nom de la classe Python (ex: ActionMonAction)"
+    )
+    fichier_genere: str | None = Field(
+        default=None,
+        description="Chemin du fichier Python généré"
+    )
+    created_at: datetime = Field(
+        default_factory=datetime.now,
+        description="Date de création"
+    )
+
+
+class ControlBlock(BaseModel):
+    """Bloc de contrôle pour ActionLongue (if, while, for)."""
+    type: Literal["if", "if_else", "while", "for", "action"] = Field(
+        ...,
+        description="Type de bloc"
+    )
+    condition: str | None = Field(
+        default=None,
+        description="Condition pour if/while"
+    )
+    iterations: int | None = Field(
+        default=None,
+        description="Nombre d'itérations pour for"
+    )
+    actions: list["ControlBlock | ActionReference"] = Field(
+        default_factory=list,
+        description="Actions dans le bloc"
+    )
+    actions_else: list["ControlBlock | ActionReference"] = Field(
+        default_factory=list,
+        description="Actions pour le else (if_else uniquement)"
+    )
+    max_iterations: int = Field(
+        default=100,
+        description="Limite de sécurité pour while"
+    )
+
+
+class ActionLongueCreate(BaseModel):
+    """Données pour créer une ActionLongue."""
+    nom: str = Field(
+        ...,
+        min_length=1,
+        max_length=50,
+        pattern=r'^[a-z][a-z0-9_]*$',
+        description="Nom unique de l'action longue (snake_case)"
+    )
+    description: str | None = Field(
+        default=None,
+        description="Description de l'action"
+    )
+    blocks: list[ControlBlock | ActionReference] = Field(
+        default_factory=list,
+        description="Blocs de contrôle et actions"
+    )
+    etat_requis: str | None = Field(
+        default=None,
+        description="État requis avant exécution"
+    )
+    maintenant: bool = Field(
+        default=False,
+        description="Insérer immédiatement dans la séquence"
+    )
+
+
+class ActionLongueSchema(ActionLongueCreate):
+    """ActionLongue complète avec métadonnées."""
+    nom_classe: str = Field(
+        ...,
+        description="Nom de la classe Python"
+    )
+    fichier_genere: str | None = Field(
+        default=None,
+        description="Chemin du fichier Python généré"
+    )
+    created_at: datetime = Field(
+        default_factory=datetime.now,
+        description="Date de création"
+    )
+
+
 class SuggestionIA(BaseModel):
     """Suggestion de l'IA Claude."""
     regions: list[dict] = Field(

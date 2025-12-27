@@ -24,6 +24,8 @@ TRASH_DIR = BASE_DIR / "corbeille"
 FRAMEWORK_ETATS_DIR = PROJECT_ROOT / "manoirs" / "etats"
 FRAMEWORK_CHEMINS_DIR = PROJECT_ROOT / "manoirs" / "chemins"
 FRAMEWORK_TEMPLATES_DIR = PROJECT_ROOT / "templates"
+FRAMEWORK_ACTIONS_SIMPLE_DIR = PROJECT_ROOT / "actions" / "simple"
+FRAMEWORK_ACTIONS_LONGUE_DIR = PROJECT_ROOT / "actions" / "longue"
 
 # Créer les dossiers nécessaires
 for dir_path in [UPLOAD_DIR, GENERATED_DIR, TEMPLATES_OUTPUT_DIR, SESSIONS_DIR, TRASH_DIR]:

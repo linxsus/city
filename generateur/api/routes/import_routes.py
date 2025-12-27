@@ -97,6 +97,42 @@ async def get_chemin_by_name(nom: str) -> APIResponse:
     )
 
 
+@router.get("/actions")
+async def get_all_actions() -> APIResponse:
+    """Liste toutes les actions existantes."""
+    service = get_import_service()
+    actions = service.get_all_actions()
+
+    return APIResponse(
+        success=True,
+        data={
+            "count": len(actions),
+            "actions": [a.to_dict() for a in actions],
+        },
+    )
+
+
+@router.get("/actions/{nom}")
+async def get_action_by_name(nom: str) -> APIResponse:
+    """Récupère une action par son nom."""
+    service = get_import_service()
+    action = service.get_action_by_name(nom)
+
+    if action is None:
+        return APIResponse(
+            success=False,
+            error={
+                "code": "NOT_FOUND",
+                "message": f"Action '{nom}' non trouvée",
+            },
+        )
+
+    return APIResponse(
+        success=True,
+        data=action.to_dict(),
+    )
+
+
 @router.get("/templates")
 async def get_all_templates() -> APIResponse:
     """Liste tous les templates existants."""

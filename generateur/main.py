@@ -13,6 +13,7 @@ from fastapi.templating import Jinja2Templates
 
 from .api.routes import chemins_router, etats_router, ia_router, images_router
 from .api.routes.actions import router as actions_router
+from .api.routes.action_routes import router as action_gen_router
 from .api.routes.import_routes import router as import_router
 from .config import DEBUG, HOST, PORT, STATIC_DIR, TEMPLATES_DIR, is_claude_available
 
@@ -36,6 +37,7 @@ app.include_router(chemins_router, prefix="/api")
 app.include_router(images_router, prefix="/api")
 app.include_router(ia_router, prefix="/api")
 app.include_router(actions_router, prefix="/api")
+app.include_router(action_gen_router, prefix="/api")
 app.include_router(import_router, prefix="/api")
 
 
@@ -73,6 +75,19 @@ async def chemin_page(request: Request):
         {
             "request": request,
             "title": "Créer un Chemin",
+            "claude_available": is_claude_available(),
+        },
+    )
+
+
+@app.get("/action", response_class=HTMLResponse)
+async def action_page(request: Request):
+    """Page de création d'action simple."""
+    return templates.TemplateResponse(
+        "views/action.html",
+        {
+            "request": request,
+            "title": "Créer une Action",
             "claude_available": is_claude_available(),
         },
     )

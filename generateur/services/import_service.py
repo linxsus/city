@@ -80,6 +80,33 @@ class ImportedChemin:
         }
 
 
+class ImportedAction:
+    """Action importée avec ses métadonnées."""
+
+    def __init__(self, class_info: ClassInfo, action_type: str = "simple"):
+        self.class_info = class_info
+        self.nom = class_info.nom
+        self.nom_classe = class_info.nom_classe
+        self.fichier = class_info.fichier
+        self.action_type = action_type  # "simple" ou "longue"
+
+        # Analyser le code pour trouver les templates et textes
+        parser = get_parser()
+        self.templates = parser.find_template_references(class_info.code_source)
+        self.textes = parser.find_text_references(class_info.code_source)
+
+    def to_dict(self) -> dict:
+        return {
+            "nom": self.nom,
+            "nom_classe": self.nom_classe,
+            "fichier": self.fichier,
+            "action_type": self.action_type,
+            "templates": self.templates,
+            "textes": self.textes,
+            "code_source": self.class_info.code_source,
+        }
+
+
 class ImportService:
     """Service pour importer et gérer les éléments existants."""
 
@@ -111,6 +138,32 @@ class ImportService:
         for chemin in chemins:
             if chemin.nom == nom:
                 return chemin
+        return None
+
+    def get_all_actions(self) -> list[ImportedAction]:
+        """Récupère toutes les actions (simples et longues)."""
+        actions = []
+
+        # Actions simples
+        classes_simples = self.parser.parse_actions_simples()
+        for c in classes_simples:
+            if c.type_classe == "action":
+                actions.append(ImportedAction(c, "simple"))
+
+        # Actions longues
+        classes_longues = self.parser.parse_actions_longues()
+        for c in classes_longues:
+            if c.type_classe == "action":
+                actions.append(ImportedAction(c, "longue"))
+
+        return actions
+
+    def get_action_by_name(self, nom: str) -> ImportedAction | None:
+        """Récupère une action par son nom."""
+        actions = self.get_all_actions()
+        for action in actions:
+            if action.nom == nom:
+                return action
         return None
 
     def _normalize_path(self, path: str) -> str:
@@ -177,6 +230,7 @@ class ImportService:
         """Retourne un résumé des éléments existants."""
         etats = self.get_all_etats()
         chemins = self.get_all_chemins()
+        actions = self.get_all_actions()
         templates = self.get_all_templates()
 
         # Collecter les groupes uniques
@@ -192,6 +246,10 @@ class ImportService:
             "chemins": {
                 "count": len(chemins),
                 "items": [c.to_dict() for c in chemins],
+            },
+            "actions": {
+                "count": len(actions),
+                "items": [a.to_dict() for a in actions],
             },
             "templates": {
                 "count": len(templates),

@@ -39,6 +39,13 @@
                     <span class="summary-label">Templates</span>
                 </div>
             </div>
+            <div class="summary-card" data-tab="actions">
+                <div class="summary-icon">⚡</div>
+                <div class="summary-info">
+                    <span class="summary-count" id="count-actions">-</span>
+                    <span class="summary-label">Actions</span>
+                </div>
+            </div>
             <div class="summary-card" data-tab="groupes">
                 <div class="summary-icon">🏷️</div>
                 <div class="summary-info">
@@ -52,6 +59,7 @@
         <div class="tabs">
             <button class="tab-btn active" data-tab="etats">États</button>
             <button class="tab-btn" data-tab="chemins">Chemins</button>
+            <button class="tab-btn" data-tab="actions">Actions</button>
             <button class="tab-btn" data-tab="templates">Templates</button>
             <button class="tab-btn" data-tab="groupes">Groupes</button>
         </div>
@@ -75,6 +83,12 @@
         <div class="tab-content" id="tab-chemins">
             <div class="elements-grid" id="grid-chemins">
                 <div class="loading">Chargement des chemins...</div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab-actions">
+            <div class="elements-grid" id="grid-actions">
+                <div class="loading">Chargement des actions...</div>
             </div>
         </div>
 

@@ -6,6 +6,7 @@
 let currentData = {
     etats: [],
     chemins: [],
+    actions: [],
     templates: [],
     groupes: [],
 };
@@ -19,10 +20,12 @@ let showMissing = false;
 const elements = {
     countEtats: document.getElementById('count-etats'),
     countChemins: document.getElementById('count-chemins'),
+    countActions: document.getElementById('count-actions'),
     countTemplates: document.getElementById('count-templates'),
     countGroupes: document.getElementById('count-groupes'),
     gridEtats: document.getElementById('grid-etats'),
     gridChemins: document.getElementById('grid-chemins'),
+    gridActions: document.getElementById('grid-actions'),
     gridTemplates: document.getElementById('grid-templates'),
     listGroupes: document.getElementById('list-groupes'),
     searchInput: document.getElementById('search-input'),
@@ -130,6 +133,7 @@ async function loadData() {
         if (response.success) {
             currentData.etats = response.data.etats.items || [];
             currentData.chemins = response.data.chemins.items || [];
+            currentData.actions = response.data.actions?.items || [];
             currentData.templates = response.data.templates.items || [];
             currentData.groupes = response.data.groupes || [];
 
@@ -170,6 +174,7 @@ async function loadMissingTemplates() {
 function updateCounts() {
     elements.countEtats.textContent = currentData.etats.length;
     elements.countChemins.textContent = currentData.chemins.length;
+    elements.countActions.textContent = currentData.actions.length;
     elements.countTemplates.textContent = currentData.templates.length;
     elements.countGroupes.textContent = currentData.groupes.length;
 }
@@ -193,6 +198,9 @@ function renderCurrentTab() {
             break;
         case 'chemins':
             renderChemins();
+            break;
+        case 'actions':
+            renderActions();
             break;
         case 'templates':
             if (!showOrphans && !showMissing) {
@@ -260,6 +268,35 @@ function renderChemins() {
             <div class="element-details">
                 <p>${escapeHtml(chemin.etat_initial)} → ${escapeHtml(chemin.etat_sortie)}</p>
                 <p>Templates: ${chemin.templates.length}</p>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderActions() {
+    const filtered = filterItems(currentData.actions, 'action');
+
+    if (filtered.length === 0) {
+        elements.gridActions.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">⚡</div>
+                <p>Aucune action trouvée</p>
+            </div>
+        `;
+        return;
+    }
+
+    elements.gridActions.innerHTML = filtered.map(action => `
+        <div class="element-card" onclick="showActionDetail('${escapeHtml(action.nom)}')">
+            <div class="element-header">
+                <span class="element-name">${escapeHtml(action.nom_classe)}</span>
+                <span class="element-type ${action.action_type === 'longue' ? 'type-action-longue' : 'type-action'}">
+                    ${action.action_type === 'longue' ? 'Action Longue' : 'Action'}
+                </span>
+            </div>
+            <div class="element-details">
+                <p>Type: ${action.action_type}</p>
+                <p>Templates: ${action.templates.length}</p>
             </div>
         </div>
     `).join('');
@@ -537,6 +574,59 @@ async function showCheminDetail(nom) {
     elements.detailModal.classList.remove('hidden');
 }
 
+async function showActionDetail(nom) {
+    const action = currentData.actions.find(a => a.nom === nom);
+    if (!action) return;
+
+    elements.detailTitle.textContent = `Action: ${action.nom_classe}`;
+    elements.detailBody.innerHTML = `
+        <div class="detail-section">
+            <h4>Informations générales</h4>
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <div class="detail-label">Nom</div>
+                    <div class="detail-value">${escapeHtml(action.nom)}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Classe</div>
+                    <div class="detail-value">${escapeHtml(action.nom_classe)}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Type</div>
+                    <div class="detail-value">${action.action_type === 'longue' ? 'Action Longue' : 'Action Simple'}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="detail-section">
+            <h4>Templates utilisés</h4>
+            <div class="detail-tags">
+                ${action.templates.map(t => `<span class="detail-tag">${escapeHtml(t)}</span>`).join('') || '<em>Aucun template</em>'}
+            </div>
+        </div>
+
+        <div class="detail-section">
+            <h4>Fichier source</h4>
+            <p style="color: var(--text-secondary); font-size: 0.875rem;">${escapeHtml(action.fichier)}</p>
+        </div>
+
+        <div class="detail-section">
+            <h4>Code source</h4>
+            <div class="detail-code">
+                <pre><code>${escapeHtml(action.code_source)}</code></pre>
+            </div>
+        </div>
+    `;
+
+    // Hide edit/duplicate button for now
+    document.getElementById('btn-edit-element').style.display = 'none';
+
+    // Hide delete button for actions (they are core framework components)
+    document.getElementById('btn-delete-element').style.display = 'none';
+
+    elements.detailModal.classList.remove('hidden');
+}
+
 async function showTemplateDetail(path) {
     try {
         const response = await API.request(`/import/templates/usage?path=${encodeURIComponent(path)}`);
@@ -667,6 +757,7 @@ function showNotification(message, type = 'info') {
 // Global functions for onclick handlers
 window.showEtatDetail = showEtatDetail;
 window.showCheminDetail = showCheminDetail;
+window.showActionDetail = showActionDetail;
 window.showTemplateDetail = showTemplateDetail;
 window.closeDetailModal = closeDetailModal;
 window.closeCodeModal = closeCodeModal;

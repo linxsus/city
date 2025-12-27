@@ -5,7 +5,12 @@ import re
 from pathlib import Path
 from typing import Any
 
-from ..config import FRAMEWORK_CHEMINS_DIR, FRAMEWORK_ETATS_DIR
+from ..config import (
+    FRAMEWORK_ACTIONS_LONGUE_DIR,
+    FRAMEWORK_ACTIONS_SIMPLE_DIR,
+    FRAMEWORK_CHEMINS_DIR,
+    FRAMEWORK_ETATS_DIR,
+)
 
 
 class ClassInfo:
@@ -43,6 +48,8 @@ class PythonParser:
     def __init__(self):
         self.etats_dir = FRAMEWORK_ETATS_DIR
         self.chemins_dir = FRAMEWORK_CHEMINS_DIR
+        self.actions_simple_dir = FRAMEWORK_ACTIONS_SIMPLE_DIR
+        self.actions_longue_dir = FRAMEWORK_ACTIONS_LONGUE_DIR
 
     def parse_file(self, filepath: Path) -> list[ClassInfo]:
         """
@@ -189,11 +196,41 @@ class PythonParser:
 
         return chemins
 
+    def parse_actions_simples(self) -> list[ClassInfo]:
+        """Parse tous les fichiers d'actions simples."""
+        actions = []
+
+        if not self.actions_simple_dir.exists():
+            return actions
+
+        for filepath in self.actions_simple_dir.glob("*.py"):
+            if filepath.name.startswith("__"):
+                continue
+            actions.extend(self.parse_file(filepath))
+
+        return actions
+
+    def parse_actions_longues(self) -> list[ClassInfo]:
+        """Parse tous les fichiers d'actions longues."""
+        actions = []
+
+        if not self.actions_longue_dir.exists():
+            return actions
+
+        for filepath in self.actions_longue_dir.glob("*.py"):
+            if filepath.name.startswith("__"):
+                continue
+            actions.extend(self.parse_file(filepath))
+
+        return actions
+
     def parse_all(self) -> dict[str, list[ClassInfo]]:
         """Parse tous les éléments du framework."""
         return {
             "etats": self.parse_etats(),
             "chemins": self.parse_chemins(),
+            "actions_simples": self.parse_actions_simples(),
+            "actions_longues": self.parse_actions_longues(),
         }
 
     def find_template_references(self, code: str) -> list[str]:
