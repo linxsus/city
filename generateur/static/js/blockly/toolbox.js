@@ -7,13 +7,23 @@ const BLOCKLY_TOOLBOX = {
     contents: [
         {
             kind: 'category',
-            name: 'Actions',
+            name: 'Actions de base',
             colour: '#5b80a5',
             contents: [
                 { kind: 'block', type: 'action_bouton' },
                 { kind: 'block', type: 'action_attendre' },
                 { kind: 'block', type: 'action_texte' },
                 { kind: 'block', type: 'action_clic_position' },
+                { kind: 'block', type: 'action_log' },
+            ]
+        },
+        {
+            kind: 'category',
+            name: 'Actions personnalisées',
+            colour: '#a55b80',
+            contents: [
+                { kind: 'block', type: 'action_custom' },
+                { kind: 'block', type: 'action_longue_ref' },
             ]
         },
         {

@@ -49,6 +49,21 @@ pythonGenerator.forBlock['action_clic_position'] = function(block) {
     return `ActionSimple(manoir, lambda m: m.click_at(${posX}, ${posY})),\n`;
 };
 
+pythonGenerator.forBlock['action_log'] = function(block) {
+    const message = block.getFieldValue('MESSAGE');
+    return `ActionLog(manoir, "${message}"),\n`;
+};
+
+pythonGenerator.forBlock['action_custom'] = function(block) {
+    const actionName = block.getFieldValue('ACTION_NAME');
+    return `${actionName}(manoir),\n`;
+};
+
+pythonGenerator.forBlock['action_longue_ref'] = function(block) {
+    const actionLongueName = block.getFieldValue('ACTION_LONGUE_NAME');
+    return `${actionLongueName}(manoir),\n`;
+};
+
 // ============================================
 // GÉNÉRATEURS POUR LES STRUCTURES DE CONTRÔLE
 // ============================================

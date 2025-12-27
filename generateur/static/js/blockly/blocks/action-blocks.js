@@ -74,3 +74,45 @@ Blockly.Blocks['action_clic_position'] = {
         this.setHelpUrl('');
     }
 };
+
+// ActionLog - Logger un message
+Blockly.Blocks['action_log'] = {
+    init: function() {
+        this.appendDummyInput()
+            .appendField('📋 Logger')
+            .appendField(new Blockly.FieldTextInput('Message'), 'MESSAGE');
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(210);
+        this.setTooltip('Enregistre un message dans les logs');
+        this.setHelpUrl('');
+    }
+};
+
+// Action personnalisée - Pour utiliser les actions customs
+Blockly.Blocks['action_custom'] = {
+    init: function() {
+        this.appendDummyInput()
+            .appendField('⚡ Action:')
+            .appendField(new Blockly.FieldTextInput('NomAction'), 'ACTION_NAME');
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(290);
+        this.setTooltip('Utilise une action personnalisée');
+        this.setHelpUrl('');
+    }
+};
+
+// ActionLongue - Pour imbriquer une action longue existante
+Blockly.Blocks['action_longue_ref'] = {
+    init: function() {
+        this.appendDummyInput()
+            .appendField('🔗 ActionLongue:')
+            .appendField(new Blockly.FieldTextInput('NomActionLongue'), 'ACTION_LONGUE_NAME');
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(330);
+        this.setTooltip('Utilise une action longue existante');
+        this.setHelpUrl('');
+    }
+};

@@ -60,6 +60,13 @@
                     <button type="button" class="btn btn-secondary" data-action="ActionTexte">
                         + Clic Texte
                     </button>
+                    <div class="action-dropdown">
+                        <select id="custom-action-select" onchange="addCustomAction()">
+                            <option value="">+ Autre action...</option>
+                            <optgroup label="Actions de base" id="optgroup-base"></optgroup>
+                            <optgroup label="Actions personnalisées" id="optgroup-custom"></optgroup>
+                        </select>
+                    </div>
                 </div>
             </section>
 

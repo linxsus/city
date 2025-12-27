@@ -11,9 +11,11 @@ if (typeof formatCode === 'undefined') {
 
 let actions = [];
 let availableStates = [];
+let availableActions = { base: [], simples: [], longues: [] };
 
 document.addEventListener('DOMContentLoaded', () => {
     initializeForm();
+    loadAvailableActions();
     loadAvailableStates().then(() => {
         loadFromUrlParams();
     });
@@ -119,6 +121,104 @@ async function loadAvailableStates() {
         availableStates = result.data.states;
         populateStateSelects();
     }
+}
+
+/**
+ * Charge les actions disponibles
+ */
+async function loadAvailableActions() {
+    try {
+        const result = await API.request('/actions/available');
+
+        if (result.success) {
+            availableActions = result.data;
+            populateActionsDropdown();
+        }
+    } catch (error) {
+        console.error('Error loading available actions:', error);
+    }
+}
+
+/**
+ * Remplit le dropdown des actions personnalisées
+ */
+function populateActionsDropdown() {
+    const optgroupBase = document.getElementById('optgroup-base');
+    const optgroupCustom = document.getElementById('optgroup-custom');
+
+    if (!optgroupBase || !optgroupCustom) return;
+
+    // Actions de base (sauf celles déjà en boutons)
+    const baseActionsFiltered = availableActions.base.filter(
+        a => !['ActionBouton', 'ActionAttendre', 'ActionTexte'].includes(a.nom_classe)
+    );
+
+    optgroupBase.innerHTML = baseActionsFiltered.map(a =>
+        `<option value="${a.nom_classe}" data-type="base">${a.nom_classe} - ${a.description || ''}</option>`
+    ).join('');
+
+    // Actions personnalisées (simples)
+    const customOptions = availableActions.simples.map(a =>
+        `<option value="${a.nom_classe}" data-type="simple">${a.nom_classe}</option>`
+    ).join('');
+
+    optgroupCustom.innerHTML = customOptions || '<option disabled>Aucune action personnalisée</option>';
+}
+
+/**
+ * Ajoute une action personnalisée depuis le dropdown
+ */
+function addCustomAction() {
+    const select = document.getElementById('custom-action-select');
+    const actionClass = select.value;
+
+    if (!actionClass) return;
+
+    // Trouver l'action dans les listes
+    let actionInfo = availableActions.base.find(a => a.nom_classe === actionClass);
+    if (!actionInfo) {
+        actionInfo = availableActions.simples.find(a => a.nom_classe === actionClass);
+    }
+
+    if (actionInfo) {
+        openCustomActionModal(actionInfo);
+    }
+
+    // Réinitialiser le select
+    select.value = '';
+}
+
+/**
+ * Ouvre le modal pour une action personnalisée
+ */
+function openCustomActionModal(actionInfo) {
+    const modal = document.getElementById('action-modal');
+    const title = document.getElementById('action-modal-title');
+    const body = document.getElementById('action-modal-body');
+
+    title.textContent = `Ajouter: ${actionInfo.nom_classe}`;
+
+    // Formulaire générique pour les actions personnalisées
+    let formHtml = `
+        <input type="hidden" id="action-type" value="${actionInfo.nom_classe}">
+        <input type="hidden" id="action-custom" value="true">
+        <div class="form-group">
+            <p class="help-text">${actionInfo.description || 'Action personnalisée'}</p>
+        </div>
+    `;
+
+    // Pour ActionLog, ajouter un champ message
+    if (actionInfo.nom_classe === 'ActionLog') {
+        formHtml += `
+            <div class="form-group">
+                <label for="action-message">Message *</label>
+                <input type="text" id="action-message" required placeholder="Message à logger">
+            </div>
+        `;
+    }
+
+    body.innerHTML = formHtml;
+    modal.classList.remove('hidden');
 }
 
 /**
@@ -319,6 +419,7 @@ function closeActionModal() {
  */
 function saveAction() {
     const type = document.getElementById('action-type').value;
+    const isCustom = document.getElementById('action-custom')?.value === 'true';
     let action = { type, parametres: {}, ordre: actions.length };
 
     switch (type) {
@@ -356,6 +457,22 @@ function saveAction() {
                 offset_x: parseInt(document.getElementById('action-offset-x').value) || 0,
                 offset_y: parseInt(document.getElementById('action-offset-y').value) || 0,
             };
+            break;
+
+        case 'ActionLog':
+            const message = document.getElementById('action-message')?.value.trim();
+            if (!message) {
+                showNotification('Le message est requis', 'warning');
+                return;
+            }
+            action.parametres = { message };
+            break;
+
+        default:
+            // Actions personnalisées - ajouter sans paramètres spécifiques
+            if (isCustom) {
+                action.parametres = { custom: true };
+            }
             break;
     }
 
@@ -546,3 +663,7 @@ async function handleSubmit(e) {
 
 // Initialiser la liste vide
 document.addEventListener('DOMContentLoaded', renderActionsList);
+
+
+// Global functions for onclick handlers
+window.addCustomAction = addCustomAction;
