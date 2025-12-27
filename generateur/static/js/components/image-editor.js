@@ -19,6 +19,7 @@ class ImageEditor {
         this.suggestions = [];
         this.isDragging = false;
         this.isResizing = false;
+        this.isMoving = false;
         this.dragStart = null;
         this.resizeHandle = null;
         this.scale = 1;
@@ -272,6 +273,7 @@ class ImageEditor {
         // Vérifier si on clique dans la sélection (pour déplacer)
         if (this.isInSelection(x, y)) {
             this.isDragging = true;
+            this.isMoving = true;
             this.dragStart = { x: x - this.selection.x, y: y - this.selection.y };
             return;
         }
@@ -287,6 +289,7 @@ class ImageEditor {
         // Nouvelle sélection
         this.selection = { x, y, width: 0, height: 0 };
         this.isDragging = true;
+        this.isMoving = false;
         this.dragStart = { x, y };
     }
 
@@ -308,12 +311,12 @@ class ImageEditor {
         if (this.isResizing && this.selection) {
             this.resizeSelection(x, y);
         } else if (this.isDragging && this.selection) {
-            if (this.dragStart.x === this.selection.x + (this.dragStart.x - this.selection.x)) {
-                // Déplacement
+            if (this.isMoving) {
+                // Déplacement de la sélection existante
                 this.selection.x = x - this.dragStart.x;
                 this.selection.y = y - this.dragStart.y;
             } else {
-                // Nouvelle sélection
+                // Nouvelle sélection (dessiner un rectangle)
                 this.selection.width = x - this.dragStart.x;
                 this.selection.height = y - this.dragStart.y;
             }
@@ -347,6 +350,7 @@ class ImageEditor {
 
         this.isDragging = false;
         this.isResizing = false;
+        this.isMoving = false;
         this.resizeHandle = null;
         this.dragStart = null;
     }
