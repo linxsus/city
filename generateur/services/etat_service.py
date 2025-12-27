@@ -53,17 +53,21 @@ class EtatService:
             MethodeVerification.IMAGE,
             MethodeVerification.COMBINAISON,
         ]:
-            if data.template_region and save_template:
-                # Découper le template
-                output_path = self.image_service.crop_region(
-                    image_path=data.image_source,
-                    region=data.template_region,
-                    output_name=f"template_{data.nom}",
-                    output_subdir=data.nom,
-                )
-                template_path = self.image_service.get_relative_template_path(
-                    output_path
-                )
+            if data.template_region:
+                if save_template:
+                    # Découper et sauvegarder le template
+                    output_path = self.image_service.crop_region(
+                        image_path=data.image_source,
+                        region=data.template_region,
+                        output_name=f"template_{data.nom}",
+                        output_subdir=data.nom,
+                    )
+                    template_path = self.image_service.get_relative_template_path(
+                        output_path
+                    )
+                else:
+                    # Mode preview: générer le chemin attendu sans sauvegarder
+                    template_path = f"{data.nom}/template_{data.nom}.png"
 
         # Créer le schéma complet
         etat = EtatSchema(
