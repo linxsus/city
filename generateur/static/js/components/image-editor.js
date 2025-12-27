@@ -1,6 +1,8 @@
 /**
  * Éditeur d'image pour la sélection de régions
+ * Version: 1.2.0
  */
+console.log('=== image-editor.js v1.2.0 chargé ===');
 
 class ImageEditor {
     constructor(canvasId, options = {}) {

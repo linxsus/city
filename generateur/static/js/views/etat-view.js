@@ -1,6 +1,8 @@
 /**
  * Vue de création d'état
+ * Version: 1.2.0
  */
+console.log('=== etat-view.js v1.2.0 chargé ===');
 
 // Fonctions utilitaires (définies localement si non disponibles)
 if (typeof showNotification === 'undefined') {
