@@ -7,8 +7,34 @@ let availableStates = [];
 
 document.addEventListener('DOMContentLoaded', () => {
     initializeForm();
-    loadAvailableStates();
+    loadAvailableStates().then(() => {
+        loadFromUrlParams();
+    });
 });
+
+/**
+ * Charge les données depuis les paramètres URL (pour duplication)
+ */
+function loadFromUrlParams() {
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.has('duplicate')) {
+        if (typeof showNotification !== 'undefined') {
+            showNotification(`Duplication du chemin "${params.get('duplicate')}"`, 'info');
+        }
+    }
+
+    // Pré-remplir l'état initial
+    if (params.has('etat_initial')) {
+        document.getElementById('etat-initial').value = params.get('etat_initial');
+    }
+
+    // Pré-remplir l'état de sortie
+    if (params.has('etat_sortie')) {
+        document.getElementById('etat-sortie').value = params.get('etat_sortie');
+        loadExitSuggestions();
+    }
+}
 
 /**
  * Initialise le formulaire

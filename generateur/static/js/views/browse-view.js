@@ -442,9 +442,17 @@ async function showEtatDetail(nom) {
         </div>
     `;
 
+    document.getElementById('btn-edit-element').textContent = '📋 Dupliquer';
     document.getElementById('btn-edit-element').onclick = () => {
-        // TODO: Redirect to edit page
-        alert('Fonctionnalité de modification à venir');
+        // Redirect to etat page with pre-filled data
+        const params = new URLSearchParams({
+            duplicate: etat.nom,
+            nom: etat.nom + '_copie',
+            groupes: etat.groupes.join(','),
+            priorite: etat.priorite,
+            methode_verif: etat.methode_verif,
+        });
+        window.location.href = `/etat?${params.toString()}`;
     };
 
     elements.detailModal.classList.remove('hidden');
@@ -498,8 +506,15 @@ async function showCheminDetail(nom) {
         </div>
     `;
 
+    document.getElementById('btn-edit-element').textContent = '📋 Dupliquer';
     document.getElementById('btn-edit-element').onclick = () => {
-        alert('Fonctionnalité de modification à venir');
+        // Redirect to chemin page with pre-filled data
+        const params = new URLSearchParams({
+            duplicate: chemin.nom,
+            etat_initial: chemin.etat_initial,
+            etat_sortie: chemin.etat_sortie,
+        });
+        window.location.href = `/chemin?${params.toString()}`;
     };
 
     elements.detailModal.classList.remove('hidden');

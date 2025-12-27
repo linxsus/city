@@ -52,7 +52,41 @@ let selectedGroups = [];
 document.addEventListener('DOMContentLoaded', () => {
     initializeForm();
     loadExistingGroups();
+    loadFromUrlParams();
 });
+
+/**
+ * Charge les données depuis les paramètres URL (pour duplication)
+ */
+function loadFromUrlParams() {
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.has('duplicate')) {
+        showNotification(`Duplication de l'état "${params.get('duplicate')}"`, 'info');
+    }
+
+    // Pré-remplir le nom
+    if (params.has('nom')) {
+        document.getElementById('nom').value = params.get('nom');
+    }
+
+    // Pré-remplir les groupes
+    if (params.has('groupes')) {
+        const groupes = params.get('groupes').split(',').filter(g => g);
+        groupes.forEach(g => addGroup(g));
+    }
+
+    // Pré-remplir la priorité
+    if (params.has('priorite')) {
+        document.getElementById('priorite').value = params.get('priorite');
+    }
+
+    // Pré-remplir la méthode de vérification
+    if (params.has('methode_verif')) {
+        document.getElementById('methode-verif').value = params.get('methode_verif');
+        updateVerificationMethod();
+    }
+}
 
 /**
  * Initialise le formulaire
