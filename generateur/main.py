@@ -13,6 +13,7 @@ from fastapi.templating import Jinja2Templates
 
 from .api.routes import chemins_router, etats_router, ia_router, images_router
 from .api.routes.actions import router as actions_router
+from .api.routes.import_routes import router as import_router
 from .config import DEBUG, HOST, PORT, STATIC_DIR, TEMPLATES_DIR, is_claude_available
 
 # Créer l'application FastAPI
@@ -35,6 +36,7 @@ app.include_router(chemins_router, prefix="/api")
 app.include_router(images_router, prefix="/api")
 app.include_router(ia_router, prefix="/api")
 app.include_router(actions_router, prefix="/api")
+app.include_router(import_router, prefix="/api")
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -84,6 +86,19 @@ async def action_longue_page(request: Request):
         {
             "request": request,
             "title": "Créer une ActionLongue",
+            "claude_available": is_claude_available(),
+        },
+    )
+
+
+@app.get("/browse", response_class=HTMLResponse)
+async def browse_page(request: Request):
+    """Page de visualisation des éléments existants."""
+    return templates.TemplateResponse(
+        "views/browse.html",
+        {
+            "request": request,
+            "title": "Explorer les éléments",
             "claude_available": is_claude_available(),
         },
     )

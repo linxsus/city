@@ -1,10 +1,12 @@
 """Routes API pour la gestion des images."""
 
 from pathlib import Path
+from urllib.parse import unquote
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 
+from ...config import FRAMEWORK_TEMPLATES_DIR
 from ...models.schemas import APIResponse, RegionSchema
 from ...services.image_service import get_image_service
 
@@ -176,3 +178,22 @@ async def cleanup_upload(path: str) -> APIResponse:
         success=deleted,
         message="Fichier supprimé" if deleted else "Fichier non trouvé ou non supprimable",
     )
+
+
+@router.get("/templates/{path:path}")
+async def serve_template(path: str):
+    """Sert un template existant du framework."""
+    # Décoder le chemin URL
+    decoded_path = unquote(path)
+    file_path = FRAMEWORK_TEMPLATES_DIR / decoded_path
+
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Template non trouvé")
+
+    # Vérifier que le fichier est bien dans le dossier templates
+    try:
+        file_path.resolve().relative_to(FRAMEWORK_TEMPLATES_DIR.resolve())
+    except ValueError:
+        raise HTTPException(status_code=403, detail="Accès non autorisé")
+
+    return FileResponse(file_path)

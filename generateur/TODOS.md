@@ -69,16 +69,18 @@
 
 ---
 
-## Phase 3 - Import et Synchronisation
+## Phase 3 - Import et Synchronisation (En cours)
 
 ### Import des éléments existants
-- [ ] Parser les fichiers Python existants :
-  - [ ] Extraire les classes Etat
-  - [ ] Extraire les classes Chemin
-  - [ ] Extraire les classes Action
-- [ ] Afficher les éléments importés dans l'interface
+- [x] Parser les fichiers Python existants :
+  - [x] Extraire les classes Etat
+  - [x] Extraire les classes Chemin
+  - [x] Extraire les classes Action
+- [x] Afficher les éléments importés dans l'interface
 - [ ] Permettre la modification des éléments importés
-- [ ] Détecter les templates associés
+- [x] Détecter les templates associés
+- [x] API routes pour l'import (/api/import/*)
+- [x] Détection des templates orphelins et manquants
 
 ### Synchronisation bidirectionnelle
 - [ ] Détecter les modifications manuelles du code
