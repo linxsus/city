@@ -18,6 +18,7 @@ TEMPLATES_OUTPUT_DIR = GENERATED_DIR / "templates"
 SESSIONS_DIR = BASE_DIR / "sessions"
 STATIC_DIR = BASE_DIR / "static"
 TEMPLATES_DIR = BASE_DIR / "templates"
+TRASH_DIR = BASE_DIR / "corbeille"
 
 # Chemins du framework existant
 FRAMEWORK_ETATS_DIR = PROJECT_ROOT / "manoirs" / "etats"
@@ -25,7 +26,7 @@ FRAMEWORK_CHEMINS_DIR = PROJECT_ROOT / "manoirs" / "chemins"
 FRAMEWORK_TEMPLATES_DIR = PROJECT_ROOT / "templates"
 
 # Créer les dossiers nécessaires
-for dir_path in [UPLOAD_DIR, GENERATED_DIR, TEMPLATES_OUTPUT_DIR, SESSIONS_DIR]:
+for dir_path in [UPLOAD_DIR, GENERATED_DIR, TEMPLATES_OUTPUT_DIR, SESSIONS_DIR, TRASH_DIR]:
     dir_path.mkdir(parents=True, exist_ok=True)
 
 # Configuration serveur

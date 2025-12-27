@@ -1,7 +1,12 @@
 """Routes API pour l'import et la visualisation des éléments existants."""
 
+import shutil
+from datetime import datetime
+from pathlib import Path
+
 from fastapi import APIRouter
 
+from ...config import FRAMEWORK_CHEMINS_DIR, FRAMEWORK_ETATS_DIR, FRAMEWORK_TEMPLATES_DIR, TRASH_DIR
 from ...models.schemas import APIResponse
 from ...services.import_service import get_import_service
 
@@ -161,3 +166,158 @@ async def get_all_groupes() -> APIResponse:
             "groupes": summary["groupes"],
         },
     )
+
+
+def _move_to_trash(file_path: Path, element_type: str) -> Path:
+    """Déplace un fichier vers la corbeille."""
+    # Créer un sous-dossier par type et par date
+    date_str = datetime.now().strftime("%Y%m%d")
+    trash_subdir = TRASH_DIR / element_type / date_str
+    trash_subdir.mkdir(parents=True, exist_ok=True)
+
+    # Nom unique avec timestamp
+    timestamp = datetime.now().strftime("%H%M%S")
+    new_name = f"{file_path.stem}_{timestamp}{file_path.suffix}"
+    trash_path = trash_subdir / new_name
+
+    shutil.move(str(file_path), str(trash_path))
+    return trash_path
+
+
+@router.delete("/etats/{nom}")
+async def delete_etat(nom: str) -> APIResponse:
+    """Supprime un état (le déplace vers la corbeille)."""
+    service = get_import_service()
+    etat = service.get_etat_by_name(nom)
+
+    if etat is None:
+        return APIResponse(
+            success=False,
+            error={
+                "code": "NOT_FOUND",
+                "message": f"État '{nom}' non trouvé",
+            },
+        )
+
+    file_path = Path(etat.fichier)
+    if not file_path.exists():
+        return APIResponse(
+            success=False,
+            error={
+                "code": "FILE_NOT_FOUND",
+                "message": f"Fichier '{etat.fichier}' non trouvé",
+            },
+        )
+
+    try:
+        trash_path = _move_to_trash(file_path, "etats")
+        return APIResponse(
+            success=True,
+            message=f"État '{nom}' déplacé vers la corbeille",
+            data={
+                "nom": nom,
+                "original_path": str(file_path),
+                "trash_path": str(trash_path),
+            },
+        )
+    except Exception as e:
+        return APIResponse(
+            success=False,
+            error={
+                "code": "DELETE_ERROR",
+                "message": f"Erreur lors de la suppression: {str(e)}",
+            },
+        )
+
+
+@router.delete("/chemins/{nom}")
+async def delete_chemin(nom: str) -> APIResponse:
+    """Supprime un chemin (le déplace vers la corbeille)."""
+    service = get_import_service()
+    chemin = service.get_chemin_by_name(nom)
+
+    if chemin is None:
+        return APIResponse(
+            success=False,
+            error={
+                "code": "NOT_FOUND",
+                "message": f"Chemin '{nom}' non trouvé",
+            },
+        )
+
+    file_path = Path(chemin.fichier)
+    if not file_path.exists():
+        return APIResponse(
+            success=False,
+            error={
+                "code": "FILE_NOT_FOUND",
+                "message": f"Fichier '{chemin.fichier}' non trouvé",
+            },
+        )
+
+    try:
+        trash_path = _move_to_trash(file_path, "chemins")
+        return APIResponse(
+            success=True,
+            message=f"Chemin '{nom}' déplacé vers la corbeille",
+            data={
+                "nom": nom,
+                "original_path": str(file_path),
+                "trash_path": str(trash_path),
+            },
+        )
+    except Exception as e:
+        return APIResponse(
+            success=False,
+            error={
+                "code": "DELETE_ERROR",
+                "message": f"Erreur lors de la suppression: {str(e)}",
+            },
+        )
+
+
+@router.delete("/templates")
+async def delete_template(path: str) -> APIResponse:
+    """Supprime un template (le déplace vers la corbeille)."""
+    file_path = FRAMEWORK_TEMPLATES_DIR / path
+
+    if not file_path.exists():
+        return APIResponse(
+            success=False,
+            error={
+                "code": "NOT_FOUND",
+                "message": f"Template '{path}' non trouvé",
+            },
+        )
+
+    # Vérifier que le fichier est bien dans le dossier templates
+    try:
+        file_path.resolve().relative_to(FRAMEWORK_TEMPLATES_DIR.resolve())
+    except ValueError:
+        return APIResponse(
+            success=False,
+            error={
+                "code": "INVALID_PATH",
+                "message": "Chemin non autorisé",
+            },
+        )
+
+    try:
+        trash_path = _move_to_trash(file_path, "templates")
+        return APIResponse(
+            success=True,
+            message=f"Template '{path}' déplacé vers la corbeille",
+            data={
+                "path": path,
+                "original_path": str(file_path),
+                "trash_path": str(trash_path),
+            },
+        )
+    except Exception as e:
+        return APIResponse(
+            success=False,
+            error={
+                "code": "DELETE_ERROR",
+                "message": f"Erreur lors de la suppression: {str(e)}",
+            },
+        )

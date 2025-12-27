@@ -4,7 +4,7 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
 
-from ..config import GENERATED_DIR
+from ..config import FRAMEWORK_CHEMINS_DIR
 from ..models.schemas import ActionReference, CheminSchema
 
 
@@ -19,7 +19,7 @@ class CheminGenerator:
             lstrip_blocks=True,
         )
         self.template = self.env.get_template("chemin.py.j2")
-        self.output_dir = GENERATED_DIR / "chemins"
+        self.output_dir = FRAMEWORK_CHEMINS_DIR
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
     def _generate_action_code(self, action: ActionReference) -> str:

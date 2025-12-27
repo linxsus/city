@@ -4,7 +4,7 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
 
-from ..config import GENERATED_DIR
+from ..config import FRAMEWORK_ETATS_DIR
 from ..models.schemas import EtatSchema
 
 
@@ -19,7 +19,7 @@ class EtatGenerator:
             lstrip_blocks=True,
         )
         self.template = self.env.get_template("etat.py.j2")
-        self.output_dir = GENERATED_DIR / "etats"
+        self.output_dir = FRAMEWORK_ETATS_DIR
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
     def generate(self, etat: EtatSchema) -> str:

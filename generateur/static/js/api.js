@@ -154,4 +154,24 @@ const API = {
     async getTemplatesList() {
         return this.request('/images/templates-list');
     },
+
+    // === Delete (move to trash) ===
+
+    async deleteEtat(nom) {
+        return this.request(`/import/etats/${encodeURIComponent(nom)}`, {
+            method: 'DELETE',
+        });
+    },
+
+    async deleteChemin(nom) {
+        return this.request(`/import/chemins/${encodeURIComponent(nom)}`, {
+            method: 'DELETE',
+        });
+    },
+
+    async deleteTemplate(path) {
+        return this.request(`/import/templates?path=${encodeURIComponent(path)}`, {
+            method: 'DELETE',
+        });
+    },
 };

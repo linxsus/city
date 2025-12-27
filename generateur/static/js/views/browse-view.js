@@ -458,6 +458,11 @@ async function showEtatDetail(nom) {
         window.location.href = '/etat?duplicate=' + encodeURIComponent(etat.nom);
     };
 
+    // Delete button
+    const deleteBtn = document.getElementById('btn-delete-element');
+    deleteBtn.style.display = '';
+    deleteBtn.onclick = () => deleteEtat(etat.nom);
+
     elements.detailModal.classList.remove('hidden');
 }
 
@@ -524,6 +529,11 @@ async function showCheminDetail(nom) {
         window.location.href = '/chemin?duplicate=' + encodeURIComponent(chemin.nom);
     };
 
+    // Delete button
+    const deleteBtn = document.getElementById('btn-delete-element');
+    deleteBtn.style.display = '';
+    deleteBtn.onclick = () => deleteChemin(chemin.nom);
+
     elements.detailModal.classList.remove('hidden');
 }
 
@@ -562,6 +572,12 @@ async function showTemplateDetail(path) {
         `;
 
         document.getElementById('btn-edit-element').style.display = 'none';
+
+        // Delete button for template
+        const deleteBtn = document.getElementById('btn-delete-element');
+        deleteBtn.style.display = '';
+        deleteBtn.onclick = () => deleteTemplate(path);
+
         elements.detailModal.classList.remove('hidden');
     } catch (error) {
         console.error('Error showing template detail:', error);
@@ -571,6 +587,7 @@ async function showTemplateDetail(path) {
 function closeDetailModal() {
     elements.detailModal.classList.add('hidden');
     document.getElementById('btn-edit-element').style.display = '';
+    document.getElementById('btn-delete-element').style.display = '';
 }
 
 function closeCodeModal() {
@@ -587,6 +604,64 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// Delete functions
+async function deleteEtat(nom) {
+    if (!confirm(`Supprimer l'état "${nom}" ?\n\nLe fichier sera déplacé vers la corbeille.`)) {
+        return;
+    }
+
+    const result = await API.deleteEtat(nom);
+
+    if (result.success) {
+        showNotification(`État "${nom}" déplacé vers la corbeille`, 'success');
+        closeDetailModal();
+        loadData(); // Refresh
+    } else {
+        showError(result.error?.message || 'Erreur lors de la suppression');
+    }
+}
+
+async function deleteChemin(nom) {
+    if (!confirm(`Supprimer le chemin "${nom}" ?\n\nLe fichier sera déplacé vers la corbeille.`)) {
+        return;
+    }
+
+    const result = await API.deleteChemin(nom);
+
+    if (result.success) {
+        showNotification(`Chemin "${nom}" déplacé vers la corbeille`, 'success');
+        closeDetailModal();
+        loadData(); // Refresh
+    } else {
+        showError(result.error?.message || 'Erreur lors de la suppression');
+    }
+}
+
+async function deleteTemplate(path) {
+    if (!confirm(`Supprimer le template "${path}" ?\n\nLe fichier sera déplacé vers la corbeille.`)) {
+        return;
+    }
+
+    const result = await API.deleteTemplate(path);
+
+    if (result.success) {
+        showNotification(`Template "${path}" déplacé vers la corbeille`, 'success');
+        closeDetailModal();
+        loadData(); // Refresh
+    } else {
+        showError(result.error?.message || 'Erreur lors de la suppression');
+    }
+}
+
+function showNotification(message, type = 'info') {
+    // Use global showNotification if available, otherwise create simple one
+    if (window.showNotification && typeof window.showNotification === 'function') {
+        window.showNotification(message, type);
+    } else {
+        alert(message);
+    }
 }
 
 // Global functions for onclick handlers

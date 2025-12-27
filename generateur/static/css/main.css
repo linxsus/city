@@ -613,6 +613,24 @@ output {
     min-height: 32px;
 }
 
+.btn-danger {
+    background-color: var(--color-error);
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #dc2626;
+}
+
+.btn-warning {
+    background-color: var(--color-warning);
+    color: white;
+}
+
+.btn-warning:hover {
+    background-color: #d97706;
+}
+
 .form-actions {
     display: flex;
     gap: var(--spacing-md);
