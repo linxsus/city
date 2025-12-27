@@ -1,14 +1,14 @@
-# -*- coding: utf-8 -*-
 """Tests pour ManoirBlueStacks
 
 Tests unitaires pour la classe ManoirBlueStacks qui gère
 le cycle de vie d'une fenêtre BlueStacks via le système états/chemins.
 """
+
 import logging
 import sys
 import time
 import unittest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import MagicMock, Mock, patch
 
 # Configuration du logging pour voir les logs pendant les tests
 # Mettre level=logging.DEBUG pour voir tous les logs
@@ -17,8 +17,8 @@ LOG_LEVEL = logging.DEBUG  # Changer en logging.WARNING pour désactiver
 
 logging.basicConfig(
     level=LOG_LEVEL,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    stream=sys.stdout
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    stream=sys.stdout,
 )
 
 # Mock des modules de dépendances avant import
@@ -38,22 +38,22 @@ mock_pynput_keyboard = MagicMock()
 mock_pynput_mouse = MagicMock()
 
 # Installer les mocks dans sys.modules
-sys.modules['mss'] = mock_mss
-sys.modules['mss.tools'] = mock_mss_tools
-sys.modules['cv2'] = mock_cv2
-sys.modules['PIL'] = mock_PIL
-sys.modules['PIL.Image'] = mock_PIL_Image
-sys.modules['numpy'] = mock_numpy
-sys.modules['pyautogui'] = mock_pyautogui
-sys.modules['win32gui'] = mock_pywin32_gui
-sys.modules['win32con'] = mock_pywin32_con
-sys.modules['win32api'] = mock_pywin32_api
-sys.modules['pynput'] = mock_pynput
-sys.modules['pynput.keyboard'] = mock_pynput_keyboard
-sys.modules['pynput.mouse'] = mock_pynput_mouse
+sys.modules["mss"] = mock_mss
+sys.modules["mss.tools"] = mock_mss_tools
+sys.modules["cv2"] = mock_cv2
+sys.modules["PIL"] = mock_PIL
+sys.modules["PIL.Image"] = mock_PIL_Image
+sys.modules["numpy"] = mock_numpy
+sys.modules["pyautogui"] = mock_pyautogui
+sys.modules["win32gui"] = mock_pywin32_gui
+sys.modules["win32con"] = mock_pywin32_con
+sys.modules["win32api"] = mock_pywin32_api
+sys.modules["pynput"] = mock_pynput
+sys.modules["pynput.keyboard"] = mock_pynput_keyboard
+sys.modules["pynput.mouse"] = mock_pynput_mouse
 
 # Maintenant on peut importer les modules du projet
-from manoirs.instances.manoir_bluestacks import ManoirBlueStacks, EtatBlueStacks
+from manoirs.instances.manoir_bluestacks import EtatBlueStacks, ManoirBlueStacks
 
 
 class ManoirBlueStacksConcret(ManoirBlueStacks):
@@ -88,15 +88,15 @@ class TestEtatBlueStacks(unittest.TestCase):
         self.assertEqual(len(valeurs), len(set(valeurs)))  # Pas de doublons
 
 
-@patch('manoirs.manoir_base.get_slot_manager')
-@patch('manoirs.manoir_base.get_timer_manager')
-@patch('manoirs.manoir_base.get_window_state_manager')
-@patch('manoirs.manoir_base.get_message_bus')
-@patch('manoirs.manoir_base.get_window_manager')
-@patch('manoirs.manoir_base.get_screen_capture')
-@patch('manoirs.manoir_base.get_image_matcher')
-@patch('manoirs.manoir_base.get_color_detector')
-@patch('manoirs.manoir_base.get_ocr_engine')
+@patch("manoirs.manoir_base.get_slot_manager")
+@patch("manoirs.manoir_base.get_timer_manager")
+@patch("manoirs.manoir_base.get_window_state_manager")
+@patch("manoirs.manoir_base.get_message_bus")
+@patch("manoirs.manoir_base.get_window_manager")
+@patch("manoirs.manoir_base.get_screen_capture")
+@patch("manoirs.manoir_base.get_image_matcher")
+@patch("manoirs.manoir_base.get_color_detector")
+@patch("manoirs.manoir_base.get_ocr_engine")
 class TestManoirBlueStacksInitialisation(unittest.TestCase):
     """Tests d'initialisation de ManoirBlueStacks"""
 
@@ -138,15 +138,15 @@ class TestManoirBlueStacksInitialisation(unittest.TestCase):
         self.assertEqual(ManoirBlueStacks.ETAT_DESTINATION, "ville")
 
 
-@patch('manoirs.manoir_base.get_slot_manager')
-@patch('manoirs.manoir_base.get_timer_manager')
-@patch('manoirs.manoir_base.get_window_state_manager')
-@patch('manoirs.manoir_base.get_message_bus')
-@patch('manoirs.manoir_base.get_window_manager')
-@patch('manoirs.manoir_base.get_screen_capture')
-@patch('manoirs.manoir_base.get_image_matcher')
-@patch('manoirs.manoir_base.get_color_detector')
-@patch('manoirs.manoir_base.get_ocr_engine')
+@patch("manoirs.manoir_base.get_slot_manager")
+@patch("manoirs.manoir_base.get_timer_manager")
+@patch("manoirs.manoir_base.get_window_state_manager")
+@patch("manoirs.manoir_base.get_message_bus")
+@patch("manoirs.manoir_base.get_window_manager")
+@patch("manoirs.manoir_base.get_screen_capture")
+@patch("manoirs.manoir_base.get_image_matcher")
+@patch("manoirs.manoir_base.get_color_detector")
+@patch("manoirs.manoir_base.get_ocr_engine")
 class TestManoirBlueStacksEtatInterne(unittest.TestCase):
     """Tests pour la gestion de l'état interne"""
 
@@ -187,15 +187,15 @@ class TestManoirBlueStacksEtatInterne(unittest.TestCase):
         self.assertFalse(manoir.est_jeu_pret())
 
 
-@patch('manoirs.manoir_base.get_slot_manager')
-@patch('manoirs.manoir_base.get_timer_manager')
-@patch('manoirs.manoir_base.get_window_state_manager')
-@patch('manoirs.manoir_base.get_message_bus')
-@patch('manoirs.manoir_base.get_window_manager')
-@patch('manoirs.manoir_base.get_screen_capture')
-@patch('manoirs.manoir_base.get_image_matcher')
-@patch('manoirs.manoir_base.get_color_detector')
-@patch('manoirs.manoir_base.get_ocr_engine')
+@patch("manoirs.manoir_base.get_slot_manager")
+@patch("manoirs.manoir_base.get_timer_manager")
+@patch("manoirs.manoir_base.get_window_state_manager")
+@patch("manoirs.manoir_base.get_message_bus")
+@patch("manoirs.manoir_base.get_window_manager")
+@patch("manoirs.manoir_base.get_screen_capture")
+@patch("manoirs.manoir_base.get_image_matcher")
+@patch("manoirs.manoir_base.get_color_detector")
+@patch("manoirs.manoir_base.get_ocr_engine")
 class TestManoirBlueStacksHistorique(unittest.TestCase):
     """Tests pour l'historique des actions"""
 
@@ -215,7 +215,7 @@ class TestManoirBlueStacksHistorique(unittest.TestCase):
         manoir._ajouter_historique("Test")
 
         # Format attendu: [HH:MM:SS] message
-        self.assertRegex(manoir._historique_actions[0], r'\[\d{2}:\d{2}:\d{2}\] Test')
+        self.assertRegex(manoir._historique_actions[0], r"\[\d{2}:\d{2}:\d{2}\] Test")
 
     def test_historique_limite_taille(self, *mocks):
         """Test que l'historique est limité à 100 entrées"""
@@ -241,15 +241,15 @@ class TestManoirBlueStacksHistorique(unittest.TestCase):
         self.assertNotIn("Nouveau", manoir._historique_actions)
 
 
-@patch('manoirs.manoir_base.get_slot_manager')
-@patch('manoirs.manoir_base.get_timer_manager')
-@patch('manoirs.manoir_base.get_window_state_manager')
-@patch('manoirs.manoir_base.get_message_bus')
-@patch('manoirs.manoir_base.get_window_manager')
-@patch('manoirs.manoir_base.get_screen_capture')
-@patch('manoirs.manoir_base.get_image_matcher')
-@patch('manoirs.manoir_base.get_color_detector')
-@patch('manoirs.manoir_base.get_ocr_engine')
+@patch("manoirs.manoir_base.get_slot_manager")
+@patch("manoirs.manoir_base.get_timer_manager")
+@patch("manoirs.manoir_base.get_window_state_manager")
+@patch("manoirs.manoir_base.get_message_bus")
+@patch("manoirs.manoir_base.get_window_manager")
+@patch("manoirs.manoir_base.get_screen_capture")
+@patch("manoirs.manoir_base.get_image_matcher")
+@patch("manoirs.manoir_base.get_color_detector")
+@patch("manoirs.manoir_base.get_ocr_engine")
 class TestManoirBlueStacksTimeout(unittest.TestCase):
     """Tests pour la gestion du timeout"""
 
@@ -285,15 +285,15 @@ class TestManoirBlueStacksTimeout(unittest.TestCase):
         self.assertTrue(manoir.est_timeout_atteint())
 
 
-@patch('manoirs.manoir_base.get_slot_manager')
-@patch('manoirs.manoir_base.get_timer_manager')
-@patch('manoirs.manoir_base.get_window_state_manager')
-@patch('manoirs.manoir_base.get_message_bus')
-@patch('manoirs.manoir_base.get_window_manager')
-@patch('manoirs.manoir_base.get_screen_capture')
-@patch('manoirs.manoir_base.get_image_matcher')
-@patch('manoirs.manoir_base.get_color_detector')
-@patch('manoirs.manoir_base.get_ocr_engine')
+@patch("manoirs.manoir_base.get_slot_manager")
+@patch("manoirs.manoir_base.get_timer_manager")
+@patch("manoirs.manoir_base.get_window_state_manager")
+@patch("manoirs.manoir_base.get_message_bus")
+@patch("manoirs.manoir_base.get_window_manager")
+@patch("manoirs.manoir_base.get_screen_capture")
+@patch("manoirs.manoir_base.get_image_matcher")
+@patch("manoirs.manoir_base.get_color_detector")
+@patch("manoirs.manoir_base.get_ocr_engine")
 class TestManoirBlueStacksSilencieuxQuandBloque(unittest.TestCase):
     """Tests pour le comportement silencieux quand bloqué"""
 
@@ -325,27 +325,27 @@ class TestManoirBlueStacksSilencieuxQuandBloque(unittest.TestCase):
         self.assertIsNone(result)
 
 
-@patch('manoirs.manoir_base.get_slot_manager')
-@patch('manoirs.manoir_base.get_timer_manager')
-@patch('manoirs.manoir_base.get_window_state_manager')
-@patch('manoirs.manoir_base.get_message_bus')
-@patch('manoirs.manoir_base.get_window_manager')
-@patch('manoirs.manoir_base.get_screen_capture')
-@patch('manoirs.manoir_base.get_image_matcher')
-@patch('manoirs.manoir_base.get_color_detector')
-@patch('manoirs.manoir_base.get_ocr_engine')
+@patch("manoirs.manoir_base.get_slot_manager")
+@patch("manoirs.manoir_base.get_timer_manager")
+@patch("manoirs.manoir_base.get_window_state_manager")
+@patch("manoirs.manoir_base.get_message_bus")
+@patch("manoirs.manoir_base.get_window_manager")
+@patch("manoirs.manoir_base.get_screen_capture")
+@patch("manoirs.manoir_base.get_image_matcher")
+@patch("manoirs.manoir_base.get_color_detector")
+@patch("manoirs.manoir_base.get_ocr_engine")
 class TestManoirBlueStacksBlocage(unittest.TestCase):
     """Tests pour la gestion du blocage"""
 
     def test_signaler_blocage(self, *mocks):
         """Test signaler_blocage() change l'état et incrémente erreurs"""
         manoir = ManoirBlueStacksConcret(manoir_id="test")
-        initial_erreurs = manoir._stats['erreurs_detectees']
+        initial_erreurs = manoir._stats["erreurs_detectees"]
 
         manoir.signaler_blocage()
 
         self.assertEqual(manoir._etat_interne, EtatBlueStacks.BLOQUE)
-        self.assertEqual(manoir._stats['erreurs_detectees'], initial_erreurs + 1)
+        self.assertEqual(manoir._stats["erreurs_detectees"], initial_erreurs + 1)
         self.assertTrue(any("BLOCAGE" in h for h in manoir._historique_actions))
 
     def test_detecter_erreur(self, *mocks):
@@ -362,22 +362,22 @@ class TestManoirBlueStacksBlocage(unittest.TestCase):
         manoir = ManoirBlueStacksConcret(manoir_id="test")
         manoir._etat_interne = EtatBlueStacks.BLOQUE
 
-        with patch.object(manoir, '_reboot_bluestacks') as mock_reboot:
+        with patch.object(manoir, "_reboot_bluestacks") as mock_reboot:
             result = manoir._gerer_erreur()
 
         mock_reboot.assert_called_once()
         self.assertFalse(result)
 
 
-@patch('manoirs.manoir_base.get_slot_manager')
-@patch('manoirs.manoir_base.get_timer_manager')
-@patch('manoirs.manoir_base.get_window_state_manager')
-@patch('manoirs.manoir_base.get_message_bus')
-@patch('manoirs.manoir_base.get_window_manager')
-@patch('manoirs.manoir_base.get_screen_capture')
-@patch('manoirs.manoir_base.get_image_matcher')
-@patch('manoirs.manoir_base.get_color_detector')
-@patch('manoirs.manoir_base.get_ocr_engine')
+@patch("manoirs.manoir_base.get_slot_manager")
+@patch("manoirs.manoir_base.get_timer_manager")
+@patch("manoirs.manoir_base.get_window_state_manager")
+@patch("manoirs.manoir_base.get_message_bus")
+@patch("manoirs.manoir_base.get_window_manager")
+@patch("manoirs.manoir_base.get_screen_capture")
+@patch("manoirs.manoir_base.get_image_matcher")
+@patch("manoirs.manoir_base.get_color_detector")
+@patch("manoirs.manoir_base.get_ocr_engine")
 class TestManoirBlueStacksReboot(unittest.TestCase):
     """Tests pour le reboot"""
 
@@ -406,22 +406,22 @@ class TestManoirBlueStacksReboot(unittest.TestCase):
         manoir = ManoirBlueStacksConcret(manoir_id="test")
         manoir._hwnd = 12345  # Fake handle
 
-        with patch.object(manoir._wm, 'close_window') as mock_close:
-            with patch('time.sleep'):  # Skip sleep
+        with patch.object(manoir._wm, "close_window") as mock_close:
+            with patch("time.sleep"):  # Skip sleep
                 manoir._reboot_bluestacks()
 
         mock_close.assert_called_once_with(12345)
 
 
-@patch('manoirs.manoir_base.get_slot_manager')
-@patch('manoirs.manoir_base.get_timer_manager')
-@patch('manoirs.manoir_base.get_window_state_manager')
-@patch('manoirs.manoir_base.get_message_bus')
-@patch('manoirs.manoir_base.get_window_manager')
-@patch('manoirs.manoir_base.get_screen_capture')
-@patch('manoirs.manoir_base.get_image_matcher')
-@patch('manoirs.manoir_base.get_color_detector')
-@patch('manoirs.manoir_base.get_ocr_engine')
+@patch("manoirs.manoir_base.get_slot_manager")
+@patch("manoirs.manoir_base.get_timer_manager")
+@patch("manoirs.manoir_base.get_window_state_manager")
+@patch("manoirs.manoir_base.get_message_bus")
+@patch("manoirs.manoir_base.get_window_manager")
+@patch("manoirs.manoir_base.get_screen_capture")
+@patch("manoirs.manoir_base.get_image_matcher")
+@patch("manoirs.manoir_base.get_color_detector")
+@patch("manoirs.manoir_base.get_ocr_engine")
 class TestManoirBlueStacksFenetre(unittest.TestCase):
     """Tests pour la gestion de la fenêtre"""
 
@@ -429,26 +429,26 @@ class TestManoirBlueStacksFenetre(unittest.TestCase):
         """Test fenêtre non ouverte"""
         manoir = ManoirBlueStacksConcret(manoir_id="test")
 
-        with patch.object(manoir, 'find_window', return_value=None):
+        with patch.object(manoir, "find_window", return_value=None):
             self.assertFalse(manoir.est_fenetre_ouverte())
 
     def test_est_fenetre_ouverte_oui(self, *mocks):
         """Test fenêtre ouverte"""
         manoir = ManoirBlueStacksConcret(manoir_id="test")
 
-        with patch.object(manoir, 'find_window', return_value=12345):
+        with patch.object(manoir, "find_window", return_value=12345):
             self.assertTrue(manoir.est_fenetre_ouverte())
 
 
-@patch('manoirs.manoir_base.get_slot_manager')
-@patch('manoirs.manoir_base.get_timer_manager')
-@patch('manoirs.manoir_base.get_window_state_manager')
-@patch('manoirs.manoir_base.get_message_bus')
-@patch('manoirs.manoir_base.get_window_manager')
-@patch('manoirs.manoir_base.get_screen_capture')
-@patch('manoirs.manoir_base.get_image_matcher')
-@patch('manoirs.manoir_base.get_color_detector')
-@patch('manoirs.manoir_base.get_ocr_engine')
+@patch("manoirs.manoir_base.get_slot_manager")
+@patch("manoirs.manoir_base.get_timer_manager")
+@patch("manoirs.manoir_base.get_window_state_manager")
+@patch("manoirs.manoir_base.get_message_bus")
+@patch("manoirs.manoir_base.get_window_manager")
+@patch("manoirs.manoir_base.get_screen_capture")
+@patch("manoirs.manoir_base.get_image_matcher")
+@patch("manoirs.manoir_base.get_color_detector")
+@patch("manoirs.manoir_base.get_ocr_engine")
 class TestManoirBlueStacksPreparerAlimenterSequence(unittest.TestCase):
     """Tests pour _preparer_alimenter_sequence()"""
 
@@ -476,7 +476,7 @@ class TestManoirBlueStacksPreparerAlimenterSequence(unittest.TestCase):
         manoir._gestionnaire = mock_gestionnaire
         manoir.etat_actuel = mock_etat
 
-        with patch.object(manoir, 'activate'):
+        with patch.object(manoir, "activate"):
             result = manoir._preparer_alimenter_sequence()
 
         self.assertTrue(result)
@@ -502,42 +502,41 @@ class TestManoirBlueStacksPreparerAlimenterSequence(unittest.TestCase):
         # Simuler un timeout
         manoir._heure_lancement = time.time() - (35 * 60)  # 35 minutes
 
-        with patch.object(manoir, 'sauvegarder_etat_timeout', return_value=None):
+        with patch.object(manoir, "sauvegarder_etat_timeout", return_value=None):
             result = manoir._preparer_alimenter_sequence()
 
         self.assertFalse(result)
         self.assertEqual(manoir._etat_interne, EtatBlueStacks.BLOQUE)
 
 
-@patch('manoirs.manoir_base.get_slot_manager')
-@patch('manoirs.manoir_base.get_timer_manager')
-@patch('manoirs.manoir_base.get_window_state_manager')
-@patch('manoirs.manoir_base.get_message_bus')
-@patch('manoirs.manoir_base.get_window_manager')
-@patch('manoirs.manoir_base.get_screen_capture')
-@patch('manoirs.manoir_base.get_image_matcher')
-@patch('manoirs.manoir_base.get_color_detector')
-@patch('manoirs.manoir_base.get_ocr_engine')
+@patch("manoirs.manoir_base.get_slot_manager")
+@patch("manoirs.manoir_base.get_timer_manager")
+@patch("manoirs.manoir_base.get_window_state_manager")
+@patch("manoirs.manoir_base.get_message_bus")
+@patch("manoirs.manoir_base.get_window_manager")
+@patch("manoirs.manoir_base.get_screen_capture")
+@patch("manoirs.manoir_base.get_image_matcher")
+@patch("manoirs.manoir_base.get_color_detector")
+@patch("manoirs.manoir_base.get_ocr_engine")
 class TestManoirBlueStacksGetStatus(unittest.TestCase):
     """Tests pour get_status()"""
 
     def test_get_status_contenu(self, *mocks):
         """Test que get_status() retourne les infos attendues"""
-        manoir = ManoirBlueStacksConcret(manoir_id="test", config={
-            "nom": "Test Manoir",
-            "titre_bluestacks": "TestWindow"
-        })
+        manoir = ManoirBlueStacksConcret(
+            manoir_id="test", config={"nom": "Test Manoir", "titre_bluestacks": "TestWindow"}
+        )
 
-        with patch.object(manoir, 'est_fenetre_ouverte', return_value=True):
+        with patch.object(manoir, "est_fenetre_ouverte", return_value=True):
             status = manoir.get_status()
 
-        self.assertEqual(status['manoir_id'], "test")
-        self.assertEqual(status['nom'], "Test Manoir")
-        self.assertEqual(status['etat_interne'], "EN_COURS")
-        self.assertEqual(status['etat_ecran'], "inconnu")
-        self.assertTrue(status['fenetre_ouverte'])
-        self.assertFalse(status['jeu_charge'])
-        self.assertEqual(status['titre'], "TestWindow")
+        self.assertEqual(status["manoir_id"], "test")
+        self.assertEqual(status["nom"], "Test Manoir")
+        self.assertEqual(status["etat_interne"], "EN_COURS")
+        self.assertEqual(status["etat_ecran"], "inconnu")
+        self.assertTrue(status["fenetre_ouverte"])
+        self.assertFalse(status["jeu_charge"])
+        self.assertEqual(status["titre"], "TestWindow")
 
     def test_get_status_avec_etat_pret(self, *mocks):
         """Test get_status() quand jeu chargé"""
@@ -548,23 +547,23 @@ class TestManoirBlueStacksGetStatus(unittest.TestCase):
         mock_etat.nom = "ville"
         manoir.etat_actuel = mock_etat
 
-        with patch.object(manoir, 'est_fenetre_ouverte', return_value=True):
+        with patch.object(manoir, "est_fenetre_ouverte", return_value=True):
             status = manoir.get_status()
 
-        self.assertEqual(status['etat_interne'], "PRET")
-        self.assertEqual(status['etat_ecran'], "ville")
-        self.assertTrue(status['jeu_charge'])
+        self.assertEqual(status["etat_interne"], "PRET")
+        self.assertEqual(status["etat_ecran"], "ville")
+        self.assertTrue(status["jeu_charge"])
 
 
-@patch('manoirs.manoir_base.get_slot_manager')
-@patch('manoirs.manoir_base.get_timer_manager')
-@patch('manoirs.manoir_base.get_window_state_manager')
-@patch('manoirs.manoir_base.get_message_bus')
-@patch('manoirs.manoir_base.get_window_manager')
-@patch('manoirs.manoir_base.get_screen_capture')
-@patch('manoirs.manoir_base.get_image_matcher')
-@patch('manoirs.manoir_base.get_color_detector')
-@patch('manoirs.manoir_base.get_ocr_engine')
+@patch("manoirs.manoir_base.get_slot_manager")
+@patch("manoirs.manoir_base.get_timer_manager")
+@patch("manoirs.manoir_base.get_window_state_manager")
+@patch("manoirs.manoir_base.get_message_bus")
+@patch("manoirs.manoir_base.get_window_manager")
+@patch("manoirs.manoir_base.get_screen_capture")
+@patch("manoirs.manoir_base.get_image_matcher")
+@patch("manoirs.manoir_base.get_color_detector")
+@patch("manoirs.manoir_base.get_ocr_engine")
 class TestManoirBlueStacksRepr(unittest.TestCase):
     """Tests pour __repr__()"""
 
@@ -590,15 +589,15 @@ class TestManoirBlueStacksRepr(unittest.TestCase):
         self.assertIn("écran=ville", repr_str)
 
 
-@patch('manoirs.manoir_base.get_slot_manager')
-@patch('manoirs.manoir_base.get_timer_manager')
-@patch('manoirs.manoir_base.get_window_state_manager')
-@patch('manoirs.manoir_base.get_message_bus')
-@patch('manoirs.manoir_base.get_window_manager')
-@patch('manoirs.manoir_base.get_screen_capture')
-@patch('manoirs.manoir_base.get_image_matcher')
-@patch('manoirs.manoir_base.get_color_detector')
-@patch('manoirs.manoir_base.get_ocr_engine')
+@patch("manoirs.manoir_base.get_slot_manager")
+@patch("manoirs.manoir_base.get_timer_manager")
+@patch("manoirs.manoir_base.get_window_state_manager")
+@patch("manoirs.manoir_base.get_message_bus")
+@patch("manoirs.manoir_base.get_window_manager")
+@patch("manoirs.manoir_base.get_screen_capture")
+@patch("manoirs.manoir_base.get_image_matcher")
+@patch("manoirs.manoir_base.get_color_detector")
+@patch("manoirs.manoir_base.get_ocr_engine")
 class TestManoirBlueStacksReset(unittest.TestCase):
     """Tests pour reset()"""
 
@@ -614,15 +613,15 @@ class TestManoirBlueStacksReset(unittest.TestCase):
         self.assertIsNone(manoir._heure_lancement)
 
 
-@patch('manoirs.manoir_base.get_slot_manager')
-@patch('manoirs.manoir_base.get_timer_manager')
-@patch('manoirs.manoir_base.get_window_state_manager')
-@patch('manoirs.manoir_base.get_message_bus')
-@patch('manoirs.manoir_base.get_window_manager')
-@patch('manoirs.manoir_base.get_screen_capture')
-@patch('manoirs.manoir_base.get_image_matcher')
-@patch('manoirs.manoir_base.get_color_detector')
-@patch('manoirs.manoir_base.get_ocr_engine')
+@patch("manoirs.manoir_base.get_slot_manager")
+@patch("manoirs.manoir_base.get_timer_manager")
+@patch("manoirs.manoir_base.get_window_state_manager")
+@patch("manoirs.manoir_base.get_message_bus")
+@patch("manoirs.manoir_base.get_window_manager")
+@patch("manoirs.manoir_base.get_screen_capture")
+@patch("manoirs.manoir_base.get_image_matcher")
+@patch("manoirs.manoir_base.get_color_detector")
+@patch("manoirs.manoir_base.get_ocr_engine")
 class TestManoirBlueStacksHookReprise(unittest.TestCase):
     """Tests pour _hook_reprise_changement()"""
 
@@ -630,21 +629,21 @@ class TestManoirBlueStacksHookReprise(unittest.TestCase):
         """Test que le hook appelle activate()"""
         manoir = ManoirBlueStacksConcret(manoir_id="test")
 
-        with patch.object(manoir, 'activate') as mock_activate:
+        with patch.object(manoir, "activate") as mock_activate:
             manoir._hook_reprise_changement()
 
         mock_activate.assert_called_once()
 
 
-@patch('manoirs.manoir_base.get_slot_manager')
-@patch('manoirs.manoir_base.get_timer_manager')
-@patch('manoirs.manoir_base.get_window_state_manager')
-@patch('manoirs.manoir_base.get_message_bus')
-@patch('manoirs.manoir_base.get_window_manager')
-@patch('manoirs.manoir_base.get_screen_capture')
-@patch('manoirs.manoir_base.get_image_matcher')
-@patch('manoirs.manoir_base.get_color_detector')
-@patch('manoirs.manoir_base.get_ocr_engine')
+@patch("manoirs.manoir_base.get_slot_manager")
+@patch("manoirs.manoir_base.get_timer_manager")
+@patch("manoirs.manoir_base.get_window_state_manager")
+@patch("manoirs.manoir_base.get_message_bus")
+@patch("manoirs.manoir_base.get_window_manager")
+@patch("manoirs.manoir_base.get_screen_capture")
+@patch("manoirs.manoir_base.get_image_matcher")
+@patch("manoirs.manoir_base.get_color_detector")
+@patch("manoirs.manoir_base.get_ocr_engine")
 class TestManoirBlueStacksSauvegarderTimeout(unittest.TestCase):
     """Tests pour sauvegarder_etat_timeout()"""
 
@@ -654,12 +653,14 @@ class TestManoirBlueStacksSauvegarderTimeout(unittest.TestCase):
         manoir._heure_lancement = time.time() - 1800
         manoir._ajouter_historique("Action test")
 
-        with patch.object(manoir, 'save_capture', return_value="/path/to/screenshot.png") as mock_save:
+        with patch.object(
+            manoir, "save_capture", return_value="/path/to/screenshot.png"
+        ) as mock_save:
             result = manoir.sauvegarder_etat_timeout()
 
         mock_save.assert_called_once_with(suffix="_TIMEOUT")
         self.assertEqual(result, "/path/to/screenshot.png")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

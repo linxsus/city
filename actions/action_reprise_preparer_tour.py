@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Action spéciale pour demander la reprise de preparer_tour()
 
 Cette action signale à l'Engine qu'il doit rappeler preparer_tour() du manoir.

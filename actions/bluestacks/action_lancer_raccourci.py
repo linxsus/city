@@ -1,7 +1,7 @@
-# -*- coding: utf-8 -*-
 """Action pour lancer BlueStacks via raccourci/commande"""
-import time
+
 import subprocess
+import time
 
 from actions.action import Action
 
@@ -50,20 +50,17 @@ class ActionLancerRaccourci(Action):
             # Construire la commande en string pour shell=True
             cmd_parts = []
             for part in self.fenetre.commande_lancement:
-                if ' ' in part and not part.startswith('"'):
+                if " " in part and not part.startswith('"'):
                     cmd_parts.append(f'"{part}"')
                 else:
                     cmd_parts.append(part)
 
-            cmd_str = ' '.join(cmd_parts)
+            cmd_str = " ".join(cmd_parts)
             self.logger.info(f"Commande: {cmd_str}")
 
             # Lancer BlueStacks en arrière-plan
             process = subprocess.Popen(
-                cmd_str,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                shell=True
+                cmd_str, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
             )
 
             time.sleep(0.5)
@@ -77,9 +74,7 @@ class ActionLancerRaccourci(Action):
                 self.fenetre._ajouter_historique("ERREUR: Processus terminé immédiatement")
                 return False
 
-            self.logger.info(
-                f"{self.fenetre.nom}: lancement initié (PID: {process.pid})"
-            )
+            self.logger.info(f"{self.fenetre.nom}: lancement initié (PID: {process.pid})")
             self.fenetre._ajouter_historique(f"Processus lancé (PID: {process.pid})")
             return True
 

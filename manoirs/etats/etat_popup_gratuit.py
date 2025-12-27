@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """État : Popup Bouton Gratuit"""
 
 from core.popup import Popup
@@ -16,6 +15,7 @@ class EtatPopupGratuit(Popup):
     Priorité haute : les popups doivent être détectés avant les états normaux.
     Note: États de sortie définis par groupe "ville" dans config/etat-chemin.toml
     """
+
     nom = "popup_gratuit"
     groupes = ["popup", "demarrage"]
     image_detection = "boutons/bouton_gratuit.png"

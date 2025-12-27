@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """État : BlueStacks en cours de chargement"""
 
 from core.etat import Etat
@@ -16,6 +15,7 @@ class EtatChargement(Etat):
         Le flag _lancement_initie est mis à True par chemin_lancer_bluestacks
         et remis à False par etat_ville ou manoir.reset()
     """
+
     nom = "chargement"
     groupes = ["demarrage"]
 
@@ -34,7 +34,7 @@ class EtatChargement(Etat):
             return False
 
         # Doit avoir été lancé par nous
-        if not getattr(manoir, '_lancement_initie', False):
+        if not getattr(manoir, "_lancement_initie", False):
             return False
 
         # Icône jeu chargé ne doit PAS être visible

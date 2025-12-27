@@ -4,8 +4,8 @@ Classe de base Etat avec pattern Singleton.
 Un état représente un écran ou une situation identifiable du système (ex: ville, carte, popup).
 """
 
-from typing import List, Optional, TYPE_CHECKING
 from abc import abstractmethod
+from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from manoirs.manoir_base import ManoirBase
@@ -19,11 +19,12 @@ class SingletonMeta(type):
     Exception: EtatInconnu n'est pas un Singleton car chaque chemin
     peut avoir ses propres etats_possibles.
     """
+
     _instances = {}
 
     def __call__(cls, *args, **kwargs):
         # EtatInconnu n'est pas un Singleton - créer une nouvelle instance à chaque fois
-        if cls.__name__ == 'EtatInconnu':
+        if cls.__name__ == "EtatInconnu":
             return super().__call__(*args, **kwargs)
         if cls not in cls._instances:
             instance = super().__call__(*args, **kwargs)
@@ -55,7 +56,7 @@ class Etat(metaclass=SingletonMeta):
             self.nom = self.__class__.__name__
 
     @abstractmethod
-    def verif(self, manoir: 'ManoirBase') -> bool:
+    def verif(self, manoir: "ManoirBase") -> bool:
         """
         Vérifie si le système est actuellement dans cet état.
 

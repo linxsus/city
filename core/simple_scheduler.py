@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Ordonnanceur à deux niveaux pour la sélection des fenêtres
 
 Gère deux niveaux de priorité :
@@ -9,8 +8,9 @@ Logique :
 - Tant qu'une fenêtre a des actions prioritaires prêtes, on reste en niveau prioritaire
 - Quand plus aucune action prioritaire n'est prête, on passe au niveau normal
 """
+
 from dataclasses import dataclass
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 
 from utils.logger import get_module_logger
 
@@ -28,6 +28,7 @@ class ManoirSelection:
         est_prioritaire: True si action prioritaire, False si normale
         pret: True si le manoir est prêt maintenant (temps <= 0)
     """
+
     manoir_id: str
     temps_avant_passage: float
     priorite: int
@@ -37,7 +38,9 @@ class ManoirSelection:
     def __repr__(self):
         niveau_str = "PRIO" if self.est_prioritaire else "NORM"
         if self.pret:
-            return f"ManoirSelection({self.manoir_id}, [{niveau_str}] PRÊT, priorité={self.priorite})"
+            return (
+                f"ManoirSelection({self.manoir_id}, [{niveau_str}] PRÊT, priorité={self.priorite})"
+            )
         return f"ManoirSelection({self.manoir_id}, [{niveau_str}] dans {self.temps_avant_passage:.1f}s, priorité={self.priorite})"
 
 
@@ -59,12 +62,14 @@ class SimpleScheduler:
         - > 0  : revenir dans X secondes
         - float('inf') ou None : pas d'action de ce type
     """
-    
+
     def __init__(self):
         """Initialise l'ordonnanceur"""
         pass
-    
-    def _collecter_selections(self, manoirs: Dict[str, Any], prioritaire: bool) -> List[ManoirSelection]:
+
+    def _collecter_selections(
+        self, manoirs: Dict[str, Any], prioritaire: bool
+    ) -> List[ManoirSelection]:
         """Collecte les sélections pour un niveau donné (PROTÉGÉ)
 
         Args:
@@ -85,17 +90,17 @@ class SimpleScheduler:
                     temps = manoir.get_prochain_passage_normal()
 
                 # Ignorer si pas d'action (None ou inf)
-                if temps is None or temps == float('inf'):
+                if temps is None or temps == float("inf"):
                     continue
 
-                priorite_statique = getattr(manoir, 'priorite', 0)
+                priorite_statique = getattr(manoir, "priorite", 0)
 
                 selection = ManoirSelection(
                     manoir_id=manoir_id,
                     temps_avant_passage=temps,
                     priorite=priorite_statique,
                     est_prioritaire=prioritaire,
-                    pret=(temps <= 0)
+                    pret=(temps <= 0),
                 )
                 selections.append(selection)
 
@@ -106,7 +111,7 @@ class SimpleScheduler:
                 logger.error(f"Erreur collecte {niveau_str} pour {manoir_id}: {e}")
 
         return selections
-    
+
     def selectionner_manoir(self, manoirs: Dict[str, Any]) -> Optional[ManoirSelection]:
         """Sélectionne le manoir à traiter
 
@@ -156,7 +161,7 @@ class SimpleScheduler:
         logger.info(f"[{niveau_str}] Manoir sélectionné: {meilleur}")
 
         return meilleur
-    
+
     def get_classement(self, manoirs: Dict[str, Any]) -> Dict[str, List[ManoirSelection]]:
         """Retourne le classement complet par niveau
 
@@ -173,10 +178,7 @@ class SimpleScheduler:
         prioritaires.sort(key=lambda s: (s.temps_avant_passage, -s.priorite))
         normales.sort(key=lambda s: (s.temps_avant_passage, -s.priorite))
 
-        return {
-            'prioritaire': prioritaires,
-            'normal': normales
-        }
+        return {"prioritaire": prioritaires, "normal": normales}
 
     def get_temps_attente(self, manoirs: Dict[str, Any]) -> Optional[float]:
         """Retourne le temps d'attente avant le prochain manoir prêt
@@ -208,7 +210,7 @@ class SimpleScheduler:
         """
         prioritaires = self._collecter_selections(manoirs, prioritaire=True)
         return any(s.pret for s in prioritaires)
-    
+
     def __repr__(self):
         return "SimpleScheduler(2 niveaux: PRIORITAIRE, NORMAL)"
 
@@ -219,7 +221,7 @@ _simple_scheduler_instance = None
 
 def get_simple_scheduler() -> SimpleScheduler:
     """Retourne l'instance singleton du SimpleScheduler
-    
+
     Returns:
         SimpleScheduler: Instance partagée
     """

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Chemins des manoirs
 
 Chaque manoir peut définir ses propres chemins dans ce dossier.

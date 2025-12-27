@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Moteur principal d'automatisation
 
 Engine est le cœur du système. Il orchestre :
@@ -8,30 +7,31 @@ Engine est le cœur du système. Il orchestre :
 - La persistance de l'état
 - Le cycle de vie complet de l'automatisation
 """
-import time
+
 import signal
 import threading
+import time
 from enum import Enum, auto
-from typing import Dict, Optional, List, Callable
+from typing import Callable, Dict, Optional
 
-from utils.logger import get_module_logger
+from core.gestionnaire_etats import GestionnaireEtats
+from core.message_bus import get_message_bus
+from core.simple_scheduler import get_simple_scheduler
+from core.user_activity_detector import get_activity_detector
 from utils.config import (
+    CONFIG_DIR,
     PAUSE_ENTRE_ACTIONS,
     PAUSE_ENTRE_FENETRES,
-    PAUSE_UTILISATEUR_ACTIF,
     TEMPS_INACTIVITE_REQUIS,
-    CONFIG_DIR,
 )
-from core.simple_scheduler import get_simple_scheduler
-from core.message_bus import get_message_bus
-from core.user_activity_detector import get_activity_detector
-from core.gestionnaire_etats import GestionnaireEtats
+from utils.logger import get_module_logger
 
 logger = get_module_logger("Engine")
 
 
 class EtatEngine(Enum):
     """États possibles du moteur"""
+
     ARRETE = auto()
     EN_COURS = auto()
     EN_PAUSE = auto()
@@ -55,7 +55,7 @@ class Engine:
         etat: État actuel du moteur
         stats: Statistiques d'exécution
     """
-    
+
     # Limites de sécurité
     MAX_ECHECS_CONSECUTIFS = 5  # Par manoir
     MAX_ERREURS_CONSECUTIVES = 10  # Global
@@ -64,7 +64,7 @@ class Engine:
 
     def __init__(self):
         """Initialise le moteur"""
-        self.manoirs: Dict[str, 'ManoirBase'] = {}
+        self.manoirs: Dict[str, ManoirBase] = {}
         self.etat = EtatEngine.ARRETE
 
         # Composants
@@ -88,19 +88,19 @@ class Engine:
         self._on_action_executed: Optional[Callable] = None
         self._on_error: Optional[Callable] = None
         self._on_state_change: Optional[Callable] = None
-        
+
         # Statistiques (agrégées depuis les manoirs)
         self.stats = {
-            'actions_executees': 0,
-            'manoirs_traites': 0,
-            'erreurs_detectees': 0,
-            'temps_total': 0,
-            'debut': None,
+            "actions_executees": 0,
+            "manoirs_traites": 0,
+            "erreurs_detectees": 0,
+            "temps_total": 0,
+            "debut": None,
         }
-        
+
         # Gestion des signaux pour arrêt propre
         self._setup_signal_handlers()
-    
+
     def _setup_signal_handlers(self):
         """Configure les gestionnaires de signaux (PROTÉGÉ)"""
         try:
@@ -109,12 +109,12 @@ class Engine:
         except (ValueError, OSError):
             # Peut échouer si pas dans le thread principal
             pass
-    
+
     def _handle_stop_signal(self, signum, frame):
         """Gère les signaux d'arrêt (PROTÉGÉ)"""
         logger.info(f"Signal {signum} reçu, arrêt en cours...")
         self.arreter()
-    
+
     # =========================================================
     # CONFIGURATION
     # =========================================================
@@ -152,19 +152,19 @@ class Engine:
             event: 'manoir_change', 'action_executed', 'error', 'state_change'
             callback: Fonction à appeler
         """
-        if event == 'manoir_change':
+        if event == "manoir_change":
             self._on_manoir_change = callback
-        elif event == 'action_executed':
+        elif event == "action_executed":
             self._on_action_executed = callback
-        elif event == 'error':
+        elif event == "error":
             self._on_error = callback
-        elif event == 'state_change':
+        elif event == "state_change":
             self._on_state_change = callback
-    
+
     # =========================================================
     # CONTRÔLE DU MOTEUR
     # =========================================================
-    
+
     def demarrer(self):
         """Démarre le moteur d'automatisation
 
@@ -185,7 +185,7 @@ class Engine:
 
         self._changer_etat(EtatEngine.EN_COURS)
         self._stop_event.clear()
-        self.stats['debut'] = time.time()
+        self.stats["debut"] = time.time()
 
         # Initialiser les manoirs
         self._initialiser_manoirs()
@@ -197,66 +197,66 @@ class Engine:
             self._boucle_principale()
         finally:
             self._cleanup()
-    
+
     def arreter(self):
         """Demande l'arrêt du moteur"""
         if self.etat == EtatEngine.ARRETE:
             return
-        
+
         logger.info("Demande d'arrêt du moteur...")
         self._changer_etat(EtatEngine.ARRET_EN_COURS)
         self._stop_event.set()
-    
+
     def pause(self):
         """Met le moteur en pause"""
         if self.etat == EtatEngine.EN_COURS:
             self._changer_etat(EtatEngine.EN_PAUSE)
             self._pause_event.clear()
             logger.info("Moteur en pause")
-    
+
     def reprendre(self):
         """Reprend après une pause"""
         if self.etat == EtatEngine.EN_PAUSE:
             self._changer_etat(EtatEngine.EN_COURS)
             self._pause_event.set()
             logger.info("Reprise du moteur")
-    
+
     def toggle_pause(self):
         """Bascule l'état de pause"""
         if self.etat == EtatEngine.EN_PAUSE:
             self.reprendre()
         elif self.etat == EtatEngine.EN_COURS:
             self.pause()
-    
+
     def _changer_etat(self, nouvel_etat):
         """Change l'état du moteur (PROTÉGÉ)"""
         ancien_etat = self.etat
         self.etat = nouvel_etat
-        
+
         if self._on_state_change:
             try:
                 self._on_state_change(ancien_etat, nouvel_etat)
             except Exception as e:
                 logger.error(f"Erreur callback state_change: {e}")
-    
+
     # =========================================================
     # BOUCLE PRINCIPALE
     # =========================================================
-    
+
     def _boucle_principale(self):
         """Boucle principale du moteur (PROTÉGÉ)"""
         logger.info("Boucle principale démarrée")
-        
+
         while not self._stop_event.is_set():
             try:
                 # Attendre si en pause
                 if not self._pause_event.wait(timeout=0.5):
                     continue
-                
+
                 # Vérifier l'activité utilisateur
                 if not self._attendre_inactivite():
                     continue
-                
+
                 # Nettoyer les messages expirés
                 self.bus.clear_expired()
 
@@ -292,22 +292,22 @@ class Engine:
 
                 # Pause entre manoirs
                 self._attendre_interruptible(PAUSE_ENTRE_FENETRES)
-                
+
             except Exception as e:
                 logger.error(f"Erreur boucle principale: {e}")
                 self._erreurs_consecutives += 1
-                
+
                 if self._erreurs_consecutives >= self.MAX_ERREURS_CONSECUTIVES:
                     logger.critical("Trop d'erreurs consécutives, arrêt")
                     break
-                
+
                 time.sleep(1)
-        
+
         logger.info("Boucle principale terminée")
-    
+
     def _attendre_inactivite(self):
         """Attend que l'utilisateur soit inactif (PROTÉGÉ)
-        
+
         Returns:
             bool: True si on peut continuer, False si arrêt demandé
         """
@@ -315,24 +315,24 @@ class Engine:
             if self.etat != EtatEngine.ATTENTE_UTILISATEUR:
                 self._changer_etat(EtatEngine.ATTENTE_UTILISATEUR)
                 logger.info("Utilisateur actif, en attente...")
-            
+
             # Attendre l'inactivité
             while not self._stop_event.is_set():
                 if self.activity.wait_for_inactivity(TEMPS_INACTIVITE_REQUIS, max_wait=1):
                     break
-            
+
             if self._stop_event.is_set():
                 return False
-            
+
             self._changer_etat(EtatEngine.EN_COURS)
             logger.info("Utilisateur inactif, reprise")
-        
+
         return True
-    
+
     def _attendre_interruptible(self, duree):
         """Attend une durée, interruptible par stop (PROTÉGÉ)"""
         self._stop_event.wait(timeout=duree)
-    
+
     # =========================================================
     # GESTION DES MANOIRS
     # =========================================================
@@ -389,7 +389,7 @@ class Engine:
             except Exception as e:
                 logger.error(f"Erreur callback manoir_change: {e}")
 
-        self.stats['manoirs_traites'] += 1
+        self.stats["manoirs_traites"] += 1
 
     def _executer_tour_manoir(self, manoir_id):
         """Exécute un tour pour un manoir (PROTÉGÉ)
@@ -441,19 +441,19 @@ class Engine:
             # Exécuter l'action
             try:
                 if action and action.condition():
-                    nom = getattr(action, 'nom', action.__class__.__name__)
+                    nom = getattr(action, "nom", action.__class__.__name__)
                     logger.debug(f"Exécution: {nom}")
 
                     result = action.execute()
 
                     # VÉRIFIER SI REPRISE PREPARER_TOUR DEMANDÉE (chemin incertain)
-                    if getattr(action, 'demande_reprise', False):
+                    if getattr(action, "demande_reprise", False):
                         logger.debug(f"{manoir_id}: Reprise preparer_tour demandée")
                         if result:
                             actions_executees += 1
-                            self.stats['actions_executees'] += 1
+                            self.stats["actions_executees"] += 1
                             self._echecs_consecutifs[manoir_id] = 0
-                            manoir.incrementer_stat('actions_executees')
+                            manoir.incrementer_stat("actions_executees")
                         # Rappeler preparer_tour pour recalculer le chemin
                         try:
                             manoir.preparer_tour()
@@ -466,17 +466,17 @@ class Engine:
                         logger.debug(f"{manoir_id}: Rotation demandée par action")
                         if result:
                             actions_executees += 1
-                            self.stats['actions_executees'] += 1
+                            self.stats["actions_executees"] += 1
                             self._echecs_consecutifs[manoir_id] = 0
-                            manoir.incrementer_stat('actions_executees')
+                            manoir.incrementer_stat("actions_executees")
                         break  # Sortir, passer au manoir suivant
 
                     if result:
                         # Succès
                         actions_executees += 1
-                        self.stats['actions_executees'] += 1
+                        self.stats["actions_executees"] += 1
                         self._echecs_consecutifs[manoir_id] = 0
-                        manoir.incrementer_stat('actions_executees')
+                        manoir.incrementer_stat("actions_executees")
 
                         # Callback
                         if self._on_action_executed:
@@ -487,17 +487,19 @@ class Engine:
                     else:
                         # Échec - condition non remplie
                         self._echecs_consecutifs[manoir_id] += 1
-                        manoir.incrementer_stat('actions_echouees')
+                        manoir.incrementer_stat("actions_echouees")
                         logger.debug(f"Action {nom} échouée (condition non remplie)")
 
                         # Vérifier si blocage
                         if self._echecs_consecutifs[manoir_id] >= self.MAX_ECHECS_CONSECUTIFS:
-                            logger.warning(f"{manoir_id}: {self.MAX_ECHECS_CONSECUTIFS} échecs consécutifs - signalement blocage")
+                            logger.warning(
+                                f"{manoir_id}: {self.MAX_ECHECS_CONSECUTIFS} échecs consécutifs - signalement blocage"
+                            )
                             manoir.signaler_blocage()
                             break
                 else:
                     # Action ignorée (condition fausse)
-                    nom = getattr(action, 'nom', action.__class__.__name__) if action else 'None'
+                    nom = getattr(action, "nom", action.__class__.__name__) if action else "None"
                     logger.debug(f"Action ignorée: {nom}")
 
             except Exception as e:
@@ -514,11 +516,11 @@ class Engine:
             time.sleep(PAUSE_ENTRE_ACTIONS)
 
         logger.debug(f"{manoir_id}: {actions_executees} actions exécutées")
-    
+
     # =========================================================
     # NETTOYAGE
     # =========================================================
-    
+
     def _cleanup(self):
         """Nettoie les ressources (PROTÉGÉ)"""
         logger.info("Nettoyage en cours...")
@@ -527,15 +529,15 @@ class Engine:
         self.activity.stop()
 
         # Calculer les statistiques finales (agréger depuis les manoirs)
-        if self.stats['debut']:
-            self.stats['temps_total'] = time.time() - self.stats['debut']
+        if self.stats["debut"]:
+            self.stats["temps_total"] = time.time() - self.stats["debut"]
 
         # Agréger les erreurs depuis les manoirs
         total_erreurs = 0
         for manoir in self.manoirs.values():
             stats_manoir = manoir.get_stats()
-            total_erreurs += stats_manoir.get('erreurs_detectees', 0)
-        self.stats['erreurs_detectees'] = total_erreurs
+            total_erreurs += stats_manoir.get("erreurs_detectees", 0)
+        self.stats["erreurs_detectees"] = total_erreurs
 
         self._changer_etat(EtatEngine.ARRETE)
 
@@ -545,14 +547,14 @@ class Engine:
         logger.info(f"Actions exécutées: {self.stats['actions_executees']}")
         logger.info(f"Manoirs traités: {self.stats['manoirs_traites']}")
         logger.info(f"Erreurs détectées: {self.stats['erreurs_detectees']}")
-        if self.stats['temps_total'] > 0:
+        if self.stats["temps_total"] > 0:
             logger.info(f"Durée totale: {self.stats['temps_total']:.1f}s")
         logger.info("=" * 60)
-    
+
     # =========================================================
     # INFORMATIONS
     # =========================================================
-    
+
     def get_stats(self):
         """Retourne les statistiques actuelles (agrégées depuis les manoirs)
 
@@ -560,18 +562,18 @@ class Engine:
             dict: Statistiques
         """
         stats = self.stats.copy()
-        if stats['debut']:
-            stats['temps_ecoule'] = time.time() - stats['debut']
+        if stats["debut"]:
+            stats["temps_ecoule"] = time.time() - stats["debut"]
 
         # Agréger les stats des manoirs
-        stats['par_manoir'] = {}
+        stats["par_manoir"] = {}
         total_erreurs = 0
         for manoir_id, manoir in self.manoirs.items():
             stats_manoir = manoir.get_stats()
-            stats['par_manoir'][manoir_id] = stats_manoir
-            total_erreurs += stats_manoir.get('erreurs_detectees', 0)
+            stats["par_manoir"][manoir_id] = stats_manoir
+            total_erreurs += stats_manoir.get("erreurs_detectees", 0)
 
-        stats['erreurs_detectees'] = total_erreurs
+        stats["erreurs_detectees"] = total_erreurs
         return stats
 
     def get_status(self):
@@ -581,10 +583,10 @@ class Engine:
             dict: Statut
         """
         return {
-            'etat': self.etat.name,
-            'manoir_courant': self._manoir_courant,
-            'nb_manoirs': len(self.manoirs),
-            'erreurs_consecutives': self._erreurs_consecutives,
+            "etat": self.etat.name,
+            "manoir_courant": self._manoir_courant,
+            "nb_manoirs": len(self.manoirs),
+            "erreurs_consecutives": self._erreurs_consecutives,
         }
 
     def __repr__(self):
@@ -597,7 +599,7 @@ _engine_instance = None
 
 def get_engine():
     """Retourne l'instance singleton du moteur
-    
+
     Returns:
         Engine: Instance partagée
     """

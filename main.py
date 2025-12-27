@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Point d'entrée principal de l'automatisation Mafia City
 
 Usage:
@@ -9,24 +8,23 @@ Usage:
     python main.py --status         # Afficher le statut
     python main.py --test           # Lancer les tests
 """
-import sys
+
 import argparse
+import sys
 import time
-import signal
 from pathlib import Path
 
 # Ajouter le dossier au path si exécuté directement
 if __name__ == "__main__":
     sys.path.insert(0, str(Path(__file__).parent))
 
-from utils.logger import setup_logging, get_module_logger
-from utils.config import init_directories
-from core.engine import get_engine, EtatEngine
+from core.engine import EtatEngine, get_engine
 from manoirs.config_manoirs import (
-    MANOIRS_CONFIG,
     get_all_manoir_ids,
     get_config,
 )
+from utils.config import init_directories
+from utils.logger import get_module_logger, setup_logging
 
 logger = get_module_logger("Main")
 
@@ -34,6 +32,7 @@ logger = get_module_logger("Main")
 # =============================================================================
 # FACTORY DE MANOIRS
 # =============================================================================
+
 
 def creer_manoir(manoir_id):
     """Crée un manoir selon son type dans la configuration
@@ -49,26 +48,28 @@ def creer_manoir(manoir_id):
         logger.error(f"Configuration non trouvée pour: {manoir_id}")
         return None
 
-    type_manoir = config.get('type', 'virtuel')
+    type_manoir = config.get("type", "virtuel")
 
-    if type_manoir == 'bluestacks':
-        from manoirs.instances.manoir_bluestacks import ManoirBlueStacks
+    if type_manoir == "bluestacks":
         # ManoirBlueStacks est abstrait, il faut une sous-classe concrète
         # Pour l'instant on log une erreur
         logger.error(f"ManoirBlueStacks est abstrait, créez une sous-classe pour: {manoir_id}")
         return None
 
-    elif type_manoir == 'principal':
+    elif type_manoir == "principal":
         from manoirs.instances.manoir_principal import ManoirPrincipal
+
         return ManoirPrincipal(manoir_id, config)
 
-    elif type_manoir == 'virtuel':
+    elif type_manoir == "virtuel":
         from manoirs.instances.manoir_virtuel import ManoirVirtuel
+
         return ManoirVirtuel(manoir_id, config)
 
     else:
         logger.warning(f"Type de manoir inconnu: {type_manoir}, utilisation de ManoirVirtuel")
         from manoirs.instances.manoir_virtuel import ManoirVirtuel
+
         return ManoirVirtuel(manoir_id, config)
 
 
@@ -99,6 +100,7 @@ def creer_tous_manoirs(manoir_ids=None):
 # COMMANDES
 # =============================================================================
 
+
 def parse_args():
     """Parse les arguments de ligne de commande"""
     parser = argparse.ArgumentParser(
@@ -111,49 +113,32 @@ Exemples:
   python main.py --dry-run           Mode simulation
   python main.py --list              Lister les manoirs
   python main.py --test              Lancer les tests
-        """
+        """,
     )
 
     parser.add_argument(
-        '--manoirs', '-m',
+        "--manoirs",
+        "-m",
         type=str,
-        help='Liste des manoirs à automatiser (séparées par des virgules)'
+        help="Liste des manoirs à automatiser (séparées par des virgules)",
     )
 
     parser.add_argument(
-        '--dry-run', '-n',
-        action='store_true',
-        help='Mode simulation (pas d\'actions réelles)'
+        "--dry-run", "-n", action="store_true", help="Mode simulation (pas d'actions réelles)"
+    )
+
+    parser.add_argument("--list", "-l", action="store_true", help="Lister les manoirs disponibles")
+
+    parser.add_argument("--status", "-s", action="store_true", help="Afficher le statut actuel")
+
+    parser.add_argument("--test", "-t", action="store_true", help="Lancer les tests")
+
+    parser.add_argument(
+        "--verbose", "-v", action="store_true", help="Afficher plus de détails (niveau DEBUG)"
     )
 
     parser.add_argument(
-        '--list', '-l',
-        action='store_true',
-        help='Lister les manoirs disponibles'
-    )
-
-    parser.add_argument(
-        '--status', '-s',
-        action='store_true',
-        help='Afficher le statut actuel'
-    )
-
-    parser.add_argument(
-        '--test', '-t',
-        action='store_true',
-        help='Lancer les tests'
-    )
-
-    parser.add_argument(
-        '--verbose', '-v',
-        action='store_true',
-        help='Afficher plus de détails (niveau DEBUG)'
-    )
-
-    parser.add_argument(
-        '--config', '-c',
-        type=str,
-        help='Chemin vers un fichier de configuration JSON'
+        "--config", "-c", type=str, help="Chemin vers un fichier de configuration JSON"
     )
 
     return parser.parse_args()
@@ -167,11 +152,11 @@ def lister_manoirs():
 
     for mid in get_all_manoir_ids():
         config = get_config(mid)
-        type_man = config.get('type', 'inconnu')
-        nom = config.get('nom', mid)
-        titre = config.get('titre_bluestacks', 'N/A')
-        priorite = config.get('priorite', 0)
-        niveau = config.get('niveau_manoir', 'N/A')
+        type_man = config.get("type", "inconnu")
+        nom = config.get("nom", mid)
+        titre = config.get("titre_bluestacks", "N/A")
+        priorite = config.get("priorite", 0)
+        niveau = config.get("niveau_manoir", "N/A")
 
         print(f"\n  [{mid}]")
         print(f"    Nom:       {nom}")
@@ -185,9 +170,9 @@ def lister_manoirs():
 
 def afficher_status():
     """Affiche le statut actuel"""
-    from core.window_state_manager import get_window_state_manager
-    from core.timer_manager import get_timer_manager
     from core.slot_manager import get_slot_manager
+    from core.timer_manager import get_timer_manager
+    from core.window_state_manager import get_window_state_manager
 
     wsm = get_window_state_manager()
     tm = get_timer_manager()
@@ -223,30 +208,27 @@ def afficher_status():
 def lancer_tests():
     """Lance tous les tests"""
     import subprocess
-    
+
     print("\n" + "=" * 60)
     print(" LANCEMENT DES TESTS")
     print("=" * 60 + "\n")
-    
+
     tests_dir = Path(__file__).parent / "tests"
-    
+
     for test_file in sorted(tests_dir.glob("test_phase*.py")):
         print(f"\n>>> {test_file.name}")
         print("-" * 40)
-        
-        result = subprocess.run(
-            [sys.executable, str(test_file)],
-            capture_output=False
-        )
-        
+
+        result = subprocess.run([sys.executable, str(test_file)], capture_output=False)
+
         if result.returncode != 0:
             print(f"ÉCHEC: {test_file.name}")
             return False
-    
+
     print("\n" + "=" * 60)
     print(" TOUS LES TESTS PASSÉS ✓")
     print("=" * 60)
-    
+
     return True
 
 
@@ -254,12 +236,13 @@ def lancer_tests():
 # MAIN
 # =============================================================================
 
+
 def main():
     """Fonction principale"""
     args = parse_args()
 
     # Initialiser le logging
-    log_level = 'DEBUG' if args.verbose else 'DEBUG'
+    log_level = "DEBUG" if args.verbose else "DEBUG"
     setup_logging(level=log_level)
 
     # Initialiser les dossiers
@@ -281,13 +264,14 @@ def main():
     # Charger la configuration personnalisée si fournie
     if args.config:
         from manoirs.config_manoirs import charger_config_depuis_fichier
+
         if not charger_config_depuis_fichier(args.config):
             logger.error(f"Impossible de charger {args.config}")
             return 1
 
     # Déterminer quels manoirs créer
     if args.manoirs:
-        manoir_ids = [m.strip() for m in args.manoirs.split(',')]
+        manoir_ids = [m.strip() for m in args.manoirs.split(",")]
     else:
         manoir_ids = None  # Tous les manoirs
 
@@ -332,9 +316,9 @@ def main():
     def on_error(manoir_id, erreur):
         logger.warning(f"Erreur {manoir_id}: {erreur}")
 
-    engine.set_callback('manoir_change', on_manoir_change)
-    engine.set_callback('state_change', on_state_change)
-    engine.set_callback('error', on_error)
+    engine.set_callback("manoir_change", on_manoir_change)
+    engine.set_callback("state_change", on_state_change)
+    engine.set_callback("error", on_error)
 
     # Démarrer
     logger.info("=" * 60)
@@ -358,8 +342,8 @@ def main():
     logger.info(f"Actions exécutées:  {stats['actions_executees']}")
     logger.info(f"Manoirs traités:    {stats['manoirs_traites']}")
     logger.info(f"Erreurs détectées:  {stats['erreurs_detectees']}")
-    if stats.get('temps_total', 0) > 0:
-        duree = stats['temps_total']
+    if stats.get("temps_total", 0) > 0:
+        duree = stats["temps_total"]
         heures = int(duree // 3600)
         minutes = int((duree % 3600) // 60)
         secondes = int(duree % 60)

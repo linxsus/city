@@ -1,11 +1,11 @@
-# -*- coding: utf-8 -*-
 """Chemin : Attendre pendant le chargement"""
 
-from typing import List, Any
+from typing import Any, List
+
+from actions.action_reprise_preparer_tour import ActionReprisePreparerTour
+from actions.simple.action_attendre import ActionAttendre
 from core.chemin import Chemin
 from core.etat_inconnu import EtatInconnu
-from actions.simple.action_attendre import ActionAttendre
-from actions.action_reprise_preparer_tour import ActionReprisePreparerTour
 
 
 class CheminAttendreChargement(Chemin):
@@ -21,6 +21,7 @@ class CheminAttendreChargement(Chemin):
         L'attente est non-bloquante : permet au moteur de traiter
         d'autres fenêtres pendant ce temps.
     """
+
     etat_initial = "chargement"
     # Sortie incertaine : peut être ville ou popup
     etat_sortie = EtatInconnu(

@@ -1,8 +1,7 @@
-# -*- coding: utf-8 -*-
 """Manoir Principal - Gestion du compte principal avec BlueStacks"""
 
-from manoirs.instances.manoir_bluestacks import ManoirBlueStacks
 import actions.liste_actions as ListeActions
+from manoirs.instances.manoir_bluestacks import ManoirBlueStacks
 
 
 class ManoirPrincipal(ManoirBlueStacks):
@@ -25,11 +24,10 @@ class ManoirPrincipal(ManoirBlueStacks):
         super().__init__(manoir_id=manoir_id, config=config)
 
         self.logger.info(f"Manoir Principal '{self.nom}' initialisé")
-        self.debut=True
-        
+        self.debut = True
+
     def definir_timers(self):
-        """Définit les timers pour ce manoir - Pas de timers pour ce manoir simple
-        """
+        """Définit les timers pour ce manoir - Pas de timers pour ce manoir simple"""
         # Pas de timers nécessaires, tout est géré par la boucle d'actions
         pass
 
@@ -48,23 +46,23 @@ class ManoirPrincipal(ManoirBlueStacks):
                     # Attendre 30 secondes
                     ListeActions.ActionAttendre(self, 30),
                     # Afficher le message
-                    ListeActions.ActionLog(self, "je suis la", level="info")
+                    ListeActions.ActionLog(self, "je suis la", level="info"),
                 ],
                 max_iterations=None,  # Pas de limite
-                nom_boucle="boucle_principale"
+                nom_boucle="boucle_principale",
             )
 
             self.sequence.add(boucle_principale)
             self.logger.debug("Boucle principale ajoutée à la séquence")
-            self.debut=False
-            
+            self.debut = False
+
     def get_prochain_passage_prioritaire(self):
         """Retourne toujours float('inf') car pas d'actions prioritaires
 
         Returns:
             float: float('inf') - pas d'actions prioritaires
         """
-        return float('inf')
+        return float("inf")
 
     def get_prochain_passage_normal(self):
         """Retourne 0 si on doit traiter ce manoir, sinon le temps avant le prochain timer

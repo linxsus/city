@@ -1,16 +1,16 @@
-# -*- coding: utf-8 -*-
 """Gestionnaire d'états des fenêtres avec persistance
 
 Gère les états des fenêtres (actif, exclu, en attente, etc.)
 et le compteur de relances.
 """
+
 import json
 import time
 from enum import Enum
 from pathlib import Path
 from threading import Lock
 
-from utils.config import WINDOW_STATES_FILE, DATA_DIR
+from utils.config import DATA_DIR, WINDOW_STATES_FILE
 from utils.logger import get_module_logger
 
 logger = get_module_logger("WindowStateManager")
@@ -18,12 +18,13 @@ logger = get_module_logger("WindowStateManager")
 
 class EtatManoir(Enum):
     """États possibles d'un manoir"""
-    ACTIF = "actif"                     # Manoir disponible pour rotation
-    EXCLU_TEMPORAIRE = "exclu_temp"     # Exclu temporairement (relance en cours)
-    EXCLU_2H = "exclu_2h"               # Exclu 2h (compte utilisé ailleurs)
-    EN_ATTENTE_LANCEMENT = "attente"    # En attente de lancement
-    ERREUR = "erreur"                   # En état d'erreur
-    DESACTIVE = "desactive"             # Désactivé manuellement
+
+    ACTIF = "actif"  # Manoir disponible pour rotation
+    EXCLU_TEMPORAIRE = "exclu_temp"  # Exclu temporairement (relance en cours)
+    EXCLU_2H = "exclu_2h"  # Exclu 2h (compte utilisé ailleurs)
+    EN_ATTENTE_LANCEMENT = "attente"  # En attente de lancement
+    ERREUR = "erreur"  # En état d'erreur
+    DESACTIVE = "desactive"  # Désactivé manuellement
 
 
 class ManoirState:
@@ -79,7 +80,7 @@ class ManoirState:
         if self.etat in (EtatManoir.EXCLU_TEMPORAIRE, EtatManoir.EXCLU_2H):
             return max(0, self.heure_fin_exclusion - time.time())
 
-        return float('inf')  # Indisponible indéfiniment
+        return float("inf")  # Indisponible indéfiniment
 
     def set_actif(self):
         """Met le manoir en état actif"""
@@ -96,10 +97,7 @@ class ManoirState:
         """
         self.etat = EtatManoir.EXCLU_TEMPORAIRE
         self.heure_fin_exclusion = time.time() + duree_secondes
-        logger.info(
-            f"Manoir {self.manoir_id}: exclusion temporaire "
-            f"pour {duree_secondes}s"
-        )
+        logger.info(f"Manoir {self.manoir_id}: exclusion temporaire pour {duree_secondes}s")
 
     def set_exclu_2h(self, message=None):
         """Exclut le manoir pour 2 heures (compte utilisé ailleurs)
@@ -110,9 +108,7 @@ class ManoirState:
         self.etat = EtatManoir.EXCLU_2H
         self.heure_fin_exclusion = time.time() + (2 * 60 * 60)
         self.message_erreur = message or "Compte utilisé ailleurs"
-        logger.warning(
-            f"Manoir {self.manoir_id}: exclusion 2h - {self.message_erreur}"
-        )
+        logger.warning(f"Manoir {self.manoir_id}: exclusion 2h - {self.message_erreur}")
 
     def set_en_attente(self, message=None):
         """Met le manoir en attente de lancement
@@ -165,25 +161,25 @@ class ManoirState:
     def to_dict(self):
         """Convertit en dictionnaire pour sérialisation"""
         return {
-            'manoir_id': self.manoir_id,
-            'etat': self.etat.value,
-            'heure_fin_exclusion': self.heure_fin_exclusion,
-            'compteur_relances': self.compteur_relances,
-            'derniere_relance': self.derniere_relance,
-            'derniere_activite': self.derniere_activite,
-            'message_erreur': self.message_erreur,
+            "manoir_id": self.manoir_id,
+            "etat": self.etat.value,
+            "heure_fin_exclusion": self.heure_fin_exclusion,
+            "compteur_relances": self.compteur_relances,
+            "derniere_relance": self.derniere_relance,
+            "derniere_activite": self.derniere_activite,
+            "message_erreur": self.message_erreur,
         }
 
     @classmethod
     def from_dict(cls, data):
         """Crée un état depuis un dictionnaire"""
-        state = cls(data['manoir_id'])
-        state.etat = EtatManoir(data.get('etat', 'actif'))
-        state.heure_fin_exclusion = data.get('heure_fin_exclusion', 0)
-        state.compteur_relances = data.get('compteur_relances', 0)
-        state.derniere_relance = data.get('derniere_relance', 0)
-        state.derniere_activite = data.get('derniere_activite', 0)
-        state.message_erreur = data.get('message_erreur')
+        state = cls(data["manoir_id"])
+        state.etat = EtatManoir(data.get("etat", "actif"))
+        state.heure_fin_exclusion = data.get("heure_fin_exclusion", 0)
+        state.compteur_relances = data.get("compteur_relances", 0)
+        state.derniere_relance = data.get("derniere_relance", 0)
+        state.derniere_activite = data.get("derniere_activite", 0)
+        state.message_erreur = data.get("message_erreur")
         return state
 
     def __repr__(self):
@@ -255,10 +251,7 @@ class ManoirStateManager:
             List[str]: IDs des manoirs disponibles
         """
         with self._lock:
-            return [
-                mid for mid, state in self._states.items()
-                if state.is_available()
-            ]
+            return [mid for mid, state in self._states.items() if state.is_available()]
 
     def get_all_states(self):
         """Récupère tous les états
@@ -317,12 +310,12 @@ class ManoirStateManager:
             return
 
         try:
-            with open(self.filepath, 'r', encoding='utf-8') as f:
+            with open(self.filepath, encoding="utf-8") as f:
                 data = json.load(f)
 
             with self._lock:
                 self._states = {}
-                for state_data in data.get('states', []):
+                for state_data in data.get("states", []):
                     state = ManoirState.from_dict(state_data)
                     self._states[state.manoir_id] = state
 
@@ -338,11 +331,11 @@ class ManoirStateManager:
 
             with self._lock:
                 data = {
-                    'last_save': time.time(),
-                    'states': [s.to_dict() for s in self._states.values()]
+                    "last_save": time.time(),
+                    "states": [s.to_dict() for s in self._states.values()],
                 }
 
-            with open(self.filepath, 'w', encoding='utf-8') as f:
+            with open(self.filepath, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
 
             logger.debug("États sauvegardés")

@@ -1,15 +1,15 @@
-# -*- coding: utf-8 -*-
 """Gestionnaire de slots avec persistance
 
 Gère les slots d'envoi pour chaque fenêtre (1-5 selon niveau du manoir).
 Permet de savoir quand un slot sera disponible.
 """
+
 import json
 import time
 from pathlib import Path
 from threading import Lock
 
-from utils.config import SLOTS_FILE, DATA_DIR
+from utils.config import DATA_DIR, SLOTS_FILE
 from utils.logger import get_module_logger
 
 logger = get_module_logger("SlotManager")
@@ -38,33 +38,33 @@ class Slot:
         self.slot_index = slot_index
         self.heure_liberation = 0
         self.actif = False
-    
+
     def is_available(self, margin=30):
         """Vérifie si le slot est disponible ou le sera bientôt
-        
+
         Args:
             margin: Marge en secondes pour considérer "bientôt disponible"
-            
+
         Returns:
             bool: True si disponible ou bientôt disponible
         """
         if not self.actif:
             return True
         return time.time() + margin >= self.heure_liberation
-    
+
     def is_free(self):
         """Vérifie si le slot est actuellement libre
-        
+
         Returns:
             bool: True si libre maintenant
         """
         if not self.actif:
             return True
         return time.time() >= self.heure_liberation
-    
+
     def time_until_free(self):
         """Retourne le temps restant avant libération
-        
+
         Returns:
             float: Secondes restantes (0 si déjà libre)
         """
@@ -72,7 +72,7 @@ class Slot:
             return 0
         remaining = self.heure_liberation - time.time()
         return max(0, remaining)
-    
+
     def occupy(self, duree):
         """Occupe le slot
 
@@ -82,43 +82,38 @@ class Slot:
         self.actif = True
         self.heure_liberation = time.time() + duree
         logger.debug(
-            f"Slot {self.manoir_id}:{self.slot_type}[{self.slot_index}] occupé "
-            f"pour {duree}s"
+            f"Slot {self.manoir_id}:{self.slot_type}[{self.slot_index}] occupé pour {duree}s"
         )
-    
+
     def release(self):
         """Libère le slot"""
         self.actif = False
         self.heure_liberation = 0
-    
+
     def update_liberation(self, nouvelle_heure):
         """Met à jour l'heure de libération
-        
+
         Args:
             nouvelle_heure: Nouveau timestamp de libération
         """
         self.heure_liberation = nouvelle_heure
-    
+
     def to_dict(self):
         """Convertit en dictionnaire pour sérialisation"""
         return {
-            'manoir_id': self.manoir_id,
-            'slot_type': self.slot_type,
-            'slot_index': self.slot_index,
-            'heure_liberation': self.heure_liberation,
-            'actif': self.actif,
+            "manoir_id": self.manoir_id,
+            "slot_type": self.slot_type,
+            "slot_index": self.slot_index,
+            "heure_liberation": self.heure_liberation,
+            "actif": self.actif,
         }
 
     @classmethod
     def from_dict(cls, data):
         """Crée un slot depuis un dictionnaire"""
-        slot = cls(
-            data['manoir_id'],
-            data['slot_type'],
-            data.get('slot_index', 0)
-        )
-        slot.heure_liberation = data.get('heure_liberation', 0)
-        slot.actif = data.get('actif', False)
+        slot = cls(data["manoir_id"], data["slot_type"], data.get("slot_index", 0))
+        slot.heure_liberation = data.get("heure_liberation", 0)
+        slot.actif = data.get("actif", False)
 
         # Vérifier si le slot devrait être libéré
         if slot.actif and time.time() >= slot.heure_liberation:
@@ -149,11 +144,11 @@ class SlotManager:
 
     # Temps moyens par type d'action (en secondes)
     TEMPS_MOYENS = {
-        'mercenaire': 60,
-        'collecte': 180,
-        'raid': 120,
-        'reconnaissance': 30,
-        'default': 120,
+        "mercenaire": 60,
+        "collecte": 180,
+        "raid": 120,
+        "reconnaissance": 30,
+        "default": 120,
     }
 
     def __init__(self, filepath=None):
@@ -180,7 +175,7 @@ class SlotManager:
         with self._lock:
             # Rétrocompatibilité: si c'est un int, créer des slots génériques
             if isinstance(slots_config, int):
-                slots_config = [{'nom': 'default', 'nb': slots_config}]
+                slots_config = [{"nom": "default", "nb": slots_config}]
 
             self._slots_config[manoir_id] = slots_config
 
@@ -189,8 +184,8 @@ class SlotManager:
 
             # Créer/mettre à jour les slots par type
             for slot_def in slots_config:
-                slot_type = slot_def['nom']
-                nb_slots = slot_def['nb']
+                slot_type = slot_def["nom"]
+                nb_slots = slot_def["nb"]
 
                 if slot_type not in self._slots[manoir_id]:
                     self._slots[manoir_id][slot_type] = [
@@ -201,23 +196,22 @@ class SlotManager:
                     current = len(self._slots[manoir_id][slot_type])
                     if nb_slots > current:
                         for i in range(current, nb_slots):
-                            self._slots[manoir_id][slot_type].append(
-                                Slot(manoir_id, slot_type, i)
-                            )
+                            self._slots[manoir_id][slot_type].append(Slot(manoir_id, slot_type, i))
                     elif nb_slots < current:
-                        self._slots[manoir_id][slot_type] = \
-                            self._slots[manoir_id][slot_type][:nb_slots]
+                        self._slots[manoir_id][slot_type] = self._slots[manoir_id][slot_type][
+                            :nb_slots
+                        ]
 
             # Supprimer les types qui ne sont plus dans la config
-            types_config = {s['nom'] for s in slots_config}
+            types_config = {s["nom"] for s in slots_config}
             for slot_type in list(self._slots[manoir_id].keys()):
                 if slot_type not in types_config:
                     del self._slots[manoir_id][slot_type]
 
         total = sum(len(slots) for slots in self._slots[manoir_id].values())
-        types_str = ', '.join(f"{s['nom']}:{s['nb']}" for s in slots_config)
+        types_str = ", ".join(f"{s['nom']}:{s['nb']}" for s in slots_config)
         logger.debug(f"Manoir {manoir_id} enregistré avec {total} slots ({types_str})")
-    
+
     def _get_all_slots_list(self, manoir_id):
         """Retourne tous les slots d'un manoir en liste plate (PROTÉGÉ)"""
         if manoir_id not in self._slots:
@@ -319,7 +313,7 @@ class SlotManager:
             Slot ou None: Le slot occupé ou None si aucun disponible
         """
         if duree is None:
-            duree = self.TEMPS_MOYENS.get(slot_type, self.TEMPS_MOYENS['default'])
+            duree = self.TEMPS_MOYENS.get(slot_type, self.TEMPS_MOYENS["default"])
 
         with self._lock:
             if manoir_id not in self._slots:
@@ -413,10 +407,7 @@ class SlotManager:
                 return self._slots[manoir_id].get(slot_type, []).copy()
             else:
                 # Retourne une copie du dict
-                return {
-                    t: slots.copy()
-                    for t, slots in self._slots[manoir_id].items()
-                }
+                return {t: slots.copy() for t, slots in self._slots[manoir_id].items()}
 
     def get_slot_types(self, manoir_id):
         """Récupère les types de slots disponibles pour un manoir
@@ -460,26 +451,20 @@ class SlotManager:
             return
 
         try:
-            with open(self.filepath, 'r', encoding='utf-8') as f:
+            with open(self.filepath, encoding="utf-8") as f:
                 data = json.load(f)
 
             with self._lock:
-                self._slots_config = data.get('slots_config', {})
+                self._slots_config = data.get("slots_config", {})
                 self._slots = {}
 
                 # Charger les slots par manoir et par type
-                for manoir_id, types_data in data.get('slots', {}).items():
+                for manoir_id, types_data in data.get("slots", {}).items():
                     self._slots[manoir_id] = {}
                     for slot_type, slots_data in types_data.items():
-                        self._slots[manoir_id][slot_type] = [
-                            Slot.from_dict(s) for s in slots_data
-                        ]
+                        self._slots[manoir_id][slot_type] = [Slot.from_dict(s) for s in slots_data]
 
-            total = sum(
-                len(slots)
-                for types in self._slots.values()
-                for slots in types.values()
-            )
+            total = sum(len(slots) for types in self._slots.values() for slots in types.values())
             logger.info(f"Chargé {total} slot(s) pour {len(self._slots)} manoir(s)")
 
         except Exception as e:
@@ -492,31 +477,27 @@ class SlotManager:
 
             with self._lock:
                 data = {
-                    'last_save': time.time(),
-                    'slots_config': self._slots_config,
-                    'slots': {
+                    "last_save": time.time(),
+                    "slots_config": self._slots_config,
+                    "slots": {
                         manoir_id: {
                             slot_type: [s.to_dict() for s in slots]
                             for slot_type, slots in types.items()
                         }
                         for manoir_id, types in self._slots.items()
-                    }
+                    },
                 }
-            
-            with open(self.filepath, 'w', encoding='utf-8') as f:
+
+            with open(self.filepath, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
-            
+
             logger.debug("Slots sauvegardés")
-            
+
         except Exception as e:
             logger.error(f"Erreur sauvegarde slots: {e}")
-    
+
     def __repr__(self):
-        total = sum(
-            len(slots)
-            for types in self._slots.values()
-            for slots in types.values()
-        )
+        total = sum(len(slots) for types in self._slots.values() for slots in types.values())
         return f"SlotManager({len(self._slots)} manoirs, {total} slots)"
 
 
@@ -526,7 +507,7 @@ _slot_manager_instance = None
 
 def get_slot_manager():
     """Retourne une instance singleton de SlotManager
-    
+
     Returns:
         SlotManager: Instance partagée
     """
