@@ -2,6 +2,47 @@
  * Vue de création d'état
  */
 
+// Fonctions utilitaires (définies localement si non disponibles)
+if (typeof showNotification === 'undefined') {
+    window.showNotification = function(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        setTimeout(() => {
+            notification.classList.add('fade-out');
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    };
+}
+
+if (typeof showResultModal === 'undefined') {
+    window.showResultModal = function(title, content, isSuccess = true) {
+        const modal = document.getElementById('result-modal');
+        const titleEl = document.getElementById('result-title');
+        const bodyEl = document.getElementById('result-body');
+        if (modal && titleEl && bodyEl) {
+            titleEl.textContent = title;
+            titleEl.style.color = isSuccess ? 'var(--color-success)' : 'var(--color-error)';
+            bodyEl.innerHTML = content;
+            modal.classList.remove('hidden');
+        }
+    };
+}
+
+if (typeof closeModal === 'undefined') {
+    window.closeModal = function() {
+        const modal = document.getElementById('result-modal');
+        if (modal) modal.classList.add('hidden');
+    };
+}
+
+if (typeof formatCode === 'undefined') {
+    window.formatCode = function(code) {
+        return code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    };
+}
+
 let imageEditor = null;
 let currentImagePath = null;
 let selectedGroups = [];
