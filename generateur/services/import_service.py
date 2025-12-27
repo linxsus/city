@@ -113,6 +113,10 @@ class ImportService:
                 return chemin
         return None
 
+    def _normalize_path(self, path: str) -> str:
+        """Normalise un chemin en utilisant des forward slashes."""
+        return path.replace("\\", "/")
+
     def get_all_templates(self) -> list[dict]:
         """Liste tous les templates existants."""
         templates = []
@@ -122,11 +126,16 @@ class ImportService:
 
         for filepath in self.templates_dir.rglob("*.png"):
             rel_path = filepath.relative_to(self.templates_dir)
+            # Normaliser les chemins avec des forward slashes
+            normalized_path = self._normalize_path(str(rel_path))
+            folder = str(rel_path.parent)
+            normalized_folder = self._normalize_path(folder) if folder != "." else None
+
             templates.append({
-                "path": str(rel_path),
+                "path": normalized_path,
                 "full_path": str(filepath),
                 "name": filepath.stem,
-                "folder": str(rel_path.parent) if rel_path.parent != Path(".") else None,
+                "folder": normalized_folder,
                 "size": filepath.stat().st_size,
             })
 
@@ -147,14 +156,19 @@ class ImportService:
             "chemins": [],
         }
 
+        # Normaliser le chemin recherché
+        normalized_search = self._normalize_path(template_path)
+
         # Chercher dans les états
         for etat in self.get_all_etats():
-            if template_path in etat.templates:
+            normalized_templates = [self._normalize_path(t) for t in etat.templates]
+            if normalized_search in normalized_templates:
                 usage["etats"].append(etat.nom)
 
         # Chercher dans les chemins
         for chemin in self.get_all_chemins():
-            if template_path in chemin.templates:
+            normalized_templates = [self._normalize_path(t) for t in chemin.templates]
+            if normalized_search in normalized_templates:
                 usage["chemins"].append(chemin.nom)
 
         return usage
@@ -201,12 +215,18 @@ class ImportService:
     def find_missing_templates(self) -> list[dict]:
         """Trouve les templates référencés mais inexistants."""
         missing = []
+        # Normaliser tous les chemins existants
         existing_paths = {t["path"] for t in self.get_all_templates()}
+
+        # Pour éviter les doublons
+        seen = set()
 
         # Vérifier les états
         for etat in self.get_all_etats():
             for template in etat.templates:
-                if template not in existing_paths:
+                normalized = self._normalize_path(template)
+                if normalized not in existing_paths and normalized not in seen:
+                    seen.add(normalized)
                     missing.append({
                         "template": template,
                         "used_in": etat.nom,
@@ -216,7 +236,9 @@ class ImportService:
         # Vérifier les chemins
         for chemin in self.get_all_chemins():
             for template in chemin.templates:
-                if template not in existing_paths:
+                normalized = self._normalize_path(template)
+                if normalized not in existing_paths and normalized not in seen:
+                    seen.add(normalized)
                     missing.append({
                         "template": template,
                         "used_in": chemin.nom,
