@@ -28,30 +28,29 @@
 
 ---
 
-## Phase 2 - Fonctionnalités Avancées
+## Phase 2 - Fonctionnalités Avancées ✅
 
-### ActionLongue avec Blockly
-- [ ] Intégrer la bibliothèque Blockly
-- [ ] Créer les blocs personnalisés :
-  - [ ] Bloc ActionBouton
-  - [ ] Bloc ActionAttendre
-  - [ ] Bloc ActionTexte
-  - [ ] Bloc ActionSimple (lambda)
-- [ ] Créer les blocs de contrôle :
-  - [ ] Bloc If / If-Else
-  - [ ] Bloc For (boucle comptée)
-  - [ ] Bloc While (boucle conditionnelle)
-  - [ ] Bloc Switch / Case
-- [ ] Créer les blocs de conditions :
-  - [ ] image_presente / image_absente
-  - [ ] texte_present / texte_absent
-  - [ ] variable_egale / superieure / inferieure
-  - [ ] Combinateurs : et, ou, non
-- [ ] Parser Blockly → Structure Python
-- [ ] Générateur de code ActionLongue
-- [ ] Template Jinja2 pour ActionLongue
-- [ ] Interface web pour ActionLongue
-- [ ] Sauvegarde/chargement du workspace Blockly
+### ActionLongue avec Blockly ✅
+- [x] Intégrer la bibliothèque Blockly
+- [x] Créer les blocs personnalisés :
+  - [x] Bloc ActionBouton
+  - [x] Bloc ActionAttendre
+  - [x] Bloc ActionTexte
+  - [x] Bloc ActionClicPosition
+- [x] Créer les blocs de contrôle :
+  - [x] Bloc Si / Si-Sinon
+  - [x] Bloc Répéter (for)
+  - [x] Bloc Tant que (while)
+  - [x] Bloc Pour chaque (foreach)
+- [x] Créer les blocs de conditions :
+  - [x] image_presente / image_absente
+  - [x] texte_present / texte_absent
+  - [x] variable_egale / superieure / inferieure
+  - [x] Combinateurs : et, ou, non
+- [x] Générateur Blockly → Python
+- [x] Service ActionLongue (création, validation)
+- [x] Interface web pour ActionLongue
+- [x] Sauvegarde/chargement du workspace Blockly
 
 ### Gestion des erreurs
 - [ ] Charger la liste des erreurs existantes (liste_erreurs.py)
@@ -61,17 +60,12 @@
 - [ ] Paramètres erreurs_verif_apres / erreurs_si_echec
 - [ ] Option retry_si_erreur_non_identifiee
 
-### Conditions d'exécution
-- [ ] Interface visuelle pour les conditions (condition_func)
-- [ ] Blocs Blockly pour les conditions
-- [ ] Prévisualisation des conditions générées
-
 ### Améliorations UX
-- [ ] Drag & drop pour réordonner les actions
+- [x] Historique undo/redo (intégré à Blockly)
+- [ ] Drag & drop pour réordonner les actions (chemins)
 - [ ] Duplication d'actions
-- [ ] Historique undo/redo
 - [ ] Raccourcis clavier
-- [ ] Mode sombre / clair
+- [x] Mode sombre (thème par défaut)
 
 ---
 
