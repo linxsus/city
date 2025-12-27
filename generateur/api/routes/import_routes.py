@@ -312,6 +312,52 @@ async def delete_chemin(nom: str) -> APIResponse:
         )
 
 
+@router.delete("/actions/{nom}")
+async def delete_action(nom: str) -> APIResponse:
+    """Supprime une action (la déplace vers la corbeille)."""
+    service = get_import_service()
+    action = service.get_action_by_name(nom)
+
+    if action is None:
+        return APIResponse(
+            success=False,
+            error={
+                "code": "NOT_FOUND",
+                "message": f"Action '{nom}' non trouvée",
+            },
+        )
+
+    file_path = Path(action.fichier)
+    if not file_path.exists():
+        return APIResponse(
+            success=False,
+            error={
+                "code": "FILE_NOT_FOUND",
+                "message": f"Fichier '{action.fichier}' non trouvé",
+            },
+        )
+
+    try:
+        trash_path = _move_to_trash(file_path, "actions")
+        return APIResponse(
+            success=True,
+            message=f"Action '{nom}' déplacée vers la corbeille",
+            data={
+                "nom": nom,
+                "original_path": str(file_path),
+                "trash_path": str(trash_path),
+            },
+        )
+    except Exception as e:
+        return APIResponse(
+            success=False,
+            error={
+                "code": "DELETE_ERROR",
+                "message": f"Erreur lors de la suppression: {str(e)}",
+            },
+        )
+
+
 @router.delete("/templates")
 async def delete_template(path: str) -> APIResponse:
     """Supprime un template (le déplace vers la corbeille)."""

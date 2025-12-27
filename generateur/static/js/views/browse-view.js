@@ -621,10 +621,38 @@ async function showActionDetail(nom) {
     // Hide edit/duplicate button for now
     document.getElementById('btn-edit-element').style.display = 'none';
 
-    // Hide delete button for actions (they are core framework components)
-    document.getElementById('btn-delete-element').style.display = 'none';
+    // Show delete button for custom actions
+    const deleteBtn = document.getElementById('btn-delete-element');
+    deleteBtn.style.display = '';
+    deleteBtn.onclick = () => deleteAction(action.nom);
 
     elements.detailModal.classList.remove('hidden');
+}
+
+/**
+ * Supprime une action
+ */
+async function deleteAction(nom) {
+    if (!confirm(`Supprimer l'action "${nom}" ?\n\nLe fichier sera déplacé vers la corbeille.`)) {
+        return;
+    }
+
+    try {
+        const result = await API.request(`/import/actions/${encodeURIComponent(nom)}`, {
+            method: 'DELETE',
+        });
+
+        if (result.success) {
+            showNotification(`Action "${nom}" déplacée vers la corbeille`, 'success');
+            closeDetailModal();
+            loadData();
+        } else {
+            showNotification(result.error?.message || 'Erreur lors de la suppression', 'error');
+        }
+    } catch (error) {
+        console.error('Delete error:', error);
+        showNotification('Erreur lors de la suppression', 'error');
+    }
 }
 
 async function showTemplateDetail(path) {
