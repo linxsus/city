@@ -1,6 +1,6 @@
 """Chemin : Attendre pendant le chargement"""
 
-from typing import Any, List
+from typing import Any
 
 from actions.action_reprise_preparer_tour import ActionReprisePreparerTour
 from actions.simple.action_attendre import ActionAttendre
@@ -31,7 +31,7 @@ class CheminAttendreChargement(Chemin):
     # Durée d'attente en secondes
     DUREE_ATTENTE = 5
 
-    def fonction_actions(self, manoir) -> List[Any]:
+    def fonction_actions(self, manoir) -> list[Any]:
         """Génère les actions pour attendre pendant le chargement
 
         Args:

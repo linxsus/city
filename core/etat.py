@@ -5,7 +5,7 @@ Un état représente un écran ou une situation identifiable du système (ex: vi
 """
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from manoirs.manoir_base import ManoirBase
@@ -49,7 +49,7 @@ class Etat(metaclass=SingletonMeta):
     """
 
     nom: str = None
-    groupes: List[str] = []
+    groupes: list[str] = []
 
     def __init__(self):
         if self.nom is None:

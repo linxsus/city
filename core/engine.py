@@ -8,11 +8,15 @@ Engine est le cœur du système. Il orchestre :
 - Le cycle de vie complet de l'automatisation
 """
 
+import contextlib
 import signal
 import threading
 import time
 from enum import Enum, auto
-from typing import Callable, Dict, Optional
+from typing import TYPE_CHECKING, Callable, Optional
+
+if TYPE_CHECKING:
+    from manoirs.manoir_base import ManoirBase
 
 from core.gestionnaire_etats import GestionnaireEtats
 from core.message_bus import get_message_bus
@@ -64,7 +68,7 @@ class Engine:
 
     def __init__(self):
         """Initialise le moteur"""
-        self.manoirs: Dict[str, ManoirBase] = {}
+        self.manoirs: dict[str, ManoirBase] = {}
         self.etat = EtatEngine.ARRETE
 
         # Composants
@@ -77,7 +81,7 @@ class Engine:
 
         # État interne
         self._manoir_courant: Optional[str] = None
-        self._echecs_consecutifs: Dict[str, int] = {}  # Par manoir
+        self._echecs_consecutifs: dict[str, int] = {}  # Par manoir
         self._erreurs_consecutives: int = 0  # Global
         self._stop_event = threading.Event()
         self._pause_event = threading.Event()
@@ -480,10 +484,8 @@ class Engine:
 
                         # Callback
                         if self._on_action_executed:
-                            try:
+                            with contextlib.suppress(Exception):
                                 self._on_action_executed(manoir_id, actions_executees)
-                            except Exception:
-                                pass
                     else:
                         # Échec - condition non remplie
                         self._echecs_consecutifs[manoir_id] += 1
@@ -507,10 +509,8 @@ class Engine:
                 self._echecs_consecutifs[manoir_id] += 1
 
                 if self._on_error:
-                    try:
+                    with contextlib.suppress(Exception):
                         self._on_error(manoir_id, str(e))
-                    except Exception:
-                        pass
 
             # Pause entre actions
             time.sleep(PAUSE_ENTRE_ACTIONS)

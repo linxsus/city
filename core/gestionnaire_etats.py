@@ -6,7 +6,7 @@ Gère le graphe d'états, le pathfinding et la détermination d'état.
 
 import importlib
 import importlib.util
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 if TYPE_CHECKING:
     from manoirs.manoir_base import ManoirBase
@@ -55,10 +55,10 @@ class GestionnaireEtats:
             ErreurValidation: Si noms dupliqués ou références invalides
         """
         self._logger = get_module_logger("GestionnaireEtats")
-        self._etats: Dict[str, Etat] = {}
-        self._chemins: List[Chemin] = []
-        self._priorites: List[str] = []
-        self._config: Dict[str, Any] = {}
+        self._etats: dict[str, Etat] = {}
+        self._chemins: list[Chemin] = []
+        self._priorites: list[str] = []
+        self._config: dict[str, Any] = {}
 
         # Chemin de base par défaut (parent.parent du fichier config)
         self._base_path = Path(chemin_config).parent.parent
@@ -152,7 +152,7 @@ class GestionnaireEtats:
         groupe_defaut = config_groupes.get("defaut", "ville")
 
         # Construire la map popup_nom → liste de groupes
-        popup_vers_groupes: Dict[str, List[str]] = {}
+        popup_vers_groupes: dict[str, list[str]] = {}
 
         for nom_groupe, config_groupe in config_groupes.items():
             if nom_groupe == "defaut":
@@ -239,7 +239,7 @@ class GestionnaireEtats:
             f"Scan du répertoire '{repertoire_chemins}': {len(chemins_manuels)} chemins manuels trouvés"
         )
 
-    def _scanner_modules(self, repertoire: str, classe_base: type) -> List[Any]:
+    def _scanner_modules(self, repertoire: str, classe_base: type) -> list[Any]:
         """
         Scanne un répertoire et instancie les classes héritant de classe_base.
 
@@ -304,7 +304,7 @@ class GestionnaireEtats:
                 else:
                     chemin.etat_sortie = self._resoudre_reference(chemin.etat_sortie)
 
-        for nom, etat in self._etats.items():
+        for _nom, etat in self._etats.items():
             if isinstance(etat, EtatInconnu) and etat.etats_possibles:
                 etat.etats_possibles = [self._resoudre_reference(e) for e in etat.etats_possibles]
 
@@ -340,7 +340,7 @@ class GestionnaireEtats:
     def _valider_coherence(self) -> None:
         """Valide la cohérence du système (noms uniques, références valides)."""
         noms_vus = set()
-        for nom in self._etats.keys():
+        for nom in self._etats:
             if nom in noms_vus:
                 raise ErreurValidation(f"Nom d'état dupliqué: {nom}")
             noms_vus.add(nom)
@@ -351,7 +351,7 @@ class GestionnaireEtats:
 
     def trouver_chemin(
         self, etat_depart: Union[Etat, str], etat_arrivee: Union[Etat, str]
-    ) -> Tuple[List[Chemin], bool]:
+    ) -> tuple[list[Chemin], bool]:
         """
         Trouve le plus court chemin entre deux états.
 
@@ -399,7 +399,7 @@ class GestionnaireEtats:
 
         return ([], False)
 
-    def _construire_graphe(self, seulement_certains: bool = False) -> Dict[Etat, List[Chemin]]:
+    def _construire_graphe(self, seulement_certains: bool = False) -> dict[Etat, list[Chemin]]:
         """
         Construit le graphe pour le pathfinding.
 
@@ -409,7 +409,7 @@ class GestionnaireEtats:
         Returns:
             Map associant chaque état aux chemins partant de cet état
         """
-        graphe: Dict[Etat, List[Chemin]] = {}
+        graphe: dict[Etat, list[Chemin]] = {}
 
         for chemin in self._chemins:
             if seulement_certains and not chemin.est_certain():
@@ -425,8 +425,8 @@ class GestionnaireEtats:
         return graphe
 
     def _bfs_plus_court_chemin(
-        self, graphe: Dict[Etat, List[Chemin]], depart: Etat, arrivee: Etat
-    ) -> Optional[List[Chemin]]:
+        self, graphe: dict[Etat, list[Chemin]], depart: Etat, arrivee: Etat
+    ) -> Optional[list[Chemin]]:
         """
         Algorithme BFS pour trouver le plus court chemin.
 
@@ -470,7 +470,7 @@ class GestionnaireEtats:
 
         return None
 
-    def _obtenir_etats_sortie(self, chemin: Chemin) -> List[Etat]:
+    def _obtenir_etats_sortie(self, chemin: Chemin) -> list[Etat]:
         """
         Obtient les états de sortie possibles d'un chemin.
 
@@ -497,7 +497,7 @@ class GestionnaireEtats:
         return []
 
     def determiner_etat_actuel(
-        self, manoir: "ManoirBase", liste_etats: Optional[List[Union[Etat, str]]] = None
+        self, manoir: "ManoirBase", liste_etats: Optional[list[Union[Etat, str]]] = None
     ) -> Etat:
         """
         Teste les états pour déterminer l'état actuel du système.
@@ -525,7 +525,7 @@ class GestionnaireEtats:
 
         etats_a_tester = [e for e in etats_a_tester if not isinstance(e, EtatInconnu)]
 
-        def priorite_key(etat: Etat) -> Tuple[int, str]:
+        def priorite_key(etat: Etat) -> tuple[int, str]:
             try:
                 idx = self._priorites.index(etat.nom)
                 return (0, idx)
@@ -563,7 +563,7 @@ class GestionnaireEtats:
             raise EtatInconnuException(f"État inconnu: {nom}")
         return self._etats[nom]
 
-    def obtenir_chemins_depuis(self, etat: Union[Etat, str]) -> List[Chemin]:
+    def obtenir_chemins_depuis(self, etat: Union[Etat, str]) -> list[Chemin]:
         """
         Liste tous les chemins partant d'un état.
 
@@ -576,7 +576,7 @@ class GestionnaireEtats:
         etat_instance = self._resoudre_reference(etat)
         return [c for c in self._chemins if c.etat_initial == etat_instance]
 
-    def obtenir_chemins_vers(self, etat: Union[Etat, str]) -> List[Chemin]:
+    def obtenir_chemins_vers(self, etat: Union[Etat, str]) -> list[Chemin]:
         """
         Liste tous les chemins arrivant à un état.
 
@@ -597,11 +597,11 @@ class GestionnaireEtats:
         return chemins_vers
 
     @property
-    def etats(self) -> Dict[str, Etat]:
+    def etats(self) -> dict[str, Etat]:
         """Retourne le dictionnaire des états enregistrés."""
         return self._etats.copy()
 
     @property
-    def chemins(self) -> List[Chemin]:
+    def chemins(self) -> list[Chemin]:
         """Retourne la liste des chemins enregistrés."""
         return self._chemins.copy()

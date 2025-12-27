@@ -4,7 +4,7 @@ Classe EtatInconnu - État spécial représentant un état incertain.
 Utilisé comme état de sortie de chemins dont le résultat est imprévisible.
 """
 
-from typing import TYPE_CHECKING, List, Union
+from typing import TYPE_CHECKING, Union
 
 from core.etat import Etat
 
@@ -25,7 +25,7 @@ class EtatInconnu(Etat):
                         Si vide, tous les états enregistrés seront testés.
     """
 
-    etats_possibles: List[Union["Etat", str, type]] = []
+    etats_possibles: list[Union["Etat", str, type]] = []
 
     def __init__(self, etats_possibles=None):
         """

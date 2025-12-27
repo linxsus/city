@@ -10,7 +10,7 @@ Logique :
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from utils.logger import get_module_logger
 
@@ -68,8 +68,8 @@ class SimpleScheduler:
         pass
 
     def _collecter_selections(
-        self, manoirs: Dict[str, Any], prioritaire: bool
-    ) -> List[ManoirSelection]:
+        self, manoirs: dict[str, Any], prioritaire: bool
+    ) -> list[ManoirSelection]:
         """Collecte les sélections pour un niveau donné (PROTÉGÉ)
 
         Args:
@@ -112,7 +112,7 @@ class SimpleScheduler:
 
         return selections
 
-    def selectionner_manoir(self, manoirs: Dict[str, Any]) -> Optional[ManoirSelection]:
+    def selectionner_manoir(self, manoirs: dict[str, Any]) -> Optional[ManoirSelection]:
         """Sélectionne le manoir à traiter
 
         Logique :
@@ -162,7 +162,7 @@ class SimpleScheduler:
 
         return meilleur
 
-    def get_classement(self, manoirs: Dict[str, Any]) -> Dict[str, List[ManoirSelection]]:
+    def get_classement(self, manoirs: dict[str, Any]) -> dict[str, list[ManoirSelection]]:
         """Retourne le classement complet par niveau
 
         Args:
@@ -180,7 +180,7 @@ class SimpleScheduler:
 
         return {"prioritaire": prioritaires, "normal": normales}
 
-    def get_temps_attente(self, manoirs: Dict[str, Any]) -> Optional[float]:
+    def get_temps_attente(self, manoirs: dict[str, Any]) -> Optional[float]:
         """Retourne le temps d'attente avant le prochain manoir prêt
 
         Args:
@@ -199,7 +199,7 @@ class SimpleScheduler:
 
         return selection.temps_avant_passage
 
-    def a_prioritaire_pret(self, manoirs: Dict[str, Any]) -> bool:
+    def a_prioritaire_pret(self, manoirs: dict[str, Any]) -> bool:
         """Vérifie si une action prioritaire est prête
 
         Args:

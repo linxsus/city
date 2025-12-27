@@ -38,7 +38,4 @@ class EtatChargement(Etat):
             return False
 
         # Icône jeu chargé ne doit PAS être visible
-        if manoir.detect_image("ville/icone_jeu_charge.png"):
-            return False
-
-        return True
+        return not manoir.detect_image("ville/icone_jeu_charge.png")

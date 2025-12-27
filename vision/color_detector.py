@@ -72,11 +72,7 @@ class ColorDetector:
             return False
 
         # Vérifier chaque composante
-        for i in range(3):
-            if abs(pixel[i] - expected_rgb[i]) > tolerance:
-                return False
-
-        return True
+        return all(abs(pixel[i] - expected_rgb[i]) <= tolerance for i in range(3))
 
     def find_color(self, image, target_rgb, tolerance=10, region=None):
         """Trouve la première occurrence d'une couleur

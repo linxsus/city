@@ -238,7 +238,7 @@ class OCREngine:
 
         search = search_text if case_sensitive else search_text.lower()
 
-        for bbox, text, conf in results:
+        for bbox, text, _conf in results:
             text_compare = text if case_sensitive else text.lower()
 
             if search in text_compare:

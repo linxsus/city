@@ -148,10 +148,7 @@ class MessageBus:
         Returns:
             Message: Le message créé
         """
-        if expire is None:
-            expire_time = time.time() + self.DEFAULT_EXPIRE
-        else:
-            expire_time = time.time() + expire
+        expire_time = time.time() + self.DEFAULT_EXPIRE if expire is None else time.time() + expire
 
         msg = Message(
             source=source,

@@ -223,13 +223,10 @@ class TimerManager:
 
         with self._lock:
             for timer in self._timers.values():
-                if timer.is_due():
-                    if (
-                        fenetre_id is None
-                        or timer.fenetre_id == fenetre_id
-                        or timer.fenetre_id is None
-                    ):
-                        due_timers.append(timer)
+                if timer.is_due() and (
+                    fenetre_id is None or timer.fenetre_id == fenetre_id or timer.fenetre_id is None
+                ):
+                    due_timers.append(timer)
 
         # Trier par priorité (décroissant)
         due_timers.sort(key=lambda t: t.priorite, reverse=True)

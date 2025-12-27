@@ -5,7 +5,7 @@ Un popup est un état qui peut être fermé par un clic, générant automatiquem
 le chemin de fermeture correspondant.
 """
 
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from core.chemin import Chemin
 from core.etat import Etat
@@ -40,7 +40,7 @@ class Popup(Etat):
     image_fermeture: Optional[str] = None
     position_fermeture: Optional[tuple] = None
     position_relative: bool = False
-    etats_possibles_extra: List[str] = []
+    etats_possibles_extra: list[str] = []
 
     def __init__(self):
         """Initialise le popup."""
@@ -101,7 +101,7 @@ class CheminPopup(Chemin):
         # etat_sortie sera défini par GestionnaireEtats._resoudre_groupes_sortie()
         self.etat_sortie = EtatInconnu(etats_possibles=[])
 
-    def fonction_actions(self, manoir: Any) -> List[Any]:
+    def fonction_actions(self, manoir: Any) -> list[Any]:
         """
         Génère les actions pour fermer le popup.
 

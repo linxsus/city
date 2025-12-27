@@ -4,6 +4,8 @@ Utilise pywin32 pour interagir avec les fenêtres Windows.
 Fonctionne uniquement sur Windows.
 """
 
+import builtins
+import contextlib
 import time
 
 from utils.logger import get_module_logger
@@ -149,7 +151,7 @@ class WindowManager:
                         ctypes.windll.user32.AttachThreadInput(
                             foreground_thread, target_thread, True
                         )
-                    except:
+                    except Exception:
                         pass  # Ignorer si échoue
 
                 # Forcer l'activation
@@ -159,19 +161,17 @@ class WindowManager:
 
                 # Détacher les threads
                 if foreground_thread != target_thread:
-                    try:
+                    with contextlib.suppress(builtins.BaseException):
                         ctypes.windll.user32.AttachThreadInput(
                             foreground_thread, target_thread, False
                         )
-                    except:
-                        pass
 
             except Exception:
                 # Fallback : méthode simple
                 try:
                     win32gui.BringWindowToTop(hwnd)
                     win32gui.SetForegroundWindow(hwnd)
-                except:
+                except Exception:
                     pass
 
             time.sleep(0.1)

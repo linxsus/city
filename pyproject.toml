@@ -91,7 +91,15 @@ select = [
 ]
 ignore = [
     "E501",   # ligne trop longue (gere par formatter)
+    "B027",   # empty method in ABC without @abstractmethod (voulu)
+    "SIM102", # nested if (parfois plus lisible)
+    "SIM108", # ternary operator (parfois moins lisible)
+    "SIM117", # multiple with statements (parfois plus lisible)
+    "B904",   # raise from (pas toujours necessaire)
 ]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E402"]  # imports not at top (necessaire pour path setup)
 
 [tool.ruff.format]
 quote-style = "double"

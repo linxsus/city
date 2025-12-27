@@ -1,6 +1,6 @@
 """Chemin : Lancer BlueStacks"""
 
-from typing import Any, List
+from typing import Any
 
 from actions.bluestacks.action_lancer_raccourci import ActionLancerRaccourci
 from actions.simple.action_attendre import ActionAttendre
@@ -21,7 +21,7 @@ class CheminLancerBluestacks(Chemin):
     etat_initial = "non_lance"
     etat_sortie = "chargement"
 
-    def fonction_actions(self, manoir) -> List[Any]:
+    def fonction_actions(self, manoir) -> list[Any]:
         """Génère les actions pour lancer BlueStacks
 
         Args:

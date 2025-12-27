@@ -52,10 +52,7 @@ class Item:
         Returns:
             bool: Résultat de l'exécution
         """
-        if self.condition():
-            result = self._run()
-        else:
-            result = False
+        result = self._run() if self.condition() else False
 
         self.executer = True
         return result
