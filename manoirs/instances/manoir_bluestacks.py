@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Manoir BlueStacks - Classe abstraite pour gérer une fenêtre BlueStacks
 
 ManoirBlueStacks gère le cycle de vie d'une fenêtre BlueStacks via le
@@ -14,13 +13,13 @@ Navigation :
 
 Les sous-classes doivent implémenter gestion_tour() pour la logique métier.
 """
+
 import time
 from abc import abstractmethod
 from enum import Enum, auto
 
+from manoirs.config_manoirs import HAUTEUR_DEFAUT, LARGEUR_DEFAUT, get_config
 from manoirs.manoir_base import ManoirBase
-from manoirs.config_manoirs import get_config, LARGEUR_DEFAUT, HAUTEUR_DEFAUT
-import actions.liste_actions as ListeActions
 
 
 class EtatBlueStacks(Enum):
@@ -29,9 +28,10 @@ class EtatBlueStacks(Enum):
     Note: La navigation utilise le système états/chemins.
     Cet enum gère uniquement l'état de blocage.
     """
-    EN_COURS = auto()        # Navigation en cours (pas encore en ville)
-    PRET = auto()            # Jeu chargé (état "ville"), prêt à automatiser
-    BLOQUE = auto()          # Trop d'échecs, reboot nécessaire
+
+    EN_COURS = auto()  # Navigation en cours (pas encore en ville)
+    PRET = auto()  # Jeu chargé (état "ville"), prêt à automatiser
+    BLOQUE = auto()  # Trop d'échecs, reboot nécessaire
 
 
 class ManoirBlueStacks(ManoirBase):
@@ -107,7 +107,9 @@ class ManoirBlueStacks(ManoirBase):
         """Change l'état interne avec log"""
         if nouvel_etat != self._etat_interne:
             self.logger.info(f"{self.nom}: {self._etat_interne.name} -> {nouvel_etat.name}")
-            self._ajouter_historique(f"État interne: {self._etat_interne.name} -> {nouvel_etat.name}")
+            self._ajouter_historique(
+                f"État interne: {self._etat_interne.name} -> {nouvel_etat.name}"
+            )
             self._etat_interne = nouvel_etat
 
     # =========================================================
@@ -340,7 +342,7 @@ class ManoirBlueStacks(ManoirBase):
         """Appelé par Engine quand trop d'échecs consécutifs"""
         self.logger.warning(f"{self.nom}: Blocage détecté, reboot prévu au prochain tour")
         self._ajouter_historique("BLOCAGE signalé par Engine")
-        self._stats['erreurs_detectees'] += 1
+        self._stats["erreurs_detectees"] += 1
         self.etat = EtatBlueStacks.BLOQUE
 
     # =========================================================
@@ -378,18 +380,20 @@ class ManoirBlueStacks(ManoirBase):
         """Retourne le statut du manoir"""
         etat_ecran = self.etat_actuel.nom if self.etat_actuel else "inconnu"
         status = {
-            'manoir_id': self.manoir_id,
-            'nom': self.nom,
-            'etat_interne': self._etat_interne.name,
-            'etat_ecran': etat_ecran,
-            'fenetre_ouverte': self.est_fenetre_ouverte(),
-            'jeu_charge': self._etat_interne == EtatBlueStacks.PRET,
-            'temps_lancement': self.get_temps_depuis_lancement(),
-            'titre': self.titre_bluestacks,
+            "manoir_id": self.manoir_id,
+            "nom": self.nom,
+            "etat_interne": self._etat_interne.name,
+            "etat_ecran": etat_ecran,
+            "fenetre_ouverte": self.est_fenetre_ouverte(),
+            "jeu_charge": self._etat_interne == EtatBlueStacks.PRET,
+            "temps_lancement": self.get_temps_depuis_lancement(),
+            "titre": self.titre_bluestacks,
         }
         status.update(self._stats)
         return status
 
     def __repr__(self):
         etat_ecran = self.etat_actuel.nom if self.etat_actuel else "?"
-        return f"ManoirBlueStacks('{self.manoir_id}', {self._etat_interne.name}, écran={etat_ecran})"
+        return (
+            f"ManoirBlueStacks('{self.manoir_id}', {self._etat_interne.name}, écran={etat_ecran})"
+        )

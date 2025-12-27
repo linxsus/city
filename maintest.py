@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Test du système avec simulation du lancement BlueStacks
 
 Ce script permet de tester le flow complet du système sans avoir
@@ -12,13 +11,14 @@ Usage:
     python maintest.py --scenario ville    # Démarre directement en ville
     python maintest.py --scenario popup    # Démarre avec un popup
 """
-import sys
-import time
+
 import argparse
 import subprocess
-from pathlib import Path
-from unittest.mock import patch, MagicMock, PropertyMock
+import sys
 import threading
+import time
+from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 # Ajouter le dossier au path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -30,14 +30,14 @@ import numpy as np
 class SimulateurBlueStacks:
     """Simule le comportement de BlueStacks pour les tests"""
 
-    def __init__(self, scenario='lancement'):
+    def __init__(self, scenario="lancement"):
         """
         Args:
             scenario: 'lancement' | 'ville' | 'popup' | 'chargement'
         """
         self.scenario = scenario
         self._etat_simule = self._etat_initial()
-        self._fenetre_visible = scenario != 'lancement'
+        self._fenetre_visible = scenario != "lancement"
         self._hwnd_simule = 12345 if self._fenetre_visible else None
         self._temps_lancement = None
         self._temps_init_termine = None  # Initialisé ici aussi
@@ -46,11 +46,11 @@ class SimulateurBlueStacks:
     def _etat_initial(self):
         """Retourne l'état initial selon le scénario"""
         return {
-            'lancement': 'non_lance',
-            'chargement': 'chargement',
-            'ville': 'ville',
-            'popup': 'popup_rapport',
-        }.get(self.scenario, 'non_lance')
+            "lancement": "non_lance",
+            "chargement": "chargement",
+            "ville": "ville",
+            "popup": "popup_rapport",
+        }.get(self.scenario, "non_lance")
 
     def simuler_lancement(self):
         """Simule le lancement de BlueStacks"""
@@ -59,21 +59,24 @@ class SimulateurBlueStacks:
         self._temps_init_termine = None  # Sera défini quand on entre en chargement
         self._fenetre_visible = True
         self._hwnd_simule = 12345
-        self._etat_simule = 'chargement'
+        self._etat_simule = "chargement"
         return True
 
     def marquer_init_termine(self):
         """Marque que temps_initialisation est terminé"""
         if self._temps_init_termine is None:
             self._temps_init_termine = time.time()
-            print(f"[SIMULATION] temps_init terminé, chargement pendant {self._delai_chargement}s...", flush=True)
+            print(
+                f"[SIMULATION] temps_init terminé, chargement pendant {self._delai_chargement}s...",
+                flush=True,
+            )
 
     def get_etat_actuel(self):
         """Retourne l'état actuel simulé"""
         # Si en chargement, vérifier si le délai est passé APRÈS temps_init
-        if self._etat_simule == 'chargement' and self._temps_init_termine:
+        if self._etat_simule == "chargement" and self._temps_init_termine:
             if time.time() - self._temps_init_termine > self._delai_chargement:
-                self._etat_simule = 'ville'
+                self._etat_simule = "ville"
                 print("[SIMULATION] Chargement terminé -> ville", flush=True)
         return self._etat_simule
 
@@ -107,16 +110,16 @@ def mock_subprocess_run(cmd, *args, **kwargs):
     """Mock pour subprocess.run() - simule le lancement BlueStacks"""
     sim = get_simulateur()
     # Vérifier si c'est une commande BlueStacks
-    cmd_str = ' '.join(cmd) if isinstance(cmd, list) else str(cmd)
-    if 'HD-Player' in cmd_str or 'BlueStacks' in cmd_str:
+    cmd_str = " ".join(cmd) if isinstance(cmd, list) else str(cmd)
+    if "HD-Player" in cmd_str or "BlueStacks" in cmd_str:
         print("[SIMULATION] Lancement BlueStacks intercepté (run)")
         if sim:
             sim.simuler_lancement()
         # Retourner un mock de CompletedProcess
         result = MagicMock()
         result.returncode = 0
-        result.stdout = b''
-        result.stderr = b''
+        result.stdout = b""
+        result.stderr = b""
         return result
     # Fallback - ne pas exécuter les autres commandes non plus en mode test
     result = MagicMock()
@@ -134,8 +137,8 @@ class MockPopen:
         self._started = False
 
         # Vérifier si c'est une commande BlueStacks
-        cmd_str = ' '.join(cmd) if isinstance(cmd, list) else str(cmd)
-        if 'HD-Player' in cmd_str or 'BlueStacks' in cmd_str:
+        cmd_str = " ".join(cmd) if isinstance(cmd, list) else str(cmd)
+        if "HD-Player" in cmd_str or "BlueStacks" in cmd_str:
             print("[SIMULATION] Lancement BlueStacks intercepté (Popen)")
             sim = get_simulateur()
             if sim:
@@ -150,7 +153,7 @@ class MockPopen:
 
     def communicate(self, input=None, timeout=None):
         """Retourne (stdout, stderr)"""
-        return (b'', b'')
+        return (b"", b"")
 
     def wait(self, timeout=None):
         """Attend la fin du processus"""
@@ -162,7 +165,7 @@ def mock_determiner_etat_actuel(self, manoir, liste_etats=None):
     sim = get_simulateur()
     if sim:
         # Si on est en chargement, marquer que temps_init est terminé
-        if sim._etat_simule == 'chargement':
+        if sim._etat_simule == "chargement":
             sim.marquer_init_termine()
 
         # Obtenir l'état actuel simulé
@@ -179,7 +182,7 @@ def mock_determiner_etat_actuel(self, manoir, liste_etats=None):
                     return etat
             # Retourner le premier état inconnu
             for etat in self._etats.values():
-                if hasattr(etat, 'etats_possibles'):
+                if hasattr(etat, "etats_possibles"):
                     return etat
 
     # Appeler la méthode originale si pas de simulateur
@@ -196,7 +199,7 @@ def mock_capture(self, force=False):
 
 def mock_last_capture_getter(self):
     """Mock pour la propriété _last_capture"""
-    if not hasattr(self, '_mock_capture'):
+    if not hasattr(self, "_mock_capture"):
         self._mock_capture = np.zeros((720, 1280, 3), dtype=np.uint8)
     return self._mock_capture
 
@@ -208,10 +211,10 @@ def mock_detect_image(self, image_path, *args, **kwargs):
     if sim:
         etat = sim.get_etat_actuel()
         # Simuler les détections selon l'état
-        if 'loading' in str(image_path).lower() or 'chargement' in str(image_path).lower():
-            return etat == 'chargement'
-        if 'ville' in str(image_path).lower() or 'city' in str(image_path).lower():
-            return etat == 'ville'
+        if "loading" in str(image_path).lower() or "chargement" in str(image_path).lower():
+            return etat == "chargement"
+        if "ville" in str(image_path).lower() or "city" in str(image_path).lower():
+            return etat == "ville"
     return False
 
 
@@ -221,28 +224,26 @@ def main_test():
 
     parser = argparse.ArgumentParser(description="Test du système avec simulation")
     parser.add_argument(
-        '--scenario', '-s',
-        choices=['lancement', 'ville', 'popup', 'chargement'],
-        default='lancement',
-        help='Scénario de test (default: lancement)'
+        "--scenario",
+        "-s",
+        choices=["lancement", "ville", "popup", "chargement"],
+        default="lancement",
+        help="Scénario de test (default: lancement)",
     )
     parser.add_argument(
-        '--duree', '-d',
-        type=int,
-        default=30,
-        help='Durée du test en secondes (default: 30)'
+        "--duree", "-d", type=int, default=30, help="Durée du test en secondes (default: 30)"
     )
     parser.add_argument(
-        '--delai-chargement',
+        "--delai-chargement",
         type=int,
         default=3,
-        help='Délai simulé pour le chargement en secondes (default: 3)'
+        help="Délai simulé pour le chargement en secondes (default: 3)",
     )
     parser.add_argument(
-        '--temps-init',
+        "--temps-init",
         type=int,
         default=5,
-        help='Temps d\'initialisation BlueStacks en secondes (default: 5, prod: 300)'
+        help="Temps d'initialisation BlueStacks en secondes (default: 5, prod: 300)",
     )
     args = parser.parse_args()
 
@@ -265,6 +266,7 @@ def main_test():
 
     # Patcher la config pour réduire temps_initialisation
     import manoirs.config_manoirs as config_module
+
     for manoir_config in config_module.MANOIRS_CONFIG.values():
         if "temps_initialisation" in manoir_config:
             manoir_config["temps_initialisation"] = args.temps_init
@@ -277,12 +279,13 @@ def main_test():
     GestionnaireEtats._original_determiner_etat_actuel = GestionnaireEtats.determiner_etat_actuel
 
     # Appliquer tous les mocks
-    with patch.object(action_module, 'subprocess') as mock_subproc, \
-         patch('manoirs.manoir_base.ManoirBase.find_window', mock_find_window), \
-         patch('manoirs.manoir_base.ManoirBase.capture', mock_capture), \
-         patch('manoirs.manoir_base.ManoirBase.detect_image', mock_detect_image), \
-         patch.object(GestionnaireEtats, 'determiner_etat_actuel', mock_determiner_etat_actuel):
-
+    with (
+        patch.object(action_module, "subprocess") as mock_subproc,
+        patch("manoirs.manoir_base.ManoirBase.find_window", mock_find_window),
+        patch("manoirs.manoir_base.ManoirBase.capture", mock_capture),
+        patch("manoirs.manoir_base.ManoirBase.detect_image", mock_detect_image),
+        patch.object(GestionnaireEtats, "determiner_etat_actuel", mock_determiner_etat_actuel),
+    ):
         # Configurer le mock de subprocess
         mock_subproc.run = mock_subprocess_run
         mock_subproc.Popen = MockPopen
@@ -294,6 +297,7 @@ def main_test():
             print(f"\n[TEST] Durée de {args.duree}s atteinte, arrêt...")
             import os
             import signal
+
             os.kill(os.getpid(), signal.SIGINT)
 
         timer_thread = threading.Thread(target=auto_stop, daemon=True)
@@ -301,6 +305,7 @@ def main_test():
 
         # Lancer le main
         import main
+
         return main.main()
 
 

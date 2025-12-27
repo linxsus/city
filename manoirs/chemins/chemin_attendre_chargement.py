@@ -1,11 +1,11 @@
-# -*- coding: utf-8 -*-
 """Chemin : Attendre pendant le chargement"""
 
-from typing import List, Any
+from typing import Any
+
+from actions.action_reprise_preparer_tour import ActionReprisePreparerTour
+from actions.simple.action_attendre import ActionAttendre
 from core.chemin import Chemin
 from core.etat_inconnu import EtatInconnu
-from actions.simple.action_attendre import ActionAttendre
-from actions.action_reprise_preparer_tour import ActionReprisePreparerTour
 
 
 class CheminAttendreChargement(Chemin):
@@ -21,6 +21,7 @@ class CheminAttendreChargement(Chemin):
         L'attente est non-bloquante : permet au moteur de traiter
         d'autres fenêtres pendant ce temps.
     """
+
     etat_initial = "chargement"
     # Sortie incertaine : peut être ville ou popup
     etat_sortie = EtatInconnu(
@@ -30,7 +31,7 @@ class CheminAttendreChargement(Chemin):
     # Durée d'attente en secondes
     DUREE_ATTENTE = 5
 
-    def fonction_actions(self, manoir) -> List[Any]:
+    def fonction_actions(self, manoir) -> list[Any]:
         """Génère les actions pour attendre pendant le chargement
 
         Args:

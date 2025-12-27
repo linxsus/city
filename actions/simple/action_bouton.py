@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Action de clic sur une image (bouton)"""
 
 from actions.action import Action

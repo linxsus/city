@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Classe de base pour tous les éléments exécutables"""
 
 from utils.logger import get_module_logger
@@ -53,10 +52,7 @@ class Item:
         Returns:
             bool: Résultat de l'exécution
         """
-        if self.condition():
-            result = self._run()
-        else:
-            result = False
+        result = self._run() if self.condition() else False
 
         self.executer = True
         return result
@@ -70,14 +66,13 @@ class Item:
         Raises:
             NotImplementedError: Si non implémenté dans la sous-classe
         """
-        raise NotImplementedError(
-            f"{self.__class__.__name__} doit implémenter _run()"
-        )
+        raise NotImplementedError(f"{self.__class__.__name__} doit implémenter _run()")
 
 
 # =====================================================
 # HELPERS DE CONDITIONS
 # =====================================================
+
 
 def image_presente(image_path, threshold=0.8):
     """Condition : une image est présente à l'écran

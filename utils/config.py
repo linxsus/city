@@ -1,8 +1,6 @@
-# -*- coding: utf-8 -*-
 """Configuration globale de l'application"""
-import os
-from pathlib import Path
 
+from pathlib import Path
 
 # =====================================================
 # CHEMINS
@@ -66,14 +64,14 @@ TEMPS_INACTIVITE_REQUIS = 0.5  # Réduit pour tests
 DEFAULT_IMAGE_THRESHOLD = 0.8
 
 # Langues OCR (format EasyOCR : 2 lettres)
-OCR_LANGUAGES = ['fr', 'en']
+OCR_LANGUAGES = ["fr", "en"]
 
 # Utiliser EasyOCR (True) ou Tesseract (False)
 USE_EASYOCR = True
 
 # Chemin vers l'exécutable Tesseract (Windows)
 # Mettre None pour utiliser le PATH système
-TESSERACT_CMD = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+TESSERACT_CMD = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
 
 # =====================================================
@@ -92,7 +90,7 @@ ACTIVITY_CHECK_INTERVAL = 1.0
 # =====================================================
 
 # Niveau de log console : DEBUG, INFO, WARNING, ERROR
-LOG_LEVEL_CONSOLE = 'DEBUG'
+LOG_LEVEL_CONSOLE = "DEBUG"
 
 # Taille max d'un fichier log avant rotation (Mo)
 LOG_ROTATION_SIZE_MB = 50
@@ -106,7 +104,7 @@ LOG_BACKUP_COUNT = 10
 # =====================================================
 
 # Format des screenshots
-CAPTURE_FORMAT = 'PNG'
+CAPTURE_FORMAT = "PNG"
 
 # Qualité JPEG si utilisé (0-100)
 CAPTURE_QUALITY = 85
@@ -130,6 +128,7 @@ ATTENTE_LANCEMENT_JEU = 60
 # INITIALISATION DES DOSSIERS
 # =====================================================
 
+
 def init_directories():
     """Crée les dossiers nécessaires s'ils n'existent pas"""
     directories = [
@@ -141,7 +140,7 @@ def init_directories():
         DATA_DIR,
         RACCOURCIS_DIR,
     ]
-    
+
     for directory in directories:
         directory.mkdir(parents=True, exist_ok=True)
 

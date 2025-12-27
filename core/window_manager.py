@@ -1,9 +1,11 @@
-# -*- coding: utf-8 -*-
 """Gestion des fenêtres Windows
 
 Utilise pywin32 pour interagir avec les fenêtres Windows.
 Fonctionne uniquement sur Windows.
 """
+
+import builtins
+import contextlib
 import time
 
 from utils.logger import get_module_logger
@@ -12,9 +14,10 @@ logger = get_module_logger("WindowManager")
 
 # Import conditionnel pour Windows
 try:
-    import win32gui
     import win32con
+    import win32gui
     import win32process
+
     WIN32_AVAILABLE = True
 except ImportError:
     WIN32_AVAILABLE = False
@@ -23,31 +26,31 @@ except ImportError:
 
 class WindowManager:
     """Gestionnaire de fenêtres Windows
-    
+
     Permet de trouver, activer et manipuler les fenêtres Windows.
     """
-    
+
     def __init__(self):
         """Initialise le gestionnaire"""
         if not WIN32_AVAILABLE:
             logger.error("pywin32 requis pour WindowManager")
-        
+
         # Cache des fenêtres trouvées {titre: hwnd}
         self._window_cache = {}
-    
+
     def find_window(self, titre_partiel, use_cache=True):
         """Trouve une fenêtre par son titre (recherche partielle)
-        
+
         Args:
             titre_partiel: Partie du titre à chercher (insensible à la casse)
             use_cache: Utiliser le cache si disponible
-            
+
         Returns:
             int ou None: Handle de la fenêtre (hwnd)
         """
         if not WIN32_AVAILABLE:
             return None
-        
+
         # Vérifier le cache
         if use_cache and titre_partiel in self._window_cache:
             hwnd = self._window_cache[titre_partiel]
@@ -56,82 +59,82 @@ class WindowManager:
                 return hwnd
             else:
                 del self._window_cache[titre_partiel]
-        
+
         # Rechercher la fenêtre
         found_windows = []
-        
+
         def enum_callback(hwnd, windows):
             if win32gui.IsWindowVisible(hwnd):
                 titre = win32gui.GetWindowText(hwnd)
                 if titre and titre_partiel.lower() in titre.lower():
                     windows.append((hwnd, titre))
-        
+
         try:
             win32gui.EnumWindows(enum_callback, found_windows)
         except Exception as e:
             logger.error(f"Erreur EnumWindows: {e}")
             return None
-        
+
         if found_windows:
             hwnd, titre = found_windows[0]
             self._window_cache[titre_partiel] = hwnd
             logger.debug(f"Fenêtre trouvée: '{titre}' (hwnd={hwnd})")
             return hwnd
-        
+
         logger.debug(f"Fenêtre non trouvée: '{titre_partiel}'")
         return None
-    
+
     def find_all_windows(self, titre_partiel):
         """Trouve toutes les fenêtres correspondant au titre
-        
+
         Args:
             titre_partiel: Partie du titre à chercher
-            
+
         Returns:
             List[Tuple]: Liste de (hwnd, titre_complet)
         """
         if not WIN32_AVAILABLE:
             return []
-        
+
         found_windows = []
-        
+
         def enum_callback(hwnd, windows):
             if win32gui.IsWindowVisible(hwnd):
                 titre = win32gui.GetWindowText(hwnd)
                 if titre and titre_partiel.lower() in titre.lower():
                     windows.append((hwnd, titre))
-        
+
         try:
             win32gui.EnumWindows(enum_callback, found_windows)
         except Exception as e:
             logger.error(f"Erreur EnumWindows: {e}")
-        
+
         logger.debug(f"Trouvé {len(found_windows)} fenêtre(s) pour '{titre_partiel}'")
         return found_windows
-    
+
     def activate_window(self, hwnd):
         """Active une fenêtre (met au premier plan)
-        
+
         Args:
             hwnd: Handle de la fenêtre
-            
+
         Returns:
             bool: True si succès
         """
         if not WIN32_AVAILABLE:
             return False
-        
+
         try:
             # Vérifier que la fenêtre existe
             if not win32gui.IsWindow(hwnd):
                 logger.error(f"Fenêtre {hwnd} n'existe plus")
                 return False
-            
+
             # Restaurer si minimisée
             if win32gui.IsIconic(hwnd):
                 win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
                 time.sleep(0.2)
-            
+
             # Mettre au premier plan
             # Méthode robuste avec AttachThreadInput pour contourner restrictions Windows
             try:
@@ -144,8 +147,11 @@ class WindowManager:
                 if foreground_thread != target_thread:
                     try:
                         import ctypes
-                        ctypes.windll.user32.AttachThreadInput(foreground_thread, target_thread, True)
-                    except:
+
+                        ctypes.windll.user32.AttachThreadInput(
+                            foreground_thread, target_thread, True
+                        )
+                    except Exception:
                         pass  # Ignorer si échoue
 
                 # Forcer l'activation
@@ -155,54 +161,54 @@ class WindowManager:
 
                 # Détacher les threads
                 if foreground_thread != target_thread:
-                    try:
-                        ctypes.windll.user32.AttachThreadInput(foreground_thread, target_thread, False)
-                    except:
-                        pass
+                    with contextlib.suppress(builtins.BaseException):
+                        ctypes.windll.user32.AttachThreadInput(
+                            foreground_thread, target_thread, False
+                        )
 
-            except Exception as e:
+            except Exception:
                 # Fallback : méthode simple
                 try:
                     win32gui.BringWindowToTop(hwnd)
                     win32gui.SetForegroundWindow(hwnd)
-                except:
+                except Exception:
                     pass
 
             time.sleep(0.1)
-            
+
             logger.debug(f"Fenêtre {hwnd} activée")
             return True
-            
+
         except Exception as e:
             # SetForegroundWindow peut échouer si l'utilisateur est actif
             # Ce n'est pas critique, juste un warning
             logger.warning(f"Activation fenêtre {hwnd} partielle: {e}")
             return True  # On continue quand même
-    
+
     def get_window_rect(self, hwnd):
         """Obtient les coordonnées d'une fenêtre
-        
+
         Args:
             hwnd: Handle de la fenêtre
-            
+
         Returns:
             Tuple (left, top, right, bottom) ou None
         """
         if not WIN32_AVAILABLE:
             return None
-        
+
         try:
             return win32gui.GetWindowRect(hwnd)
         except Exception as e:
             logger.error(f"Erreur GetWindowRect({hwnd}): {e}")
             return None
-    
+
     def get_window_size(self, hwnd):
         """Obtient la taille d'une fenêtre
-        
+
         Args:
             hwnd: Handle de la fenêtre
-            
+
         Returns:
             Tuple (width, height) ou None
         """
@@ -211,113 +217,113 @@ class WindowManager:
             left, top, right, bottom = rect
             return (right - left, bottom - top)
         return None
-    
+
     def get_window_title(self, hwnd):
         """Obtient le titre d'une fenêtre
-        
+
         Args:
             hwnd: Handle de la fenêtre
-            
+
         Returns:
             str ou None: Titre de la fenêtre
         """
         if not WIN32_AVAILABLE:
             return None
-        
+
         try:
             return win32gui.GetWindowText(hwnd)
         except Exception:
             return None
-    
+
     def is_window_visible(self, hwnd):
         """Vérifie si une fenêtre est visible
-        
+
         Args:
             hwnd: Handle de la fenêtre
-            
+
         Returns:
             bool: True si visible
         """
         if not WIN32_AVAILABLE:
             return False
-        
+
         try:
             return win32gui.IsWindowVisible(hwnd)
         except Exception:
             return False
-    
+
     def is_window_minimized(self, hwnd):
         """Vérifie si une fenêtre est minimisée
-        
+
         Args:
             hwnd: Handle de la fenêtre
-            
+
         Returns:
             bool: True si minimisée
         """
         if not WIN32_AVAILABLE:
             return False
-        
+
         try:
             return win32gui.IsIconic(hwnd)
         except Exception:
             return False
-    
+
     def window_exists(self, hwnd):
         """Vérifie si une fenêtre existe
-        
+
         Args:
             hwnd: Handle de la fenêtre
-            
+
         Returns:
             bool: True si existe
         """
         if not WIN32_AVAILABLE:
             return False
-        
+
         try:
             return win32gui.IsWindow(hwnd)
         except Exception:
             return False
-    
+
     def minimize_window(self, hwnd):
         """Minimise une fenêtre
-        
+
         Args:
             hwnd: Handle de la fenêtre
-            
+
         Returns:
             bool: True si succès
         """
         if not WIN32_AVAILABLE:
             return False
-        
+
         try:
             win32gui.ShowWindow(hwnd, win32con.SW_MINIMIZE)
             return True
         except Exception as e:
             logger.error(f"Erreur minimize_window({hwnd}): {e}")
             return False
-    
+
     def restore_window(self, hwnd):
         """Restaure une fenêtre minimisée
-        
+
         Args:
             hwnd: Handle de la fenêtre
-            
+
         Returns:
             bool: True si succès
         """
         if not WIN32_AVAILABLE:
             return False
-        
+
         try:
             win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
             return True
         except Exception as e:
             logger.error(f"Erreur restore_window({hwnd}): {e}")
             return False
-    
+
     def close_window(self, hwnd):
         """Ferme une fenêtre (envoie WM_CLOSE)
 
@@ -375,7 +381,9 @@ class WindowManager:
             # Déplacer et redimensionner
             win32gui.MoveWindow(hwnd, new_x, new_y, new_width, new_height, True)
 
-            logger.info(f"Fenêtre {hwnd} placée à ({new_x}, {new_y}) avec dimensions {new_width}x{new_height}")
+            logger.info(
+                f"Fenêtre {hwnd} placée à ({new_x}, {new_y}) avec dimensions {new_width}x{new_height}"
+            )
             return True
 
         except Exception as e:
@@ -441,7 +449,7 @@ class WindowManager:
         except Exception as e:
             logger.error(f"Erreur resize_with_aspect_ratio({hwnd}): {e}")
             return False
-    
+
     def resize_height_only(self, hwnd, height, x=None, y=None):
         """Redimensionne une fenêtre en ne spécifiant que la hauteur
 
@@ -503,50 +511,50 @@ class WindowManager:
         """
         if not WIN32_AVAILABLE:
             return None
-        
+
         try:
             return win32gui.GetForegroundWindow()
         except Exception:
             return None
-    
+
     def is_window_foreground(self, hwnd):
         """Vérifie si une fenêtre est au premier plan
-        
+
         Args:
             hwnd: Handle de la fenêtre
-            
+
         Returns:
             bool: True si au premier plan
         """
         return self.get_foreground_window() == hwnd
-    
+
     def clear_cache(self):
         """Vide le cache des fenêtres"""
         self._window_cache.clear()
         logger.debug("Cache des fenêtres vidé")
-    
+
     def list_all_windows(self):
         """Liste toutes les fenêtres visibles
-        
+
         Returns:
             List[Tuple]: Liste de (hwnd, titre)
         """
         if not WIN32_AVAILABLE:
             return []
-        
+
         windows = []
-        
+
         def enum_callback(hwnd, result):
             if win32gui.IsWindowVisible(hwnd):
                 titre = win32gui.GetWindowText(hwnd)
                 if titre:  # Ignorer les fenêtres sans titre
                     result.append((hwnd, titre))
-        
+
         try:
             win32gui.EnumWindows(enum_callback, windows)
         except Exception as e:
             logger.error(f"Erreur list_all_windows: {e}")
-        
+
         return windows
 
 
@@ -609,9 +617,9 @@ def detecter_dimensions_bluestacks(largeur_actuelle, hauteur_actuelle):
     # Dimensions cibles selon la configuration détectée
     dimensions_map = {
         (False, False): (563, HAUTEUR_CIBLE),  # Sans pub, sans bandeau
-        (False, True): (595, HAUTEUR_CIBLE),   # Sans pub, avec bandeau
-        (True, False): (884, HAUTEUR_CIBLE),   # Avec pub, sans bandeau
-        (True, True): (915, HAUTEUR_CIBLE),    # Avec pub, avec bandeau
+        (False, True): (595, HAUTEUR_CIBLE),  # Sans pub, avec bandeau
+        (True, False): (884, HAUTEUR_CIBLE),  # Avec pub, sans bandeau
+        (True, True): (915, HAUTEUR_CIBLE),  # Avec pub, avec bandeau
     }
 
     dimensions = dimensions_map[(a_pub, a_bandeau)]
@@ -626,16 +634,16 @@ def detecter_dimensions_bluestacks(largeur_actuelle, hauteur_actuelle):
     )
 
     return {
-        'dimensions': dimensions,
-        'a_pub': a_pub,
-        'a_bandeau': a_bandeau,
-        'largeur_pub': largeur_pub,
+        "dimensions": dimensions,
+        "a_pub": a_pub,
+        "a_bandeau": a_bandeau,
+        "largeur_pub": largeur_pub,
     }
 
 
 def get_window_manager():
     """Retourne une instance singleton de WindowManager
-    
+
     Returns:
         WindowManager: Instance partagée
     """

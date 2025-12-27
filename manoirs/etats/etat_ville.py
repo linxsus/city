@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """État : Ville (jeu prêt)"""
 
 from core.etat import Etat
@@ -13,6 +12,7 @@ class EtatVille(Etat):
     Effet de bord :
     - Remet _lancement_initie à False (lancement terminé)
     """
+
     nom = "ville"
     groupes = ["ecran_principal"]
 

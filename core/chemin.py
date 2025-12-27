@@ -4,8 +4,8 @@ Classe Chemin - Représente une transition possible entre deux états.
 Un chemin contient les actions nécessaires pour effectuer la transition.
 """
 
-from typing import List, Union, Callable, Any, Optional, TYPE_CHECKING
 from abc import abstractmethod
+from typing import TYPE_CHECKING, Any, Union
 
 if TYPE_CHECKING:
     from core.etat import Etat
@@ -29,15 +29,15 @@ class Chemin:
         Pas de Singleton - il peut y avoir plusieurs chemins pour la même transition.
     """
 
-    etat_initial: Union['Etat', str, type] = None
-    etat_sortie: Union['Etat', 'EtatInconnu', List['Etat'], str, type, None] = None
+    etat_initial: Union["Etat", str, type] = None
+    etat_sortie: Union["Etat", "EtatInconnu", list["Etat"], str, type, None] = None
 
     def __init__(self):
         """Initialise le chemin."""
         pass
 
     @abstractmethod
-    def fonction_actions(self, manoir: Any) -> List[Any]:
+    def fonction_actions(self, manoir: Any) -> list[Any]:
         """
         Génère la liste d'actions pour effectuer la transition.
 
@@ -52,7 +52,7 @@ class Chemin:
         """
         pass
 
-    def generer_actions(self, manoir: Any) -> List[Any]:
+    def generer_actions(self, manoir: Any) -> list[Any]:
         """
         Appelle fonction_actions pour obtenir la liste d'actions.
 
@@ -87,17 +87,14 @@ class Chemin:
         if isinstance(self.etat_sortie, EtatInconnu):
             return False
 
-        if isinstance(self.etat_sortie, Etat):
-            return True
-
-        return False
+        return bool(isinstance(self.etat_sortie, Etat))
 
     def __repr__(self) -> str:
-        initial = getattr(self.etat_initial, 'nom', str(self.etat_initial))
-        sortie = getattr(self.etat_sortie, 'nom', str(self.etat_sortie))
+        initial = getattr(self.etat_initial, "nom", str(self.etat_initial))
+        sortie = getattr(self.etat_sortie, "nom", str(self.etat_sortie))
         return f"{self.__class__.__name__}({initial} → {sortie})"
 
     def __str__(self) -> str:
-        initial = getattr(self.etat_initial, 'nom', str(self.etat_initial))
-        sortie = getattr(self.etat_sortie, 'nom', str(self.etat_sortie))
+        initial = getattr(self.etat_initial, "nom", str(self.etat_initial))
+        sortie = getattr(self.etat_sortie, "nom", str(self.etat_sortie))
         return f"{initial} → {sortie}"

@@ -1,11 +1,17 @@
-# -*- coding: utf-8 -*-
 """Instances concrètes de manoirs"""
 
-from manoirs.instances.manoir_virtuel import ManoirVirtuel, creer_manoir_virtuel
+__all__ = [
+    "ManoirVirtuel",
+    "creer_manoir_virtuel",
+    "ManoirBlueStacks",
+    "EtatBlueStacks",
+]
+
 from manoirs.instances.manoir_bluestacks import (
-    ManoirBlueStacks,
     EtatBlueStacks,
+    ManoirBlueStacks,
 )
+from manoirs.instances.manoir_virtuel import ManoirVirtuel, creer_manoir_virtuel
 
 # Les actions sont maintenant dans actions/bluestacks/ et actions/popups/
 # Importer depuis là directement :

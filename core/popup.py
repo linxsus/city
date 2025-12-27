@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Classe Popup - État popup avec génération automatique de chemin.
 
@@ -6,11 +5,10 @@ Un popup est un état qui peut être fermé par un clic, générant automatiquem
 le chemin de fermeture correspondant.
 """
 
-from typing import List, Any, Optional, TYPE_CHECKING
-from abc import abstractmethod
+from typing import TYPE_CHECKING, Any, Optional
 
-from core.etat import Etat
 from core.chemin import Chemin
+from core.etat import Etat
 from core.etat_inconnu import EtatInconnu
 
 if TYPE_CHECKING:
@@ -42,7 +40,7 @@ class Popup(Etat):
     image_fermeture: Optional[str] = None
     position_fermeture: Optional[tuple] = None
     position_relative: bool = False
-    etats_possibles_extra: List[str] = []
+    etats_possibles_extra: list[str] = []
 
     def __init__(self):
         """Initialise le popup."""
@@ -51,7 +49,7 @@ class Popup(Etat):
         if "popup" not in self.groupes:
             self.groupes = self.groupes + ["popup"]
 
-    def verif(self, manoir: 'ManoirBase') -> bool:
+    def verif(self, manoir: "ManoirBase") -> bool:
         """
         Vérifie si le popup est actuellement affiché.
 
@@ -65,7 +63,7 @@ class Popup(Etat):
             return False
         return manoir.detect_image(self.image_detection)
 
-    def generer_chemin(self) -> 'CheminPopup':
+    def generer_chemin(self) -> "CheminPopup":
         """
         Génère le chemin de fermeture pour ce popup.
 
@@ -103,7 +101,7 @@ class CheminPopup(Chemin):
         # etat_sortie sera défini par GestionnaireEtats._resoudre_groupes_sortie()
         self.etat_sortie = EtatInconnu(etats_possibles=[])
 
-    def fonction_actions(self, manoir: Any) -> List[Any]:
+    def fonction_actions(self, manoir: Any) -> list[Any]:
         """
         Génère les actions pour fermer le popup.
 
@@ -113,9 +111,10 @@ class CheminPopup(Chemin):
         Returns:
             Liste d'actions pour fermer le popup
         """
-        from actions.simple.action_bouton import ActionBouton
         from actions.simple.action_simple import ActionSimple
+
         from actions.action_reprise_preparer_tour import ActionReprisePreparerTour
+        from actions.simple.action_bouton import ActionBouton
 
         actions = []
 
@@ -128,11 +127,11 @@ class CheminPopup(Chemin):
                 m.click_at(px, py, relative=rel)
                 return True
 
-            actions.append(ActionSimple(
-                manoir,
-                action_func=clic_fermer,
-                nom=f"Fermer{self.popup.__class__.__name__}"
-            ))
+            actions.append(
+                ActionSimple(
+                    manoir, action_func=clic_fermer, nom=f"Fermer{self.popup.__class__.__name__}"
+                )
+            )
         else:
             # Clic sur image
             image = self.popup.image_fermeture or self.popup.image_detection

@@ -1,12 +1,10 @@
-# -*- coding: utf-8 -*-
 """Configuration des manoirs
 
 Définit la configuration de chaque manoir à automatiser.
 Configuration pour tests réels.
 """
-from pathlib import Path
-from utils.config import RACCOURCIS_DIR
 
+from utils.config import RACCOURCIS_DIR
 
 # =====================================================
 # CONFIGURATION PAR DÉFAUT
@@ -41,16 +39,16 @@ BLUESTACKS_HAUTEUR = 1030
 BLUESTACKS_DIMENSIONS = {
     # (a_pub, a_bandeau): (largeur, hauteur)
     (False, False): (563, 1030),  # Sans pub, sans bandeau
-    (False, True): (595, 1030),   # Sans pub, avec bandeau
-    (True, False): (884, 1030),   # Avec pub, sans bandeau
-    (True, True): (915, 1030),    # Avec pub, avec bandeau
+    (False, True): (595, 1030),  # Sans pub, avec bandeau
+    (True, False): (884, 1030),  # Avec pub, sans bandeau
+    (True, True): (915, 1030),  # Avec pub, avec bandeau
 }
 
 # Constantes individuelles (pour compatibilité)
-BLUESTACKS_LARGEUR_ZONE_JEU = 563      # Zone de jeu pure (sans bandeau)
-BLUESTACKS_LARGEUR_BANDEAU = 32         # Bandeau droit avec icônes
+BLUESTACKS_LARGEUR_ZONE_JEU = 563  # Zone de jeu pure (sans bandeau)
+BLUESTACKS_LARGEUR_BANDEAU = 32  # Bandeau droit avec icônes
 BLUESTACKS_LARGEUR_ZONE_AVEC_BANDEAU = 595  # Zone de jeu + bandeau
-BLUESTACKS_LARGEUR_PUB = 320            # Largeur approximative de la pub
+BLUESTACKS_LARGEUR_PUB = 320  # Largeur approximative de la pub
 
 # Seuils de détection
 BLUESTACKS_SEUIL_PUB = 700  # Si largeur > 700, fenêtre a pub
@@ -81,10 +79,14 @@ MANOIRS_CONFIG = {
         # Commande de lancement BlueStacks
         "commande_lancement": [
             BLUESTACKS_PLAYER,
-            "--instance", "Nougat32_1",  # Votre instance BlueStacks
-            "--cmd", "launchAppWithBsx",
-            "--package", "com.yottagames.mafiawar",
-            "--source", "desktop_shortcut"
+            "--instance",
+            "Nougat32_1",  # Votre instance BlueStacks
+            "--cmd",
+            "launchAppWithBsx",
+            "--package",
+            "com.yottagames.mafiawar",
+            "--source",
+            "desktop_shortcut",
         ],
         # Temps d'attente après lancement (secondes)
         "temps_initialisation": 300,
@@ -94,6 +96,7 @@ MANOIRS_CONFIG = {
 # =====================================================
 # HELPERS
 # =====================================================
+
 
 def get_config(manoir_id):
     """Récupère la configuration d'un manoir
@@ -125,10 +128,7 @@ def get_manoirs_par_type(type_manoir):
     Returns:
         List[str]: Liste des IDs
     """
-    return [
-        mid for mid, config in MANOIRS_CONFIG.items()
-        if config.get("type") == type_manoir
-    ]
+    return [mid for mid, config in MANOIRS_CONFIG.items() if config.get("type") == type_manoir]
 
 
 def get_farm_ids():
@@ -186,7 +186,7 @@ def charger_config_depuis_fichier(filepath):
     import json
 
     try:
-        with open(filepath, 'r', encoding='utf-8') as f:
+        with open(filepath, encoding="utf-8") as f:
             config = json.load(f)
 
         global MANOIRS_CONFIG
@@ -210,7 +210,7 @@ def sauvegarder_config(filepath):
     import json
 
     try:
-        with open(filepath, 'w', encoding='utf-8') as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             json.dump(MANOIRS_CONFIG, f, indent=2, ensure_ascii=False)
 
         return True

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """État : BlueStacks non lancé"""
 
 from core.etat import Etat
@@ -9,6 +8,7 @@ class EtatNonLance(Etat):
 
     Détection : La fenêtre avec le titre BlueStacks n'est pas trouvée.
     """
+
     nom = "non_lance"
     groupes = ["demarrage"]
 

@@ -4,10 +4,9 @@ GestionnaireEtats - Composant central du système de gestion d'états et chemins
 Gère le graphe d'états, le pathfinding et la détermination d'état.
 """
 
-import os
 import importlib
 import importlib.util
-from typing import Dict, List, Tuple, Union, Optional, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 if TYPE_CHECKING:
     from manoirs.manoir_base import ManoirBase
@@ -19,16 +18,16 @@ try:
 except ImportError:
     import tomli as tomllib
 
-from core.etat import Etat, SingletonMeta
-from core.etat_inconnu import EtatInconnu
 from core.chemin import Chemin
-from core.popup import Popup, CheminPopup
+from core.etat import Etat
+from core.etat_inconnu import EtatInconnu
 from core.exceptions import (
+    AucunEtatTrouve,
     ErreurConfiguration,
     ErreurValidation,
     EtatInconnuException,
-    AucunEtatTrouve
 )
+from core.popup import CheminPopup, Popup
 from utils.logger import get_module_logger
 
 
@@ -55,11 +54,11 @@ class GestionnaireEtats:
             ErreurConfiguration: Si le fichier TOML est invalide
             ErreurValidation: Si noms dupliqués ou références invalides
         """
-        self._logger = get_module_logger('GestionnaireEtats')
-        self._etats: Dict[str, Etat] = {}
-        self._chemins: List[Chemin] = []
-        self._priorites: List[str] = []
-        self._config: Dict[str, Any] = {}
+        self._logger = get_module_logger("GestionnaireEtats")
+        self._etats: dict[str, Etat] = {}
+        self._chemins: list[Chemin] = []
+        self._priorites: list[str] = []
+        self._config: dict[str, Any] = {}
 
         # Chemin de base par défaut (parent.parent du fichier config)
         self._base_path = Path(chemin_config).parent.parent
@@ -77,23 +76,23 @@ class GestionnaireEtats:
     def _charger_configuration(self, chemin_config: str) -> None:
         """Charge la configuration depuis le fichier TOML."""
         try:
-            with open(chemin_config, 'rb') as f:
+            with open(chemin_config, "rb") as f:
                 self._config = tomllib.load(f)
 
-            if 'priorites' in self._config:
-                self._priorites = self._config['priorites'].get('ordre', [])
+            if "priorites" in self._config:
+                self._priorites = self._config["priorites"].get("ordre", [])
 
-            if 'logging' in self._config:
-                niveau = self._config['logging'].get('niveau', 'INFO')
-                self._logger = get_module_logger('GestionnaireEtats', niveau)
+            if "logging" in self._config:
+                niveau = self._config["logging"].get("niveau", "INFO")
+                self._logger = get_module_logger("GestionnaireEtats", niveau)
 
             # Charger les chemins des dossiers (optionnels)
-            if 'chemins_dossiers' in self._config:
-                chemins_cfg = self._config['chemins_dossiers']
-                if 'etats' in chemins_cfg:
-                    self._chemin_etats = self._base_path / chemins_cfg['etats']
-                if 'chemins' in chemins_cfg:
-                    self._chemin_chemins = self._base_path / chemins_cfg['chemins']
+            if "chemins_dossiers" in self._config:
+                chemins_cfg = self._config["chemins_dossiers"]
+                if "etats" in chemins_cfg:
+                    self._chemin_etats = self._base_path / chemins_cfg["etats"]
+                if "chemins" in chemins_cfg:
+                    self._chemin_chemins = self._base_path / chemins_cfg["chemins"]
 
             self._logger.info(f"Configuration chargée: {chemin_config}")
 
@@ -105,7 +104,7 @@ class GestionnaireEtats:
     def _scanner_etats(self) -> None:
         """Scanne le répertoire 'etats/' et instancie toutes les classes Etat."""
         # Utiliser le chemin configuré ou le chemin par défaut
-        repertoire_etats = self._chemin_etats or (self._base_path / 'etats')
+        repertoire_etats = self._chemin_etats or (self._base_path / "etats")
 
         if not repertoire_etats.exists():
             self._logger.warning(f"Répertoire des états introuvable: {repertoire_etats}")
@@ -125,7 +124,9 @@ class GestionnaireEtats:
                 self._chemins.append(chemin_popup)
                 chemins_popup_generes += 1
 
-        self._logger.info(f"Scan du répertoire '{repertoire_etats}': {len(self._etats)} états trouvés")
+        self._logger.info(
+            f"Scan du répertoire '{repertoire_etats}': {len(self._etats)} états trouvés"
+        )
         if chemins_popup_generes > 0:
             self._logger.info(f"Chemins popup auto-générés: {chemins_popup_generes}")
 
@@ -142,25 +143,25 @@ class GestionnaireEtats:
         Raises:
             ErreurValidation: Si un popup listé dans le TOML n'existe pas
         """
-        config_groupes = self._config.get('groupes_sortie', {})
+        config_groupes = self._config.get("groupes_sortie", {})
 
         if not config_groupes:
             self._logger.warning("Aucune configuration [groupes_sortie] trouvée")
             return
 
-        groupe_defaut = config_groupes.get('defaut', 'ville')
+        groupe_defaut = config_groupes.get("defaut", "ville")
 
         # Construire la map popup_nom → liste de groupes
-        popup_vers_groupes: Dict[str, List[str]] = {}
+        popup_vers_groupes: dict[str, list[str]] = {}
 
         for nom_groupe, config_groupe in config_groupes.items():
-            if nom_groupe == 'defaut':
+            if nom_groupe == "defaut":
                 continue
             if not isinstance(config_groupe, dict):
                 continue
 
-            racine = config_groupe.get('racine')
-            popups_du_groupe = config_groupe.get('popups', [])
+            racine = config_groupe.get("racine")
+            popups_du_groupe = config_groupe.get("popups", [])
 
             # Valider que tous les popups listés existent
             for popup_nom in popups_du_groupe:
@@ -202,12 +203,12 @@ class GestionnaireEtats:
                     continue
 
                 # Ajouter la racine
-                racine = config_groupe.get('racine')
+                racine = config_groupe.get("racine")
                 if racine:
                     etats_sortie.add(racine)
 
                 # Ajouter les autres popups du groupe (sauf lui-même)
-                for autre_popup in config_groupe.get('popups', []):
+                for autre_popup in config_groupe.get("popups", []):
                     if autre_popup != popup_nom:
                         etats_sortie.add(autre_popup)
 
@@ -218,16 +219,14 @@ class GestionnaireEtats:
             # Mettre à jour l'etat_sortie du CheminPopup
             chemin.etat_sortie = EtatInconnu(etats_possibles=list(etats_sortie))
 
-            self._logger.debug(
-                f"Popup '{popup_nom}' → états sortie: {list(etats_sortie)}"
-            )
+            self._logger.debug(f"Popup '{popup_nom}' → états sortie: {list(etats_sortie)}")
 
         self._logger.info(f"Groupes de sortie résolus pour {len(popup_vers_groupes)} popups")
 
     def _scanner_chemins(self) -> None:
         """Scanne le répertoire 'chemins/' et instancie toutes les classes Chemin."""
         # Utiliser le chemin configuré ou le chemin par défaut
-        repertoire_chemins = self._chemin_chemins or (self._base_path / 'chemins')
+        repertoire_chemins = self._chemin_chemins or (self._base_path / "chemins")
 
         if not repertoire_chemins.exists():
             self._logger.warning(f"Répertoire des chemins introuvable: {repertoire_chemins}")
@@ -236,9 +235,11 @@ class GestionnaireEtats:
         # Étendre la liste existante (préserve les CheminPopup auto-générés)
         chemins_manuels = self._scanner_modules(str(repertoire_chemins), Chemin)
         self._chemins.extend(chemins_manuels)
-        self._logger.info(f"Scan du répertoire '{repertoire_chemins}': {len(chemins_manuels)} chemins manuels trouvés")
+        self._logger.info(
+            f"Scan du répertoire '{repertoire_chemins}': {len(chemins_manuels)} chemins manuels trouvés"
+        )
 
-    def _scanner_modules(self, repertoire: str, classe_base: type) -> List[Any]:
+    def _scanner_modules(self, repertoire: str, classe_base: type) -> list[Any]:
         """
         Scanne un répertoire et instancie les classes héritant de classe_base.
 
@@ -252,8 +253,8 @@ class GestionnaireEtats:
         instances = []
         repertoire_path = Path(repertoire)
 
-        for fichier in repertoire_path.glob('*.py'):
-            if fichier.name.startswith('__'):
+        for fichier in repertoire_path.glob("*.py"):
+            if fichier.name.startswith("__"):
                 continue
 
             try:
@@ -265,14 +266,16 @@ class GestionnaireEtats:
                 for attr_name in dir(module):
                     attr = getattr(module, attr_name)
 
-                    if (isinstance(attr, type) and
-                        issubclass(attr, classe_base) and
-                        attr is not classe_base and
-                        attr is not Etat and
-                        attr is not EtatInconnu and
-                        attr is not Chemin and
-                        attr is not Popup and
-                        attr is not CheminPopup):
+                    if (
+                        isinstance(attr, type)
+                        and issubclass(attr, classe_base)
+                        and attr is not classe_base
+                        and attr is not Etat
+                        and attr is not EtatInconnu
+                        and attr is not Chemin
+                        and attr is not Popup
+                        and attr is not CheminPopup
+                    ):
                         try:
                             instance = attr()
                             instances.append(instance)
@@ -291,9 +294,7 @@ class GestionnaireEtats:
 
             if chemin.etat_sortie is not None:
                 if isinstance(chemin.etat_sortie, list):
-                    chemin.etat_sortie = [
-                        self._resoudre_reference(e) for e in chemin.etat_sortie
-                    ]
+                    chemin.etat_sortie = [self._resoudre_reference(e) for e in chemin.etat_sortie]
                 elif isinstance(chemin.etat_sortie, EtatInconnu):
                     # Résoudre les etats_possibles à l'intérieur de l'EtatInconnu
                     if chemin.etat_sortie.etats_possibles:
@@ -303,11 +304,9 @@ class GestionnaireEtats:
                 else:
                     chemin.etat_sortie = self._resoudre_reference(chemin.etat_sortie)
 
-        for nom, etat in self._etats.items():
+        for _nom, etat in self._etats.items():
             if isinstance(etat, EtatInconnu) and etat.etats_possibles:
-                etat.etats_possibles = [
-                    self._resoudre_reference(e) for e in etat.etats_possibles
-                ]
+                etat.etats_possibles = [self._resoudre_reference(e) for e in etat.etats_possibles]
 
     def _resoudre_reference(self, ref: Union[Etat, str, type]) -> Etat:
         """
@@ -341,7 +340,7 @@ class GestionnaireEtats:
     def _valider_coherence(self) -> None:
         """Valide la cohérence du système (noms uniques, références valides)."""
         noms_vus = set()
-        for nom in self._etats.keys():
+        for nom in self._etats:
             if nom in noms_vus:
                 raise ErreurValidation(f"Nom d'état dupliqué: {nom}")
             noms_vus.add(nom)
@@ -351,10 +350,8 @@ class GestionnaireEtats:
                 self._logger.warning(f"État dans priorités mais non trouvé: {priorite}")
 
     def trouver_chemin(
-        self,
-        etat_depart: Union[Etat, str],
-        etat_arrivee: Union[Etat, str]
-    ) -> Tuple[List[Chemin], bool]:
+        self, etat_depart: Union[Etat, str], etat_arrivee: Union[Etat, str]
+    ) -> tuple[list[Chemin], bool]:
         """
         Trouve le plus court chemin entre deux états.
 
@@ -382,7 +379,9 @@ class GestionnaireEtats:
         chemin = self._bfs_plus_court_chemin(graphe_certain, depart, arrivee)
 
         if chemin is not None:
-            self._logger.debug(f"Chemin trouvé: {' → '.join(c.etat_initial.nom for c in chemin)} → {arrivee.nom} ({len(chemin)} étapes)")
+            self._logger.debug(
+                f"Chemin trouvé: {' → '.join(c.etat_initial.nom for c in chemin)} → {arrivee.nom} ({len(chemin)} étapes)"
+            )
             return (chemin, True)
 
         graphe_complet = self._construire_graphe(seulement_certains=False)
@@ -400,7 +399,7 @@ class GestionnaireEtats:
 
         return ([], False)
 
-    def _construire_graphe(self, seulement_certains: bool = False) -> Dict[Etat, List[Chemin]]:
+    def _construire_graphe(self, seulement_certains: bool = False) -> dict[Etat, list[Chemin]]:
         """
         Construit le graphe pour le pathfinding.
 
@@ -410,7 +409,7 @@ class GestionnaireEtats:
         Returns:
             Map associant chaque état aux chemins partant de cet état
         """
-        graphe: Dict[Etat, List[Chemin]] = {}
+        graphe: dict[Etat, list[Chemin]] = {}
 
         for chemin in self._chemins:
             if seulement_certains and not chemin.est_certain():
@@ -426,11 +425,8 @@ class GestionnaireEtats:
         return graphe
 
     def _bfs_plus_court_chemin(
-        self,
-        graphe: Dict[Etat, List[Chemin]],
-        depart: Etat,
-        arrivee: Etat
-    ) -> Optional[List[Chemin]]:
+        self, graphe: dict[Etat, list[Chemin]], depart: Etat, arrivee: Etat
+    ) -> Optional[list[Chemin]]:
         """
         Algorithme BFS pour trouver le plus court chemin.
 
@@ -442,7 +438,7 @@ class GestionnaireEtats:
         Returns:
             Liste ordonnée de Chemin formant le plus court chemin, ou None
         """
-        max_profondeur = self._config.get('pathfinding', {}).get('max_profondeur', 20)
+        max_profondeur = self._config.get("pathfinding", {}).get("max_profondeur", 20)
 
         file: deque = deque()
         file.append((depart, []))
@@ -474,7 +470,7 @@ class GestionnaireEtats:
 
         return None
 
-    def _obtenir_etats_sortie(self, chemin: Chemin) -> List[Etat]:
+    def _obtenir_etats_sortie(self, chemin: Chemin) -> list[Etat]:
         """
         Obtient les états de sortie possibles d'un chemin.
 
@@ -501,9 +497,7 @@ class GestionnaireEtats:
         return []
 
     def determiner_etat_actuel(
-        self,
-        manoir: 'ManoirBase',
-        liste_etats: Optional[List[Union[Etat, str]]] = None
+        self, manoir: "ManoirBase", liste_etats: Optional[list[Union[Etat, str]]] = None
     ) -> Etat:
         """
         Teste les états pour déterminer l'état actuel du système.
@@ -531,7 +525,7 @@ class GestionnaireEtats:
 
         etats_a_tester = [e for e in etats_a_tester if not isinstance(e, EtatInconnu)]
 
-        def priorite_key(etat: Etat) -> Tuple[int, str]:
+        def priorite_key(etat: Etat) -> tuple[int, str]:
             try:
                 idx = self._priorites.index(etat.nom)
                 return (0, idx)
@@ -569,7 +563,7 @@ class GestionnaireEtats:
             raise EtatInconnuException(f"État inconnu: {nom}")
         return self._etats[nom]
 
-    def obtenir_chemins_depuis(self, etat: Union[Etat, str]) -> List[Chemin]:
+    def obtenir_chemins_depuis(self, etat: Union[Etat, str]) -> list[Chemin]:
         """
         Liste tous les chemins partant d'un état.
 
@@ -582,7 +576,7 @@ class GestionnaireEtats:
         etat_instance = self._resoudre_reference(etat)
         return [c for c in self._chemins if c.etat_initial == etat_instance]
 
-    def obtenir_chemins_vers(self, etat: Union[Etat, str]) -> List[Chemin]:
+    def obtenir_chemins_vers(self, etat: Union[Etat, str]) -> list[Chemin]:
         """
         Liste tous les chemins arrivant à un état.
 
@@ -603,11 +597,11 @@ class GestionnaireEtats:
         return chemins_vers
 
     @property
-    def etats(self) -> Dict[str, Etat]:
+    def etats(self) -> dict[str, Etat]:
         """Retourne le dictionnaire des états enregistrés."""
         return self._etats.copy()
 
     @property
-    def chemins(self) -> List[Chemin]:
+    def chemins(self) -> list[Chemin]:
         """Retourne la liste des chemins enregistrés."""
         return self._chemins.copy()
