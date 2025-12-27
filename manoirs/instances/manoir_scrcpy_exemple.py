@@ -42,6 +42,8 @@ class ManoirScrcpyExemple(ManoirScrcpy):
         super().__init__(
             manoir_id=manoir_id,
             nom=config.get("nom", "Android Exemple"),
+            adb_path=config.get("adb_path", "adb"),
+            scrcpy_path=config.get("scrcpy_path", "scrcpy"),
             scrcpy_max_size=config.get("scrcpy_max_size", 1024),
             device_serial=config.get("device_serial"),
             largeur=config.get("largeur", 1024),

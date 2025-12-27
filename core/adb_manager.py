@@ -15,9 +15,9 @@ from typing import Optional, Tuple
 
 from PIL import Image
 
-from utils.logger import get_logger
+from utils.logger import get_module_logger
 
-logger = get_logger(__name__)
+logger = get_module_logger("ADBManager")
 
 
 class ADBManager:

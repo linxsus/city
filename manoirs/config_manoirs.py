@@ -18,6 +18,10 @@ HAUTEUR_DEFAUT = 720
 BLUESTACKS_PLAYER = r"C:\Program Files\BlueStacks_nxt\HD-Player.exe"
 BLUESTACKS_MANAGER = r"C:\Program Files\BlueStacks_nxt\HD-MultiInstanceManager.exe"
 
+# Chemins vers ADB et scrcpy
+ADB_PATH = r"C:\Projets\platform-tools\adb.exe"
+SCRCPY_PATH = r"C:\Projets\platform-tools\scrcpy.exe"  # Si installé au même endroit
+
 # =====================================================
 # DIMENSIONS BLUESTACKS (pour gestion pub/bandeau)
 # =====================================================
@@ -99,6 +103,9 @@ MANOIRS_CONFIG = {
         "hauteur": 576,
         # Options scrcpy
         "scrcpy_max_size": 1024,
+        # Chemins ADB/scrcpy
+        "adb_path": ADB_PATH,
+        "scrcpy_path": SCRCPY_PATH,
         # Serial appareil (None pour auto-détection)
         "device_serial": None,
     },
