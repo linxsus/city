@@ -39,6 +39,7 @@ from vision.color_detector import get_color_detector
 from vision.image_matcher import get_image_matcher
 from vision.ocr_engine import get_ocr_engine
 from vision.screen_capture import get_screen_capture
+from vision.template_manager import get_template_manager
 
 
 class ManoirBase(ABC):
@@ -52,7 +53,11 @@ class ManoirBase(ABC):
         hauteur: Hauteur de la zone de jeu
         priorite: Priorité statique (0-100)
         slots_config: Configuration des slots [{'nom': str, 'nb': int}, ...]
+        group: Groupe pour le système de templates (hérité par les sous-classes)
     """
+
+    # Groupe pour le système de templates (cumulé via l'héritage)
+    group = "manoir"
 
     # Configuration de slots par défaut
     DEFAULT_SLOTS_CONFIG = [{"nom": "default", "nb": 3}]
@@ -142,6 +147,7 @@ class ManoirBase(ABC):
         self._matcher = get_image_matcher()
         self._color = get_color_detector()
         self._ocr = get_ocr_engine()
+        self._template_manager = get_template_manager()
 
         # Statistiques locales
         self._stats = {
@@ -420,19 +426,31 @@ class ManoirBase(ABC):
     def find_image(self, template_path, threshold=None, region=None):
         """Trouve une image template et retourne sa position
 
+        Supporte deux modes :
+        1. Template logique (nouveau système avec variantes) : si template_path
+           correspond à un template avec config.json, teste toutes les variantes
+           dans l'ordre de priorité dynamique.
+        2. Chemin direct (ancien système) : utilise directement le fichier.
+
         Args:
-            template_path: Chemin vers l'image template
-            threshold: Seuil de confiance (0-1)
+            template_path: Nom du template ou chemin vers l'image
+            threshold: Seuil de confiance (0-1), ignoré si template logique
             region: Région de recherche optionnelle
 
         Returns:
             Tuple (x, y) ou None
         """
+        # Essayer d'abord le nouveau système de templates avec variantes
+        result = self._find_image_with_variants(template_path, region)
+        if result is not None:
+            return result
+
+        # Fallback sur l'ancien système (chemin direct)
         if threshold is None:
             threshold = DEFAULT_IMAGE_THRESHOLD
 
         # Résoudre le chemin
-        template_path = self._resolve_template_path(template_path)
+        resolved_path = self._resolve_template_path(template_path)
 
         image = self.capture()
         if not image:
@@ -446,11 +464,73 @@ class ManoirBase(ABC):
         else:
             offset_x, offset_y = 0, 0
 
-        result = self._matcher.find_template(image, template_path, threshold)
+        result = self._matcher.find_template(image, resolved_path, threshold)
 
         if result:
             x, y, confidence = result
             return (x + offset_x, y + offset_y)
+
+        return None
+
+    def _find_image_with_variants(self, template_name, region=None):
+        """Cherche un template en testant toutes ses variantes (PROTÉGÉ)
+
+        Utilise le template_manager pour résoudre les variantes selon
+        les groupes du manoir et les tester dans l'ordre de priorité.
+
+        Args:
+            template_name: Nom du template (ex: "bouton_ok")
+            region: Région de recherche optionnelle
+
+        Returns:
+            Tuple (x, y) ou None
+        """
+        try:
+            # Résoudre les variantes pour ce manoir
+            variants = self._template_manager.resolve_variants(template_name, self)
+        except ValueError:
+            # Pas un template logique, retourner None pour fallback
+            return None
+
+        image = self.capture()
+        if not image:
+            return None
+
+        # Extraire la région si spécifiée
+        if region:
+            x, y, w, h = region
+            image = image.crop((x, y, x + w, y + h))
+            offset_x, offset_y = x, y
+        else:
+            offset_x, offset_y = 0, 0
+
+        # Tester chaque variante dans l'ordre de priorité
+        for variant in variants:
+            if not variant.full_path.exists():
+                self.logger.debug(f"Variante non trouvée: {variant.full_path}")
+                continue
+
+            result = self._matcher.find_template(
+                image,
+                str(variant.full_path),
+                variant.threshold
+            )
+
+            if result:
+                x, y, confidence = result
+
+                # Enregistrer le match pour la priorisation dynamique
+                self._template_manager.record_match(
+                    self,
+                    template_name,
+                    variant.filename
+                )
+
+                self.logger.debug(
+                    f"Template {template_name}/{variant.filename} trouvé "
+                    f"à ({x + offset_x}, {y + offset_y}) conf={confidence:.2f}"
+                )
+                return (x + offset_x, y + offset_y)
 
         return None
 

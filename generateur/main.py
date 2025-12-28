@@ -11,7 +11,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from .api.routes import chemins_router, etats_router, ia_router, images_router
+from .api.routes import chemins_router, etats_router, ia_router, images_router, templates_router
 from .api.routes.actions import router as actions_router
 from .api.routes.action_routes import router as action_gen_router
 from .api.routes.import_routes import router as import_router
@@ -41,6 +41,7 @@ app.include_router(actions_router, prefix="/api")
 app.include_router(action_gen_router, prefix="/api")
 app.include_router(import_router, prefix="/api")
 app.include_router(scrcpy_router, prefix="/api")
+app.include_router(templates_router, prefix="/api")
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -129,6 +130,19 @@ async def capture_page(request: Request):
         {
             "request": request,
             "title": "Capture Android",
+            "claude_available": is_claude_available(),
+        },
+    )
+
+
+@app.get("/templates-manager", response_class=HTMLResponse)
+async def templates_manager_page(request: Request):
+    """Page de gestion des templates multi-variantes."""
+    return templates.TemplateResponse(
+        "views/templates.html",
+        {
+            "request": request,
+            "title": "Gestion des Templates",
             "claude_available": is_claude_available(),
         },
     )
