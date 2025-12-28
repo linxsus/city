@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Générateur de Classes</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        .capture-container {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .capture-main {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .capture-preview {
+            background: var(--bg-secondary);
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .capture-preview.connected {
+            border-style: solid;
+            border-color: var(--success-color);
+        }
+
+        .capture-preview.has-image {
+            border-style: solid;
+            border-color: var(--primary-color);
+        }
+
+        .capture-placeholder {
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        .capture-placeholder .icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .image-editor-container {
+            width: 100%;
+            height: 100%;
+            display: none;
+        }
+
+        .image-editor-container.active {
+            display: block;
+        }
+
+        .image-editor-container canvas {
+            max-width: 100%;
+            max-height: 600px;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .editor-toolbar {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+        }
+
+        .controls-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .control-section {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .control-section h3 {
+            margin-bottom: 1rem;
+            font-size: 1rem;
+            color: var(--text-primary);
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+        }
+
+        .status-indicator.connected {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success-color);
+        }
+
+        .status-indicator.disconnected {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error-color);
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .device-info {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .capture-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .btn-capture {
+            font-size: 1.1rem;
+            padding: 1rem;
+        }
+
+        .selection-info {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: var(--bg-primary);
+            border-radius: 4px;
+        }
+
+        .template-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .btn-group-vertical {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: white;
+        }
+
+        .loading .loading-overlay {
+            display: flex;
+        }
+
+        @media (max-width: 900px) {
+            .capture-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    {% include "partials/header.html" %}
+
+    <main class="container">
+        <div class="page-header">
+            <h1>Capture d'écran Android</h1>
+            <p>Capturez l'écran, sélectionnez une zone et sauvegardez comme template</p>
+        </div>
+
+        <div class="capture-container">
+            <!-- Zone principale -->
+            <div class="capture-main">
+                <!-- Zone de prévisualisation avec éditeur -->
+                <div class="capture-preview" id="capture-preview">
+                    <div class="capture-placeholder" id="placeholder">
+                        <div class="icon">📱</div>
+                        <p>Connectez un appareil Android</p>
+                        <p><small>Puis cliquez sur "Capturer l'écran"</small></p>
+                    </div>
+                    <div class="image-editor-container" id="image-editor-container">
+                        <canvas id="capture-canvas"></canvas>
+                    </div>
+                    <div class="loading-overlay">⏳ Capture en cours...</div>
+                </div>
+
+                <!-- Barre d'outils -->
+                <div class="editor-toolbar" id="editor-toolbar" style="display: none;">
+                    <button type="button" class="btn btn-secondary" id="btn-reset-selection">
+                        ↺ Réinitialiser sélection
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="btn-new-capture">
+                        📷 Nouvelle capture
+                    </button>
+                    <button type="button" class="btn btn-primary" id="btn-save-template" disabled>
+                        💾 Sauver la sélection comme template
+                    </button>
+                </div>
+            </div>
+
+            <!-- Panneau de contrôle -->
+            <div class="controls-panel">
+                <!-- Statut connexion -->
+                <div class="control-section">
+                    <h3>📱 Appareil</h3>
+                    <div class="status-indicator disconnected" id="status-indicator">
+                        <span class="status-dot"></span>
+                        <span id="status-text">Vérification...</span>
+                    </div>
+                    <div class="device-info" id="device-info"></div>
+                    <button class="btn btn-secondary btn-small" id="btn-refresh-status">
+                        Actualiser le statut
+                    </button>
+                </div>
+
+                <!-- Actions de capture -->
+                <div class="control-section">
+                    <h3>📷 Capture</h3>
+                    <div class="capture-actions">
+                        <button class="btn btn-primary btn-capture" id="btn-capture" disabled>
+                            📷 Capturer l'écran
+                        </button>
+                    </div>
+                    <div class="selection-info" id="selection-info">
+                        Capturez l'écran puis sélectionnez une zone en cliquant-glissant sur l'image.
+                    </div>
+                </div>
+
+                <!-- Sauvegarder template -->
+                <div class="control-section">
+                    <h3>💾 Template</h3>
+                    <div class="form-group">
+                        <label for="template-name">Nom du template</label>
+                        <input type="text" id="template-name" placeholder="ex: bouton_menu"
+                               pattern="^[a-z][a-z0-9_]*$">
+                        <small class="form-help">Format snake_case</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="template-subdir">Sous-dossier</label>
+                        <input type="text" id="template-subdir" value="scrcpy" placeholder="ex: scrcpy">
+                    </div>
+                    <button class="btn btn-primary" id="btn-save-template-panel" disabled style="width: 100%;">
+                        💾 Sauvegarder le template
+                    </button>
+                </div>
+
+                <!-- Utiliser pour créer -->
+                <div class="control-section">
+                    <h3>📤 Utiliser pour créer</h3>
+                    <div class="btn-group-vertical">
+                        <a class="btn btn-secondary disabled" id="btn-use-for-etat" href="#">
+                            → Créer un État
+                        </a>
+                        <a class="btn btn-secondary disabled" id="btn-use-for-chemin" href="#">
+                            → Créer un Chemin
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    {% include "partials/footer.html" %}
+
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/components/image-editor.js"></script>
+    <script src="/static/js/views/capture-view.js"></script>
+</body>
+</html>

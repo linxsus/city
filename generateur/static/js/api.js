@@ -174,4 +174,56 @@ const API = {
             method: 'DELETE',
         });
     },
+
+    // === Scrcpy/ADB ===
+
+    async getScrcpyStatus() {
+        return this.request('/scrcpy/status');
+    },
+
+    async captureScreen() {
+        return this.request('/scrcpy/capture', {
+            method: 'POST',
+        });
+    },
+
+    async capturePreview() {
+        return this.request('/scrcpy/capture-preview');
+    },
+
+    async saveTemplate(data) {
+        return this.request('/scrcpy/save-template', {
+            method: 'POST',
+            body: data,
+        });
+    },
+
+    async scrcpyClick(x, y) {
+        return this.request('/scrcpy/click', {
+            method: 'POST',
+            body: { x, y },
+        });
+    },
+
+    async scrcpyBack() {
+        return this.request('/scrcpy/back', {
+            method: 'POST',
+        });
+    },
+
+    async scrcpyHome() {
+        return this.request('/scrcpy/home', {
+            method: 'POST',
+        });
+    },
+
+    async launchScrcpy() {
+        return this.request('/scrcpy/launch-scrcpy', {
+            method: 'POST',
+        });
+    },
+
+    async getScrcpyWindowStatus() {
+        return this.request('/scrcpy/scrcpy-status');
+    },
 };

@@ -15,6 +15,7 @@ from .api.routes import chemins_router, etats_router, ia_router, images_router
 from .api.routes.actions import router as actions_router
 from .api.routes.action_routes import router as action_gen_router
 from .api.routes.import_routes import router as import_router
+from .api.routes.scrcpy import router as scrcpy_router
 from .config import DEBUG, HOST, PORT, STATIC_DIR, TEMPLATES_DIR, is_claude_available
 
 # Créer l'application FastAPI
@@ -39,6 +40,7 @@ app.include_router(ia_router, prefix="/api")
 app.include_router(actions_router, prefix="/api")
 app.include_router(action_gen_router, prefix="/api")
 app.include_router(import_router, prefix="/api")
+app.include_router(scrcpy_router, prefix="/api")
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -114,6 +116,19 @@ async def browse_page(request: Request):
         {
             "request": request,
             "title": "Explorer les éléments",
+            "claude_available": is_claude_available(),
+        },
+    )
+
+
+@app.get("/capture", response_class=HTMLResponse)
+async def capture_page(request: Request):
+    """Page de capture d'écran via scrcpy/ADB."""
+    return templates.TemplateResponse(
+        "views/capture.html",
+        {
+            "request": request,
+            "title": "Capture Android",
             "claude_available": is_claude_available(),
         },
     )
