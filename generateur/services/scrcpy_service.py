@@ -15,6 +15,9 @@ from PIL import Image
 
 from ..config import UPLOAD_DIR, FRAMEWORK_TEMPLATES_DIR
 
+# Taille max par défaut pour les captures (cohérent avec scrcpy_max_size)
+DEFAULT_MAX_SIZE = 1024
+
 
 class ScrcpyService:
     """Service pour les captures d'écran via ADB/scrcpy.
@@ -25,16 +28,22 @@ class ScrcpyService:
     - Sauvegarder les captures pour utilisation dans le générateur
     """
 
-    def __init__(self, adb_path: str = "adb", scrcpy_path: str = "scrcpy"):
+    def __init__(self, adb_path: str = "adb", scrcpy_path: str = "scrcpy", max_size: int = DEFAULT_MAX_SIZE):
         """
         Args:
             adb_path: Chemin vers l'exécutable adb
             scrcpy_path: Chemin vers l'exécutable scrcpy
+            max_size: Taille max de la dimension la plus grande (défaut: 1024)
         """
         self.adb_path = adb_path
         self.scrcpy_path = scrcpy_path
+        self.max_size = max_size
         self._adb_manager = None
         self._manoir = None
+        # Dimensions de l'écran réel (mises à jour après capture)
+        self._real_screen_size: Optional[tuple] = None
+        # Dimensions après redimensionnement
+        self._resized_size: Optional[tuple] = None
 
     def _get_adb_manager(self):
         """Récupère ou crée le gestionnaire ADB."""
@@ -45,6 +54,10 @@ class ScrcpyService:
 
             # Charger la config si disponible
             config = get_config("android") or {}
+
+            # Utiliser max_size de la config si disponible
+            if "scrcpy_max_size" in config:
+                self.max_size = config["scrcpy_max_size"]
 
             self._adb_manager = ADBManager(
                 adb_path=config.get("adb_path", self.adb_path),
@@ -64,6 +77,32 @@ class ScrcpyService:
                 self._manoir = None
         return self._manoir
 
+    def _resize_image(self, image: Image.Image) -> Image.Image:
+        """Redimensionne l'image pour que la plus grande dimension soit <= max_size.
+
+        Args:
+            image: Image PIL à redimensionner
+
+        Returns:
+            Image redimensionnée (ou originale si déjà assez petite)
+        """
+        if self.max_size <= 0:
+            return image
+
+        width, height = image.size
+        max_dim = max(width, height)
+
+        if max_dim <= self.max_size:
+            return image
+
+        # Calculer le ratio de redimensionnement
+        ratio = self.max_size / max_dim
+        new_width = int(width * ratio)
+        new_height = int(height * ratio)
+
+        # Redimensionner avec un bon algorithme
+        return image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
     def get_status(self) -> dict:
         """Récupère le statut de la connexion ADB.
 
@@ -81,6 +120,7 @@ class ScrcpyService:
             "device_serial": adb.device_serial,
             "device_name": None,
             "screen_size": None,
+            "max_size": self.max_size,
         }
 
         if connected:
@@ -92,20 +132,34 @@ class ScrcpyService:
     def capture_screen(self) -> Optional[Image.Image]:
         """Capture l'écran de l'appareil Android.
 
+        L'image est automatiquement redimensionnée pour que la plus grande
+        dimension soit <= max_size (défaut: 1024).
+
         Returns:
             PIL.Image ou None si erreur
         """
+        image = None
+
         # Essayer d'abord via le manoir
         manoir = self._get_manoir()
         if manoir:
             try:
-                return manoir.capture(force=True)
+                image = manoir.capture(force=True)
             except Exception:
                 pass
 
         # Fallback sur ADB direct
-        adb = self._get_adb_manager()
-        return adb.capture_screen()
+        if image is None:
+            adb = self._get_adb_manager()
+            image = adb.capture_screen()
+
+        # Stocker les dimensions originales et redimensionner
+        if image is not None:
+            self._real_screen_size = image.size
+            image = self._resize_image(image)
+            self._resized_size = image.size
+
+        return image
 
     def capture_and_save(self, prefix: str = "capture") -> Optional[dict]:
         """Capture l'écran et sauvegarde le fichier.
@@ -215,27 +269,54 @@ class ScrcpyService:
         except Exception as e:
             return None
 
+    def _convert_click_coordinates(self, x: int, y: int) -> tuple:
+        """Convertit les coordonnées de l'image redimensionnée vers l'écran réel.
+
+        Args:
+            x, y: Coordonnées sur l'image redimensionnée
+
+        Returns:
+            Tuple (x, y) en coordonnées écran réel
+        """
+        if self._real_screen_size and self._resized_size:
+            real_w, real_h = self._real_screen_size
+            resized_w, resized_h = self._resized_size
+
+            # Calculer le ratio
+            scale_x = real_w / resized_w
+            scale_y = real_h / resized_h
+
+            return (int(x * scale_x), int(y * scale_y))
+
+        return (x, y)
+
     def click_at(self, x: int, y: int) -> bool:
         """Effectue un clic sur l'appareil.
 
+        Les coordonnées sont relatives à l'image redimensionnée (max 1024px)
+        et sont automatiquement converties vers les coordonnées réelles de l'écran.
+
         Args:
-            x, y: Coordonnées du clic
+            x, y: Coordonnées du clic (sur l'image redimensionnée)
 
         Returns:
             True si succès
         """
+        # Convertir les coordonnées vers l'écran réel
+        real_x, real_y = self._convert_click_coordinates(x, y)
+
         # Essayer via le manoir
         manoir = self._get_manoir()
         if manoir:
             try:
-                manoir.click_at(x, y)
+                manoir.click_at(real_x, real_y)
                 return True
             except Exception:
                 pass
 
         # Fallback sur ADB direct
         adb = self._get_adb_manager()
-        return adb.tap(x, y)
+        return adb.tap(real_x, real_y)
 
     def press_back(self) -> bool:
         """Appuie sur le bouton retour."""
