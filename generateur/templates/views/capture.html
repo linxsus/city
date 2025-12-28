@@ -8,9 +8,15 @@
     <style>
         .capture-container {
             display: grid;
-            grid-template-columns: 1fr 300px;
+            grid-template-columns: 1fr 320px;
             gap: 2rem;
             margin-top: 2rem;
+        }
+
+        .capture-main {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
         }
 
         .capture-preview {
@@ -30,10 +36,9 @@
             border-color: var(--success-color);
         }
 
-        .capture-preview img {
-            max-width: 100%;
-            max-height: 600px;
-            cursor: crosshair;
+        .capture-preview.has-image {
+            border-style: solid;
+            border-color: var(--primary-color);
         }
 
         .capture-placeholder {
@@ -44,6 +49,32 @@
         .capture-placeholder .icon {
             font-size: 4rem;
             margin-bottom: 1rem;
+        }
+
+        .image-editor-container {
+            width: 100%;
+            height: 100%;
+            display: none;
+        }
+
+        .image-editor-container.active {
+            display: block;
+        }
+
+        .image-editor-container canvas {
+            max-width: 100%;
+            max-height: 600px;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .editor-toolbar {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
         }
 
         .controls-panel {
@@ -95,17 +126,6 @@
             color: var(--text-muted);
         }
 
-        .btn-group {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-
-        .btn-group .btn {
-            flex: 1;
-            min-width: 80px;
-        }
-
         .capture-actions {
             display: flex;
             flex-direction: column;
@@ -117,50 +137,43 @@
             padding: 1rem;
         }
 
-        .nav-buttons {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 0.5rem;
-        }
-
-        .nav-buttons .btn {
-            padding: 0.75rem;
-        }
-
-        .click-coords {
+        .selection-info {
             font-size: 0.85rem;
             color: var(--text-muted);
             margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: var(--bg-primary);
+            border-radius: 4px;
         }
 
-        .selection-overlay {
-            position: absolute;
-            border: 2px solid var(--primary-color);
-            background: rgba(59, 130, 246, 0.2);
-            pointer-events: none;
-        }
-
-        .quick-actions {
+        .template-actions {
             display: flex;
+            flex-direction: column;
             gap: 0.5rem;
-            margin-top: 1rem;
         }
 
-        .loading-spinner {
-            display: none;
+        .btn-group-vertical {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .loading-overlay {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
             font-size: 2rem;
+            color: white;
         }
 
-        .loading .loading-spinner {
-            display: block;
-        }
-
-        .loading img {
-            opacity: 0.5;
+        .loading .loading-overlay {
+            display: flex;
         }
 
         @media (max-width: 900px) {
@@ -176,20 +189,37 @@
     <main class="container">
         <div class="page-header">
             <h1>Capture d'écran Android</h1>
-            <p>Capturez directement l'écran depuis votre appareil Android connecté via ADB</p>
+            <p>Capturez l'écran, sélectionnez une zone et sauvegardez comme template</p>
         </div>
 
         <div class="capture-container">
-            <!-- Zone de prévisualisation -->
-            <div class="capture-preview" id="capture-preview">
-                <div class="capture-placeholder" id="placeholder">
-                    <div class="icon">📱</div>
-                    <p>Connectez un appareil Android</p>
-                    <p><small>Puis cliquez sur "Capturer l'écran"</small></p>
+            <!-- Zone principale -->
+            <div class="capture-main">
+                <!-- Zone de prévisualisation avec éditeur -->
+                <div class="capture-preview" id="capture-preview">
+                    <div class="capture-placeholder" id="placeholder">
+                        <div class="icon">📱</div>
+                        <p>Connectez un appareil Android</p>
+                        <p><small>Puis cliquez sur "Capturer l'écran"</small></p>
+                    </div>
+                    <div class="image-editor-container" id="image-editor-container">
+                        <canvas id="capture-canvas"></canvas>
+                    </div>
+                    <div class="loading-overlay">⏳ Capture en cours...</div>
                 </div>
-                <img id="capture-image" style="display: none;" alt="Capture d'écran">
-                <div class="loading-spinner">⏳</div>
-                <div class="selection-overlay" id="selection-overlay" style="display: none;"></div>
+
+                <!-- Barre d'outils -->
+                <div class="editor-toolbar" id="editor-toolbar" style="display: none;">
+                    <button type="button" class="btn btn-secondary" id="btn-reset-selection">
+                        ↺ Réinitialiser sélection
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="btn-new-capture">
+                        📷 Nouvelle capture
+                    </button>
+                    <button type="button" class="btn btn-primary" id="btn-save-template" disabled>
+                        💾 Sauver la sélection comme template
+                    </button>
+                </div>
             </div>
 
             <!-- Panneau de contrôle -->
@@ -214,60 +244,41 @@
                         <button class="btn btn-primary btn-capture" id="btn-capture" disabled>
                             📷 Capturer l'écran
                         </button>
-                        <button class="btn btn-secondary" id="btn-launch-scrcpy" disabled>
-                            🖥️ Ouvrir scrcpy
-                        </button>
+                    </div>
+                    <div class="selection-info" id="selection-info">
+                        Capturez l'écran puis sélectionnez une zone en cliquant-glissant sur l'image.
                     </div>
                 </div>
 
-                <!-- Navigation sur l'appareil -->
+                <!-- Sauvegarder template -->
                 <div class="control-section">
-                    <h3>🎮 Navigation</h3>
-                    <div class="nav-buttons">
-                        <button class="btn btn-secondary" id="btn-back" disabled>⬅️ Retour</button>
-                        <button class="btn btn-secondary" id="btn-home" disabled>🏠 Home</button>
-                        <button class="btn btn-secondary" id="btn-refresh" disabled>🔄 Refresh</button>
+                    <h3>💾 Template</h3>
+                    <div class="form-group">
+                        <label for="template-name">Nom du template</label>
+                        <input type="text" id="template-name" placeholder="ex: bouton_menu"
+                               pattern="^[a-z][a-z0-9_]*$">
+                        <small class="form-help">Format snake_case</small>
                     </div>
-                    <div class="click-coords" id="click-coords">
-                        Cliquez sur l'image pour interagir
+                    <div class="form-group">
+                        <label for="template-subdir">Sous-dossier</label>
+                        <input type="text" id="template-subdir" value="scrcpy" placeholder="ex: scrcpy">
                     </div>
+                    <button class="btn btn-primary" id="btn-save-template-panel" disabled style="width: 100%;">
+                        💾 Sauvegarder le template
+                    </button>
                 </div>
 
-                <!-- Utiliser la capture -->
+                <!-- Utiliser pour créer -->
                 <div class="control-section">
-                    <h3>📤 Utiliser</h3>
-                    <div class="btn-group">
-                        <a class="btn btn-secondary" id="btn-use-for-etat" href="#">
-                            → État
+                    <h3>📤 Utiliser pour créer</h3>
+                    <div class="btn-group-vertical">
+                        <a class="btn btn-secondary disabled" id="btn-use-for-etat" href="#">
+                            → Créer un État
                         </a>
-                        <a class="btn btn-secondary" id="btn-use-for-chemin" href="#">
-                            → Chemin
+                        <a class="btn btn-secondary disabled" id="btn-use-for-chemin" href="#">
+                            → Créer un Chemin
                         </a>
                     </div>
-                    <div class="quick-actions">
-                        <button class="btn btn-secondary btn-small" id="btn-save-template" disabled>
-                            💾 Sauver comme template
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Modal pour sauvegarder le template -->
-        <div class="modal hidden" id="template-modal">
-            <div class="modal-content">
-                <h3>Sauvegarder comme template</h3>
-                <div class="form-group">
-                    <label for="template-name">Nom du template</label>
-                    <input type="text" id="template-name" placeholder="ex: bouton_menu">
-                </div>
-                <div class="form-group">
-                    <label for="template-subdir">Sous-dossier</label>
-                    <input type="text" id="template-subdir" value="scrcpy" placeholder="ex: scrcpy">
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeTemplateModal()">Annuler</button>
-                    <button type="button" class="btn btn-primary" id="btn-confirm-save">Sauvegarder</button>
                 </div>
             </div>
         </div>
@@ -277,6 +288,7 @@
 
     <script src="/static/js/app.js"></script>
     <script src="/static/js/api.js"></script>
+    <script src="/static/js/components/image-editor.js"></script>
     <script src="/static/js/views/capture-view.js"></script>
 </body>
 </html>

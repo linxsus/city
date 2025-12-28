@@ -26,6 +26,9 @@ class ImageEditor {
         this.resizeHandle = null;
         this.scale = 1;
 
+        // Callback pour notifier les changements de sélection
+        this.onSelectionChange = null;
+
         this.setupEventListeners();
     }
 
@@ -284,6 +287,11 @@ class ImageEditor {
         if (yInput) yInput.value = sel ? sel.y : '';
         if (wInput) wInput.value = sel ? sel.width : '';
         if (hInput) hInput.value = sel ? sel.height : '';
+
+        // Notifier le changement de sélection
+        if (typeof this.onSelectionChange === 'function') {
+            this.onSelectionChange(sel);
+        }
     }
 
     /**

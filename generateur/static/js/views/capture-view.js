@@ -1,59 +1,58 @@
 /**
  * Vue de capture d'écran via scrcpy/ADB
+ * Version: 2.0.0 - Avec sélection de zone pour templates
  */
 
 (function() {
     // Éléments DOM
     const preview = document.getElementById('capture-preview');
     const placeholder = document.getElementById('placeholder');
-    const captureImage = document.getElementById('capture-image');
+    const editorContainer = document.getElementById('image-editor-container');
+    const editorToolbar = document.getElementById('editor-toolbar');
     const statusIndicator = document.getElementById('status-indicator');
     const statusText = document.getElementById('status-text');
     const deviceInfo = document.getElementById('device-info');
-    const clickCoords = document.getElementById('click-coords');
+    const selectionInfo = document.getElementById('selection-info');
 
     // Boutons
     const btnCapture = document.getElementById('btn-capture');
     const btnRefreshStatus = document.getElementById('btn-refresh-status');
-    const btnLaunchScrcpy = document.getElementById('btn-launch-scrcpy');
-    const btnBack = document.getElementById('btn-back');
-    const btnHome = document.getElementById('btn-home');
-    const btnRefresh = document.getElementById('btn-refresh');
+    const btnResetSelection = document.getElementById('btn-reset-selection');
+    const btnNewCapture = document.getElementById('btn-new-capture');
     const btnSaveTemplate = document.getElementById('btn-save-template');
+    const btnSaveTemplatePanel = document.getElementById('btn-save-template-panel');
     const btnUseForEtat = document.getElementById('btn-use-for-etat');
     const btnUseForChemin = document.getElementById('btn-use-for-chemin');
 
-    // Modal
-    const templateModal = document.getElementById('template-modal');
+    // Champs template
     const templateName = document.getElementById('template-name');
     const templateSubdir = document.getElementById('template-subdir');
-    const btnConfirmSave = document.getElementById('btn-confirm-save');
 
     // État
     let isConnected = false;
     let currentCapturePath = null;
-    let captureWidth = 0;
-    let captureHeight = 0;
+    let imageEditor = null;
 
     /**
      * Initialisation
      */
     async function init() {
+        // Initialiser l'éditeur d'image
+        imageEditor = new ImageEditor('capture-canvas');
+
+        // Écouter les changements de sélection
+        imageEditor.onSelectionChange = updateSelectionState;
+
         // Vérifier le statut initial
         await checkStatus();
 
         // Événements
         btnRefreshStatus.addEventListener('click', checkStatus);
         btnCapture.addEventListener('click', captureScreen);
-        btnLaunchScrcpy.addEventListener('click', launchScrcpy);
-        btnBack.addEventListener('click', pressBack);
-        btnHome.addEventListener('click', pressHome);
-        btnRefresh.addEventListener('click', captureScreen);
-        btnSaveTemplate.addEventListener('click', openTemplateModal);
-        btnConfirmSave.addEventListener('click', saveTemplate);
-
-        // Clic sur l'image pour interagir
-        captureImage.addEventListener('click', handleImageClick);
+        btnNewCapture.addEventListener('click', captureScreen);
+        btnResetSelection.addEventListener('click', resetSelection);
+        btnSaveTemplate.addEventListener('click', saveTemplate);
+        btnSaveTemplatePanel.addEventListener('click', saveTemplate);
 
         // Vérification périodique du statut
         setInterval(checkStatus, 10000);
@@ -100,6 +99,9 @@
             if (data.screen_size) {
                 info += `Écran: ${data.screen_size[0]}x${data.screen_size[1]}`;
             }
+            if (data.max_size) {
+                info += ` (max ${data.max_size}px)`;
+            }
             deviceInfo.innerHTML = info;
         } else {
             setDisconnected('Aucun appareil');
@@ -123,13 +125,13 @@
      */
     function updateButtons() {
         const hasCapture = currentCapturePath !== null;
+        const hasSelection = imageEditor && imageEditor.getSelection() !== null;
 
         btnCapture.disabled = !isConnected;
-        btnLaunchScrcpy.disabled = !isConnected;
-        btnBack.disabled = !isConnected;
-        btnHome.disabled = !isConnected;
-        btnRefresh.disabled = !isConnected;
-        btnSaveTemplate.disabled = !hasCapture;
+
+        // Boutons de sauvegarde template
+        btnSaveTemplate.disabled = !hasSelection;
+        btnSaveTemplatePanel.disabled = !hasSelection;
 
         // Liens vers les autres pages
         if (hasCapture) {
@@ -143,6 +145,21 @@
             btnUseForEtat.classList.add('disabled');
             btnUseForChemin.classList.add('disabled');
         }
+    }
+
+    /**
+     * Met à jour l'état de la sélection
+     */
+    function updateSelectionState(selection) {
+        if (selection) {
+            selectionInfo.innerHTML = `
+                <strong>Sélection:</strong> ${selection.width} x ${selection.height} px<br>
+                <small>Position: (${selection.x}, ${selection.y})</small>
+            `;
+        } else {
+            selectionInfo.textContent = 'Cliquez-glissez sur l\'image pour sélectionner une zone.';
+        }
+        updateButtons();
     }
 
     /**
@@ -161,15 +178,18 @@
             if (result.success) {
                 const data = result.data;
                 currentCapturePath = data.path;
-                captureWidth = data.width;
-                captureHeight = data.height;
 
-                // Afficher l'image
-                captureImage.src = `/api/images/serve?path=${encodeURIComponent(data.path)}`;
-                captureImage.style.display = 'block';
+                // Afficher l'éditeur
                 placeholder.style.display = 'none';
+                editorContainer.classList.add('active');
+                editorToolbar.style.display = 'flex';
+                preview.classList.add('has-image');
 
-                clickCoords.textContent = `Capture: ${data.width}x${data.height}`;
+                // Charger l'image dans l'éditeur
+                const imageUrl = `/api/images/serve?path=${encodeURIComponent(data.path)}`;
+                await imageEditor.loadImage(imageUrl);
+
+                selectionInfo.textContent = `Capture: ${data.width}x${data.height} - Cliquez-glissez pour sélectionner une zone.`;
 
                 showNotification(`Capture réussie (${data.width}x${data.height})`, 'success');
             } else {
@@ -187,97 +207,14 @@
     }
 
     /**
-     * Lance scrcpy
+     * Réinitialise la sélection
      */
-    async function launchScrcpy() {
-        if (!isConnected) return;
-
-        try {
-            const result = await API.launchScrcpy();
-
-            if (result.success) {
-                showNotification(result.message, 'success');
-            } else {
-                showNotification(result.error?.message || 'Échec du lancement', 'error');
-            }
-        } catch (error) {
-            console.error('Erreur lancement scrcpy:', error);
-            showNotification('Erreur lors du lancement de scrcpy', 'error');
+    function resetSelection() {
+        if (imageEditor) {
+            imageEditor.reset();
         }
+        updateButtons();
     }
-
-    /**
-     * Appuie sur Retour
-     */
-    async function pressBack() {
-        if (!isConnected) return;
-
-        try {
-            await API.scrcpyBack();
-            // Rafraîchir la capture après un court délai
-            setTimeout(captureScreen, 500);
-        } catch (error) {
-            console.error('Erreur bouton retour:', error);
-        }
-    }
-
-    /**
-     * Appuie sur Home
-     */
-    async function pressHome() {
-        if (!isConnected) return;
-
-        try {
-            await API.scrcpyHome();
-            setTimeout(captureScreen, 500);
-        } catch (error) {
-            console.error('Erreur bouton home:', error);
-        }
-    }
-
-    /**
-     * Gère le clic sur l'image pour envoyer un tap sur l'appareil
-     */
-    async function handleImageClick(event) {
-        if (!isConnected || !currentCapturePath) return;
-
-        // Calculer les coordonnées réelles sur l'appareil
-        const rect = captureImage.getBoundingClientRect();
-        const scaleX = captureWidth / rect.width;
-        const scaleY = captureHeight / rect.height;
-
-        const x = Math.round((event.clientX - rect.left) * scaleX);
-        const y = Math.round((event.clientY - rect.top) * scaleY);
-
-        clickCoords.textContent = `Clic envoyé: (${x}, ${y})`;
-
-        try {
-            const result = await API.scrcpyClick(x, y);
-
-            if (result.success) {
-                // Rafraîchir la capture après le clic
-                setTimeout(captureScreen, 300);
-            }
-        } catch (error) {
-            console.error('Erreur clic:', error);
-        }
-    }
-
-    /**
-     * Ouvre le modal de sauvegarde template
-     */
-    function openTemplateModal() {
-        templateModal.classList.remove('hidden');
-        templateName.value = '';
-        templateName.focus();
-    }
-
-    /**
-     * Ferme le modal de sauvegarde template
-     */
-    window.closeTemplateModal = function() {
-        templateModal.classList.add('hidden');
-    };
 
     /**
      * Sauvegarde comme template
@@ -288,29 +225,53 @@
 
         if (!name) {
             showNotification('Veuillez entrer un nom de template', 'warning');
+            templateName.focus();
             return;
         }
 
         if (!/^[a-z][a-z0-9_]*$/.test(name)) {
-            showNotification('Nom invalide (utilisez snake_case)', 'warning');
+            showNotification('Nom invalide (utilisez snake_case: lettres minuscules, chiffres, underscores)', 'warning');
+            templateName.focus();
             return;
         }
 
+        const selection = imageEditor.getSelection();
+        if (!selection) {
+            showNotification('Veuillez sélectionner une zone sur l\'image', 'warning');
+            return;
+        }
+
+        // Désactiver les boutons pendant la sauvegarde
+        btnSaveTemplate.disabled = true;
+        btnSaveTemplatePanel.disabled = true;
+
         try {
-            const result = await API.saveTemplate({
-                template_name: name,
-                subdir: subdir,
+            const params = new URLSearchParams({
+                image_path: currentCapturePath,
+                x: selection.x,
+                y: selection.y,
+                width: selection.width,
+                height: selection.height,
+                output_name: name,
+                output_subdir: subdir,
+            });
+
+            const result = await API.request(`/images/crop?${params}`, {
+                method: 'POST',
             });
 
             if (result.success) {
                 showNotification(`Template sauvegardé: ${result.data.relative_path}`, 'success');
-                closeTemplateModal();
+                // Vider le champ nom pour le prochain template
+                templateName.value = '';
             } else {
                 showNotification(result.error?.message || 'Échec de la sauvegarde', 'error');
             }
         } catch (error) {
             console.error('Erreur sauvegarde template:', error);
             showNotification('Erreur lors de la sauvegarde', 'error');
+        } finally {
+            updateButtons();
         }
     }
 
@@ -332,7 +293,7 @@
                 bottom: 20px;
                 right: 20px;
                 padding: 12px 24px;
-                background: ${type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#3b82f6'};
+                background: ${type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : type === 'warning' ? '#f59e0b' : '#3b82f6'};
                 color: white;
                 border-radius: 6px;
                 z-index: 1000;
