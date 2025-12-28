@@ -19,5 +19,13 @@ ENV/
 .DS_Store
 Thumbs.db
 
+logs/
+generateur/corbeille/
+generateur/genere/
+generateur/uploads/
+generateur/.env
+test_capture_adb.png
+
+
 # Generated directories (Windows path artifacts)
 C:\\Projets\\automation_framework/
