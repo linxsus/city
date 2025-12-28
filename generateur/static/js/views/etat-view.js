@@ -48,18 +48,57 @@ if (typeof formatCode === 'undefined') {
 let imageEditor = null;
 let currentImagePath = null;
 let selectedGroups = [];
+let isAndroidConnected = false;
 
 document.addEventListener('DOMContentLoaded', () => {
     initializeForm();
     loadExistingGroups();
     loadFromUrlParams();
+    checkAndroidStatus();
 });
+
+/**
+ * Vérifie le statut de connexion Android
+ */
+async function checkAndroidStatus() {
+    const captureBtn = document.getElementById('btn-capture-android');
+    const statusDiv = document.getElementById('capture-status');
+
+    try {
+        const result = await API.getScrcpyStatus();
+
+        if (result.success && result.data.connected) {
+            isAndroidConnected = true;
+            captureBtn.disabled = false;
+            statusDiv.classList.remove('hidden', 'disconnected');
+            statusDiv.classList.add('connected');
+            statusDiv.textContent = `✓ ${result.data.device_name || 'Appareil'} connecté`;
+        } else {
+            isAndroidConnected = false;
+            captureBtn.disabled = false; // On laisse cliquable pour afficher l'erreur
+            statusDiv.classList.remove('hidden', 'connected');
+            statusDiv.classList.add('disconnected');
+            statusDiv.textContent = '✗ Aucun appareil Android connecté';
+        }
+    } catch (error) {
+        isAndroidConnected = false;
+        captureBtn.disabled = false;
+        statusDiv.classList.add('hidden');
+    }
+}
 
 /**
  * Charge les données depuis sessionStorage (pour duplication)
  */
 function loadFromUrlParams() {
     const params = new URLSearchParams(window.location.search);
+
+    // Charger une image depuis l'URL (venant de la page capture)
+    if (params.has('image')) {
+        const imagePath = params.get('image');
+        loadImageFromPath(imagePath);
+        return;
+    }
 
     if (!params.has('duplicate')) return;
 
@@ -183,8 +222,166 @@ function initializeForm() {
     document.getElementById('btn-preview')?.addEventListener('click', previewCode);
     document.getElementById('btn-validate')?.addEventListener('click', validateForm);
 
+    // Capture Android
+    document.getElementById('btn-capture-android')?.addEventListener('click', captureFromAndroid);
+    document.getElementById('btn-new-capture')?.addEventListener('click', captureFromAndroid);
+
+    // Sauvegarde template
+    document.getElementById('btn-save-template')?.addEventListener('click', openTemplateModal);
+    document.getElementById('btn-confirm-template')?.addEventListener('click', saveAsTemplate);
+
     // Formulaire
     document.getElementById('etat-form').addEventListener('submit', handleSubmit);
+}
+
+/**
+ * Capture l'écran depuis Android
+ */
+async function captureFromAndroid() {
+    const btn = document.getElementById('btn-capture-android');
+    const newCaptureBtn = document.getElementById('btn-new-capture');
+
+    // Désactiver les boutons pendant la capture
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⏳ Capture en cours...';
+    }
+    if (newCaptureBtn) {
+        newCaptureBtn.disabled = true;
+    }
+
+    try {
+        // Vérifier d'abord le statut
+        const statusResult = await API.getScrcpyStatus();
+        if (!statusResult.success || !statusResult.data.connected) {
+            showNotification('Aucun appareil Android connecté. Connectez un appareil via USB avec le débogage activé.', 'error');
+            return;
+        }
+
+        // Faire la capture
+        const result = await API.captureScreen();
+
+        if (result.success) {
+            currentImagePath = result.data.path;
+            document.getElementById('image-source').value = currentImagePath;
+
+            // Afficher l'éditeur
+            document.getElementById('upload-zone').classList.add('hidden');
+            document.getElementById('image-preview-container').classList.remove('hidden');
+
+            // Charger l'image dans l'éditeur
+            await imageEditor.loadImage(`/api/images/serve?path=${encodeURIComponent(currentImagePath)}`);
+
+            showNotification(`Capture réussie (${result.data.width}x${result.data.height})`, 'success');
+        } else {
+            showNotification(result.error?.message || 'Échec de la capture', 'error');
+        }
+    } catch (error) {
+        console.error('Erreur capture:', error);
+        showNotification('Erreur lors de la capture', 'error');
+    } finally {
+        // Réactiver les boutons
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = '📱 Capturer depuis Android';
+        }
+        if (newCaptureBtn) {
+            newCaptureBtn.disabled = false;
+        }
+    }
+}
+
+/**
+ * Charge une image depuis un chemin (pour l'URL ?image=...)
+ */
+async function loadImageFromPath(imagePath) {
+    currentImagePath = imagePath;
+    document.getElementById('image-source').value = currentImagePath;
+
+    // Afficher l'éditeur
+    document.getElementById('upload-zone').classList.add('hidden');
+    document.getElementById('image-preview-container').classList.remove('hidden');
+
+    // Charger l'image dans l'éditeur
+    try {
+        await imageEditor.loadImage(`/api/images/serve?path=${encodeURIComponent(currentImagePath)}`);
+        showNotification('Image chargée depuis la capture', 'success');
+    } catch (error) {
+        console.error('Erreur chargement image:', error);
+        showNotification('Erreur lors du chargement de l\'image', 'error');
+    }
+}
+
+/**
+ * Ouvre le modal de sauvegarde template
+ */
+function openTemplateModal() {
+    const selection = imageEditor.getSelection();
+    if (!selection) {
+        showNotification('Veuillez d\'abord sélectionner une région de l\'image', 'warning');
+        return;
+    }
+
+    document.getElementById('template-modal').classList.remove('hidden');
+    document.getElementById('template-name').value = '';
+    document.getElementById('template-name').focus();
+}
+
+/**
+ * Ferme le modal de sauvegarde template
+ */
+window.closeTemplateModal = function() {
+    document.getElementById('template-modal').classList.add('hidden');
+};
+
+/**
+ * Sauvegarde la sélection comme template
+ */
+async function saveAsTemplate() {
+    const name = document.getElementById('template-name').value.trim();
+    const subdir = document.getElementById('template-subdir').value.trim() || 'scrcpy';
+
+    if (!name) {
+        showNotification('Veuillez entrer un nom de template', 'warning');
+        return;
+    }
+
+    if (!/^[a-z][a-z0-9_]*$/.test(name)) {
+        showNotification('Nom invalide (utilisez snake_case: lettres minuscules, chiffres, underscores)', 'warning');
+        return;
+    }
+
+    const selection = imageEditor.getSelection();
+    if (!selection) {
+        showNotification('Veuillez sélectionner une région', 'warning');
+        return;
+    }
+
+    // Utiliser l'API images/crop pour sauvegarder le template
+    try {
+        const params = new URLSearchParams({
+            image_path: currentImagePath,
+            x: selection.x,
+            y: selection.y,
+            width: selection.width,
+            height: selection.height,
+            output_name: name,
+            output_subdir: subdir,
+        });
+        const result = await API.request(`/images/crop?${params}`, {
+            method: 'POST',
+        });
+
+        if (result.success) {
+            showNotification(`Template sauvegardé: ${result.data.relative_path}`, 'success');
+            closeTemplateModal();
+        } else {
+            showNotification(result.error?.message || 'Échec de la sauvegarde', 'error');
+        }
+    } catch (error) {
+        console.error('Erreur sauvegarde template:', error);
+        showNotification('Erreur lors de la sauvegarde', 'error');
+    }
 }
 
 /**

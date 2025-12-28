@@ -26,6 +26,13 @@
                         <span class="upload-icon">📷</span>
                         <p>Glissez une image ici ou <button type="button" class="btn-link" onclick="document.getElementById('image-input').click()">parcourez</button></p>
                         <small>PNG ou JPG, max 10 Mo</small>
+                        <div class="upload-separator">
+                            <span>ou</span>
+                        </div>
+                        <button type="button" class="btn btn-primary" id="btn-capture-android">
+                            📱 Capturer depuis Android
+                        </button>
+                        <div id="capture-status" class="capture-status hidden"></div>
                     </div>
                 </div>
 
@@ -35,6 +42,8 @@
                     </div>
                     <div class="editor-toolbar">
                         <button type="button" class="btn btn-secondary" id="btn-reset-selection">Réinitialiser</button>
+                        <button type="button" class="btn btn-secondary" id="btn-new-capture">📱 Nouvelle capture</button>
+                        <button type="button" class="btn btn-secondary" id="btn-save-template">💾 Sauver template</button>
                         {% if claude_available %}
                         <button type="button" class="btn btn-primary" id="btn-suggest-ia">🤖 Suggestions IA</button>
                         {% endif %}
@@ -140,7 +149,65 @@
                 </div>
             </div>
         </div>
+
+        <!-- Modal sauvegarde template -->
+        <div class="modal hidden" id="template-modal">
+            <div class="modal-content">
+                <h3>Sauvegarder comme template</h3>
+                <p class="form-help">Sauvegarde la sélection actuelle comme template réutilisable.</p>
+                <div class="form-group">
+                    <label for="template-name">Nom du template</label>
+                    <input type="text" id="template-name" placeholder="ex: bouton_menu" pattern="^[a-z][a-z0-9_]*$">
+                    <small class="form-help">Format snake_case</small>
+                </div>
+                <div class="form-group">
+                    <label for="template-subdir">Sous-dossier</label>
+                    <input type="text" id="template-subdir" value="scrcpy" placeholder="ex: scrcpy">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeTemplateModal()">Annuler</button>
+                    <button type="button" class="btn btn-primary" id="btn-confirm-template">Sauvegarder</button>
+                </div>
+            </div>
+        </div>
     </main>
+
+    <style>
+        .upload-separator {
+            margin: 1rem 0;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .upload-separator::before,
+        .upload-separator::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-color);
+        }
+        .upload-separator span {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+        .capture-status {
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+            padding: 0.5rem;
+            border-radius: 4px;
+        }
+        .capture-status.connected {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success-color);
+        }
+        .capture-status.disconnected {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error-color);
+        }
+        .editor-toolbar {
+            flex-wrap: wrap;
+        }
+    </style>
 
     {% include "partials/footer.html" %}
 

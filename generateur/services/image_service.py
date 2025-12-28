@@ -8,6 +8,7 @@ from pathlib import Path
 from PIL import Image
 
 from ..config import (
+    FRAMEWORK_TEMPLATES_DIR,
     GENERATED_DIR,
     TEMPLATES_OUTPUT_DIR,
     UPLOAD_DIR,
@@ -22,6 +23,7 @@ class ImageService:
         self.upload_dir = UPLOAD_DIR
         self.templates_dir = TEMPLATES_OUTPUT_DIR
         self.generated_dir = GENERATED_DIR
+        self.framework_templates_dir = FRAMEWORK_TEMPLATES_DIR
 
     def save_upload(self, file_content: bytes, filename: str) -> Path:
         """
@@ -84,7 +86,7 @@ class ImageService:
             image_path: Chemin de l'image source
             region: Région à découper
             output_name: Nom du fichier de sortie (sans extension)
-            output_subdir: Sous-dossier dans templates/
+            output_subdir: Sous-dossier dans templates/ (si spécifié, sauvegarde dans framework)
 
         Returns:
             Chemin du template créé
@@ -94,8 +96,9 @@ class ImageService:
             raise FileNotFoundError(f"Image non trouvée: {image_path}")
 
         # Déterminer le dossier de sortie
+        # Si un sous-dossier est spécifié, on sauvegarde dans le framework templates
         if output_subdir:
-            output_dir = self.templates_dir / output_subdir
+            output_dir = self.framework_templates_dir / output_subdir
         else:
             output_dir = self.templates_dir
 
