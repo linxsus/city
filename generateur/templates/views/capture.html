@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Générateur de Classes</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        .capture-container {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .capture-preview {
+            background: var(--bg-secondary);
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .capture-preview.connected {
+            border-style: solid;
+            border-color: var(--success-color);
+        }
+
+        .capture-preview img {
+            max-width: 100%;
+            max-height: 600px;
+            cursor: crosshair;
+        }
+
+        .capture-placeholder {
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        .capture-placeholder .icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .controls-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .control-section {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .control-section h3 {
+            margin-bottom: 1rem;
+            font-size: 1rem;
+            color: var(--text-primary);
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+        }
+
+        .status-indicator.connected {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success-color);
+        }
+
+        .status-indicator.disconnected {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error-color);
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .device-info {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-group .btn {
+            flex: 1;
+            min-width: 80px;
+        }
+
+        .capture-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .btn-capture {
+            font-size: 1.1rem;
+            padding: 1rem;
+        }
+
+        .nav-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+        }
+
+        .nav-buttons .btn {
+            padding: 0.75rem;
+        }
+
+        .click-coords {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        .selection-overlay {
+            position: absolute;
+            border: 2px solid var(--primary-color);
+            background: rgba(59, 130, 246, 0.2);
+            pointer-events: none;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .loading-spinner {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2rem;
+        }
+
+        .loading .loading-spinner {
+            display: block;
+        }
+
+        .loading img {
+            opacity: 0.5;
+        }
+
+        @media (max-width: 900px) {
+            .capture-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    {% include "partials/header.html" %}
+
+    <main class="container">
+        <div class="page-header">
+            <h1>Capture d'écran Android</h1>
+            <p>Capturez directement l'écran depuis votre appareil Android connecté via ADB</p>
+        </div>
+
+        <div class="capture-container">
+            <!-- Zone de prévisualisation -->
+            <div class="capture-preview" id="capture-preview">
+                <div class="capture-placeholder" id="placeholder">
+                    <div class="icon">📱</div>
+                    <p>Connectez un appareil Android</p>
+                    <p><small>Puis cliquez sur "Capturer l'écran"</small></p>
+                </div>
+                <img id="capture-image" style="display: none;" alt="Capture d'écran">
+                <div class="loading-spinner">⏳</div>
+                <div class="selection-overlay" id="selection-overlay" style="display: none;"></div>
+            </div>
+
+            <!-- Panneau de contrôle -->
+            <div class="controls-panel">
+                <!-- Statut connexion -->
+                <div class="control-section">
+                    <h3>📱 Appareil</h3>
+                    <div class="status-indicator disconnected" id="status-indicator">
+                        <span class="status-dot"></span>
+                        <span id="status-text">Vérification...</span>
+                    </div>
+                    <div class="device-info" id="device-info"></div>
+                    <button class="btn btn-secondary btn-small" id="btn-refresh-status">
+                        Actualiser le statut
+                    </button>
+                </div>
+
+                <!-- Actions de capture -->
+                <div class="control-section">
+                    <h3>📷 Capture</h3>
+                    <div class="capture-actions">
+                        <button class="btn btn-primary btn-capture" id="btn-capture" disabled>
+                            📷 Capturer l'écran
+                        </button>
+                        <button class="btn btn-secondary" id="btn-launch-scrcpy" disabled>
+                            🖥️ Ouvrir scrcpy
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Navigation sur l'appareil -->
+                <div class="control-section">
+                    <h3>🎮 Navigation</h3>
+                    <div class="nav-buttons">
+                        <button class="btn btn-secondary" id="btn-back" disabled>⬅️ Retour</button>
+                        <button class="btn btn-secondary" id="btn-home" disabled>🏠 Home</button>
+                        <button class="btn btn-secondary" id="btn-refresh" disabled>🔄 Refresh</button>
+                    </div>
+                    <div class="click-coords" id="click-coords">
+                        Cliquez sur l'image pour interagir
+                    </div>
+                </div>
+
+                <!-- Utiliser la capture -->
+                <div class="control-section">
+                    <h3>📤 Utiliser</h3>
+                    <div class="btn-group">
+                        <a class="btn btn-secondary" id="btn-use-for-etat" href="#">
+                            → État
+                        </a>
+                        <a class="btn btn-secondary" id="btn-use-for-chemin" href="#">
+                            → Chemin
+                        </a>
+                    </div>
+                    <div class="quick-actions">
+                        <button class="btn btn-secondary btn-small" id="btn-save-template" disabled>
+                            💾 Sauver comme template
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal pour sauvegarder le template -->
+        <div class="modal hidden" id="template-modal">
+            <div class="modal-content">
+                <h3>Sauvegarder comme template</h3>
+                <div class="form-group">
+                    <label for="template-name">Nom du template</label>
+                    <input type="text" id="template-name" placeholder="ex: bouton_menu">
+                </div>
+                <div class="form-group">
+                    <label for="template-subdir">Sous-dossier</label>
+                    <input type="text" id="template-subdir" value="scrcpy" placeholder="ex: scrcpy">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeTemplateModal()">Annuler</button>
+                    <button type="button" class="btn btn-primary" id="btn-confirm-save">Sauvegarder</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    {% include "partials/footer.html" %}
+
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/views/capture-view.js"></script>
+</body>
+</html>
