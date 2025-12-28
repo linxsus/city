@@ -1,0 +1,10 @@
+{
+  "name": "bouton_gratuit",
+  "description": "Bouton gratuit",
+  "group_configs": {
+    "bluestack": {
+      "variants": ["v1.png"],
+      "threshold": 0.8
+    }
+  }
+}
