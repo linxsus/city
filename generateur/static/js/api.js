@@ -226,4 +226,36 @@ const API = {
     async getScrcpyWindowStatus() {
         return this.request('/scrcpy/scrcpy-status');
     },
+
+    // === Erreurs ===
+
+    async getAllErreurs() {
+        return this.request('/erreurs/');
+    },
+
+    async getErreursCategories() {
+        return this.request('/erreurs/categories');
+    },
+
+    async getErreursByCategory(categorie) {
+        return this.request(`/erreurs/by-category/${encodeURIComponent(categorie)}`);
+    },
+
+    async getErreursVerifApresDefaults() {
+        return this.request('/erreurs/defaults/verif-apres');
+    },
+
+    async getErreursSiEchecDefaults() {
+        return this.request('/erreurs/defaults/si-echec');
+    },
+
+    async getErreurByNom(nom) {
+        return this.request(`/erreurs/${encodeURIComponent(nom)}`);
+    },
+
+    async refreshErreurs() {
+        return this.request('/erreurs/refresh', {
+            method: 'POST',
+        });
+    },
 };

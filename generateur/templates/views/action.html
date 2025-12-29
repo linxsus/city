@@ -57,6 +57,131 @@
             align-items: center;
             margin-bottom: var(--spacing-sm);
         }
+
+        /* Styles pour le sélecteur d'erreurs */
+        .erreur-selector {
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            max-height: 250px;
+            overflow-y: auto;
+            background: var(--color-bg);
+        }
+
+        .erreur-category {
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .erreur-category:last-child {
+            border-bottom: none;
+        }
+
+        .erreur-category-header {
+            padding: var(--spacing-sm);
+            background: var(--color-surface);
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+
+        .erreur-category-header:hover {
+            background: var(--color-surface-hover);
+        }
+
+        .erreur-category-header .toggle-icon {
+            transition: transform 0.2s;
+        }
+
+        .erreur-category.collapsed .toggle-icon {
+            transform: rotate(-90deg);
+        }
+
+        .erreur-category.collapsed .erreur-list {
+            display: none;
+        }
+
+        .erreur-list {
+            padding: var(--spacing-xs) var(--spacing-sm);
+        }
+
+        .erreur-item {
+            display: flex;
+            align-items: flex-start;
+            padding: var(--spacing-xs) 0;
+            gap: var(--spacing-sm);
+        }
+
+        .erreur-item input[type="checkbox"] {
+            margin-top: 3px;
+            flex-shrink: 0;
+        }
+
+        .erreur-info {
+            flex: 1;
+        }
+
+        .erreur-name {
+            font-weight: 500;
+            color: var(--color-text);
+        }
+
+        .erreur-message {
+            font-size: 0.85em;
+            color: var(--color-text-muted);
+        }
+
+        .erreur-badge {
+            font-size: 0.75em;
+            padding: 2px 6px;
+            border-radius: var(--radius-sm);
+            background: var(--color-primary);
+            color: white;
+            margin-left: var(--spacing-xs);
+        }
+
+        .erreur-badge.retry {
+            background: var(--color-warning);
+        }
+
+        .selected-erreurs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-xs);
+            margin-top: var(--spacing-sm);
+        }
+
+        .selected-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 8px;
+            background: var(--color-primary);
+            color: white;
+            border-radius: var(--radius-sm);
+            font-size: 0.85em;
+        }
+
+        .selected-tag .remove-tag {
+            margin-left: 6px;
+            cursor: pointer;
+            opacity: 0.8;
+        }
+
+        .selected-tag .remove-tag:hover {
+            opacity: 1;
+        }
+
+        .erreur-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .erreur-actions button {
+            font-size: 0.85em;
+            padding: var(--spacing-xs) var(--spacing-sm);
+        }
     </style>
 </head>
 <body>
@@ -133,18 +258,41 @@
                     <div class="form-card">
                         <h3>Gestion des erreurs (optionnel)</h3>
 
+                        <!-- Erreurs à vérifier après succès -->
                         <div class="form-group">
-                            <label for="erreurs-apres">Erreurs à vérifier après succès</label>
-                            <input type="text" id="erreurs-apres"
-                                   placeholder="ErreurPopup, ErreurConnexion">
-                            <span class="help-text">Classes d'erreur séparées par des virgules</span>
+                            <label>Erreurs à vérifier après succès</label>
+                            <span class="help-text">Ces erreurs sont vérifiées après chaque exécution réussie (popups intempestifs, etc.)</span>
+                            <div class="erreur-actions">
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="loadDefaultErreursApres()">Charger défauts</button>
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="clearErreursApres()">Effacer</button>
+                            </div>
+                            <div class="erreur-selector" id="erreurs-apres-selector">
+                                <p class="help-text" style="padding: var(--spacing-sm);">Chargement des erreurs...</p>
+                            </div>
+                            <div class="selected-erreurs" id="erreurs-apres-selected"></div>
                         </div>
 
+                        <!-- Erreurs à vérifier si échec -->
                         <div class="form-group">
-                            <label for="erreurs-echec">Erreurs à vérifier si échec</label>
-                            <input type="text" id="erreurs-echec"
-                                   placeholder="ErreurTimeout">
-                            <span class="help-text">Classes d'erreur séparées par des virgules</span>
+                            <label>Erreurs à vérifier si échec</label>
+                            <span class="help-text">Ces erreurs sont vérifiées si l'action échoue (manque de ressources, etc.)</span>
+                            <div class="erreur-actions">
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="loadDefaultErreursEchec()">Charger défauts</button>
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="clearErreursEchec()">Effacer</button>
+                            </div>
+                            <div class="erreur-selector" id="erreurs-echec-selector">
+                                <p class="help-text" style="padding: var(--spacing-sm);">Chargement des erreurs...</p>
+                            </div>
+                            <div class="selected-erreurs" id="erreurs-echec-selected"></div>
+                        </div>
+
+                        <!-- Option retry si erreur non identifiée -->
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="retry-si-erreur-non-identifiee">
+                                Réessayer si erreur non identifiée
+                            </label>
+                            <span class="help-text">Si l'action échoue sans erreur identifiée, réessayer automatiquement</span>
                         </div>
                     </div>
 

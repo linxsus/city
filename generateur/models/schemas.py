@@ -239,6 +239,10 @@ class ActionCreate(BaseModel):
         default_factory=list,
         description="Erreurs à vérifier si échec"
     )
+    retry_si_erreur_non_identifiee: bool = Field(
+        default=False,
+        description="Réessayer si l'action échoue sans erreur identifiée"
+    )
 
 
 class ActionSchema(ActionCreate):
@@ -349,6 +353,83 @@ class SuggestionIA(BaseModel):
     explication: str | None = Field(
         default=None,
         description="Explication de l'IA"
+    )
+
+
+class TypeErreur(str, Enum):
+    """Type de détection d'erreur."""
+    IMAGE = "image"
+    TEXTE = "texte"
+    COULEUR = "couleur"
+
+
+class ErreurSchema(BaseModel):
+    """Schéma pour une erreur détectable."""
+    nom: str = Field(..., description="Identifiant unique de l'erreur")
+    type: TypeErreur = Field(..., description="Type de détection")
+    image: str | None = Field(default=None, description="Chemin de l'image template")
+    texte: str | None = Field(default=None, description="Texte à détecter (OCR)")
+    message: str = Field(..., description="Message descriptif de l'erreur")
+    retry_action_originale: bool = Field(
+        default=False,
+        description="Réessayer l'action originale après correction"
+    )
+    exclure_fenetre: int = Field(
+        default=0,
+        ge=0,
+        description="Durée d'exclusion de la fenêtre en secondes"
+    )
+    priorite: int = Field(
+        default=0,
+        description="Priorité de l'erreur (plus haut = vérifié en premier)"
+    )
+    categorie: str | None = Field(
+        default=None,
+        description="Catégorie de l'erreur (connexion, jeu, popup, système)"
+    )
+
+
+class ErreurCreate(BaseModel):
+    """Données pour créer une nouvelle erreur."""
+    nom: str = Field(
+        ...,
+        min_length=1,
+        max_length=50,
+        pattern=r'^[a-z][a-z0-9_]*$',
+        description="Nom unique de l'erreur (snake_case)"
+    )
+    type: TypeErreur = Field(..., description="Type de détection")
+    image: str | None = Field(
+        default=None,
+        description="Chemin de l'image template (pour type image)"
+    )
+    texte: str | None = Field(
+        default=None,
+        description="Texte à détecter (pour type texte)"
+    )
+    message: str = Field(..., description="Message descriptif")
+    action_correction: str | None = Field(
+        default=None,
+        description="Type d'action de correction (clic_ok, fermer, etc.)"
+    )
+    retry_action_originale: bool = Field(
+        default=False,
+        description="Réessayer l'action après correction"
+    )
+    exclure_fenetre: int = Field(
+        default=0,
+        ge=0,
+        description="Durée d'exclusion en secondes"
+    )
+    priorite: int = Field(
+        default=0,
+        ge=0,
+        le=100,
+        description="Priorité de l'erreur"
+    )
+    categorie: str = Field(
+        default="autre",
+        description="Catégorie de l'erreur"
     )
 
 

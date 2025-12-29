@@ -62,6 +62,7 @@ class ActionGenerator:
             run_code=action.run_code,
             erreurs_verif_apres=action.erreurs_verif_apres,
             erreurs_si_echec=action.erreurs_si_echec,
+            retry_si_erreur_non_identifiee=action.retry_si_erreur_non_identifiee,
         )
 
     def save(self, action: ActionSchema) -> Path:

@@ -53,12 +53,12 @@
 - [x] Sauvegarde/chargement du workspace Blockly
 
 ### Gestion des erreurs
-- [ ] Charger la liste des erreurs existantes (liste_erreurs.py)
-- [ ] Interface de sélection des erreurs pour les actions
+- [x] Charger la liste des erreurs existantes (liste_erreurs.py)
+- [x] Interface de sélection des erreurs pour les actions
 - [ ] Création de nouvelles erreurs depuis l'interface
 - [ ] Suggestion d'erreurs par l'IA selon le contexte
-- [ ] Paramètres erreurs_verif_apres / erreurs_si_echec
-- [ ] Option retry_si_erreur_non_identifiee
+- [x] Paramètres erreurs_verif_apres / erreurs_si_echec
+- [x] Option retry_si_erreur_non_identifiee
 
 ### Améliorations UX
 - [x] Historique undo/redo (intégré à Blockly)
@@ -182,4 +182,4 @@ transformers + torch
 
 ---
 
-*Dernière mise à jour : 27/12/2025*
+*Dernière mise à jour : 29/12/2025*

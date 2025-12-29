@@ -3,9 +3,13 @@
  */
 
 let paramCounter = 0;
+let allErreurs = [];
+let selectedErreursApres = new Set();
+let selectedErreursEchec = new Set();
 
 document.addEventListener('DOMContentLoaded', () => {
     initializeForm();
+    loadErreurs();
 });
 
 /**
@@ -17,6 +21,236 @@ function initializeForm() {
 
     // Mettre à jour la prévisualisation quand le nom change
     document.getElementById('nom').addEventListener('input', updateFilename);
+}
+
+/**
+ * Charge les erreurs depuis l'API
+ */
+async function loadErreurs() {
+    try {
+        const result = await API.getAllErreurs();
+        if (result.success) {
+            allErreurs = result.data.erreurs;
+            renderErreurSelectors();
+        } else {
+            console.error('Erreur chargement erreurs:', result.error);
+            showErreurLoadError();
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        showErreurLoadError();
+    }
+}
+
+/**
+ * Affiche une erreur de chargement
+ */
+function showErreurLoadError() {
+    const msg = '<p class="help-text" style="padding: var(--spacing-sm); color: var(--color-error);">Impossible de charger les erreurs</p>';
+    document.getElementById('erreurs-apres-selector').innerHTML = msg;
+    document.getElementById('erreurs-echec-selector').innerHTML = msg;
+}
+
+/**
+ * Groupe les erreurs par catégorie
+ */
+function groupErreursByCategory(erreurs) {
+    const grouped = {};
+    const categoryLabels = {
+        'connexion': 'Connexion',
+        'jeu': 'Jeu',
+        'popup': 'Popups / Publicités',
+        'systeme': 'Système / BlueStacks',
+        'autre': 'Autres'
+    };
+
+    erreurs.forEach(erreur => {
+        const cat = erreur.categorie || 'autre';
+        if (!grouped[cat]) {
+            grouped[cat] = {
+                label: categoryLabels[cat] || cat,
+                erreurs: []
+            };
+        }
+        grouped[cat].erreurs.push(erreur);
+    });
+
+    return grouped;
+}
+
+/**
+ * Rend les sélecteurs d'erreurs
+ */
+function renderErreurSelectors() {
+    const grouped = groupErreursByCategory(allErreurs);
+
+    document.getElementById('erreurs-apres-selector').innerHTML = renderErreurSelector(grouped, 'apres');
+    document.getElementById('erreurs-echec-selector').innerHTML = renderErreurSelector(grouped, 'echec');
+}
+
+/**
+ * Rend un sélecteur d'erreurs
+ */
+function renderErreurSelector(grouped, type) {
+    const categories = Object.entries(grouped);
+    if (categories.length === 0) {
+        return '<p class="help-text" style="padding: var(--spacing-sm);">Aucune erreur disponible</p>';
+    }
+
+    return categories.map(([cat, data]) => `
+        <div class="erreur-category" data-category="${cat}">
+            <div class="erreur-category-header" onclick="toggleCategory(this)">
+                <span>${data.label} (${data.erreurs.length})</span>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="erreur-list">
+                ${data.erreurs.map(erreur => renderErreurItem(erreur, type)).join('')}
+            </div>
+        </div>
+    `).join('');
+}
+
+/**
+ * Rend un item d'erreur
+ */
+function renderErreurItem(erreur, type) {
+    const checkboxId = `erreur-${type}-${erreur.nom}`;
+    const badges = [];
+
+    if (erreur.retry_action_originale) {
+        badges.push('<span class="erreur-badge retry">retry</span>');
+    }
+    if (erreur.priorite >= 80) {
+        badges.push(`<span class="erreur-badge">P${erreur.priorite}</span>`);
+    }
+
+    return `
+        <div class="erreur-item">
+            <input type="checkbox" id="${checkboxId}"
+                   data-erreur="${erreur.nom}"
+                   data-type="${type}"
+                   onchange="toggleErreurSelection('${erreur.nom}', '${type}', this.checked)">
+            <label for="${checkboxId}" class="erreur-info">
+                <div class="erreur-name">${erreur.nom} ${badges.join('')}</div>
+                <div class="erreur-message">${erreur.message}</div>
+            </label>
+        </div>
+    `;
+}
+
+/**
+ * Toggle une catégorie
+ */
+function toggleCategory(header) {
+    const category = header.parentElement;
+    category.classList.toggle('collapsed');
+}
+
+/**
+ * Toggle la sélection d'une erreur
+ */
+function toggleErreurSelection(nom, type, checked) {
+    const set = type === 'apres' ? selectedErreursApres : selectedErreursEchec;
+
+    if (checked) {
+        set.add(nom);
+    } else {
+        set.delete(nom);
+    }
+
+    updateSelectedTags(type);
+}
+
+/**
+ * Met à jour les tags des erreurs sélectionnées
+ */
+function updateSelectedTags(type) {
+    const set = type === 'apres' ? selectedErreursApres : selectedErreursEchec;
+    const container = document.getElementById(`erreurs-${type}-selected`);
+
+    if (set.size === 0) {
+        container.innerHTML = '';
+        return;
+    }
+
+    container.innerHTML = Array.from(set).map(nom => `
+        <span class="selected-tag">
+            ${nom}
+            <span class="remove-tag" onclick="removeErreurSelection('${nom}', '${type}')">&times;</span>
+        </span>
+    `).join('');
+}
+
+/**
+ * Supprime une erreur de la sélection
+ */
+function removeErreurSelection(nom, type) {
+    const set = type === 'apres' ? selectedErreursApres : selectedErreursEchec;
+    set.delete(nom);
+
+    // Décocher la checkbox
+    const checkbox = document.getElementById(`erreur-${type}-${nom}`);
+    if (checkbox) {
+        checkbox.checked = false;
+    }
+
+    updateSelectedTags(type);
+}
+
+/**
+ * Charge les erreurs par défaut pour "après succès"
+ */
+async function loadDefaultErreursApres() {
+    try {
+        const result = await API.getErreursVerifApresDefaults();
+        if (result.success) {
+            result.data.erreurs.forEach(nom => {
+                selectedErreursApres.add(nom);
+                const checkbox = document.getElementById(`erreur-apres-${nom}`);
+                if (checkbox) checkbox.checked = true;
+            });
+            updateSelectedTags('apres');
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+    }
+}
+
+/**
+ * Charge les erreurs par défaut pour "si échec"
+ */
+async function loadDefaultErreursEchec() {
+    try {
+        const result = await API.getErreursSiEchecDefaults();
+        if (result.success) {
+            result.data.erreurs.forEach(nom => {
+                selectedErreursEchec.add(nom);
+                const checkbox = document.getElementById(`erreur-echec-${nom}`);
+                if (checkbox) checkbox.checked = true;
+            });
+            updateSelectedTags('echec');
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+    }
+}
+
+/**
+ * Efface les erreurs "après succès"
+ */
+function clearErreursApres() {
+    selectedErreursApres.clear();
+    document.querySelectorAll('[data-type="apres"]').forEach(cb => cb.checked = false);
+    updateSelectedTags('apres');
+}
+
+/**
+ * Efface les erreurs "si échec"
+ */
+function clearErreursEchec() {
+    selectedErreursEchec.clear();
+    document.querySelectorAll('[data-type="echec"]').forEach(cb => cb.checked = false);
+    updateSelectedTags('echec');
 }
 
 /**
@@ -65,8 +299,7 @@ function collectFormData() {
     const description = document.getElementById('description').value.trim();
     const conditionCode = document.getElementById('condition-code').value.trim();
     const runCode = document.getElementById('run-code').value.trim();
-    const erreursApres = document.getElementById('erreurs-apres').value.trim();
-    const erreursEchec = document.getElementById('erreurs-echec').value.trim();
+    const retrySiErreurNonIdentifiee = document.getElementById('retry-si-erreur-non-identifiee')?.checked || false;
 
     // Collecter les paramètres
     const parametres = [];
@@ -89,22 +322,15 @@ function collectFormData() {
         }
     });
 
-    // Parser les erreurs
-    const erreurs_verif_apres = erreursApres
-        ? erreursApres.split(',').map(e => e.trim()).filter(e => e)
-        : [];
-    const erreurs_si_echec = erreursEchec
-        ? erreursEchec.split(',').map(e => e.trim()).filter(e => e)
-        : [];
-
     return {
         nom,
         description: description || null,
         condition_code: conditionCode || null,
         run_code: runCode,
         parametres,
-        erreurs_verif_apres,
-        erreurs_si_echec,
+        erreurs_verif_apres: Array.from(selectedErreursApres),
+        erreurs_si_echec: Array.from(selectedErreursEchec),
+        retry_si_erreur_non_identifiee: retrySiErreurNonIdentifiee,
     };
 }
 
