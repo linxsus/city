@@ -60,11 +60,11 @@
 - [x] Paramètres erreurs_verif_apres / erreurs_si_echec
 - [x] Option retry_si_erreur_non_identifiee
 
-### Améliorations UX
+### Améliorations UX ✅
 - [x] Historique undo/redo (intégré à Blockly)
-- [ ] Drag & drop pour réordonner les actions (chemins)
-- [ ] Duplication d'actions
-- [ ] Raccourcis clavier
+- [x] Drag & drop pour réordonner les actions (chemins)
+- [x] Duplication d'actions
+- [x] Raccourcis clavier
 - [x] Mode sombre (thème par défaut)
 
 ---
