@@ -52,11 +52,11 @@
 - [x] Interface web pour ActionLongue
 - [x] Sauvegarde/chargement du workspace Blockly
 
-### Gestion des erreurs
+### Gestion des erreurs ✅
 - [x] Charger la liste des erreurs existantes (liste_erreurs.py)
 - [x] Interface de sélection des erreurs pour les actions
-- [ ] Création de nouvelles erreurs depuis l'interface
-- [ ] Suggestion d'erreurs par l'IA selon le contexte
+- [x] Création de nouvelles erreurs depuis l'interface
+- [x] Suggestion d'erreurs par l'IA selon le contexte
 - [x] Paramètres erreurs_verif_apres / erreurs_si_echec
 - [x] Option retry_si_erreur_non_identifiee
 
@@ -182,4 +182,4 @@ transformers + torch
 
 ---
 
-*Dernière mise à jour : 29/12/2025*
+*Dernière mise à jour : 02/01/2026*

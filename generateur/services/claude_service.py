@@ -206,6 +206,81 @@ Réponds en JSON:
         except Exception:
             return []
 
+    async def suggerer_erreurs(
+        self,
+        action_description: str,
+        erreurs_disponibles: list[dict],
+    ) -> dict:
+        """
+        Suggère des erreurs pertinentes pour une action.
+
+        Args:
+            action_description: Description de l'action
+            erreurs_disponibles: Liste des erreurs disponibles
+
+        Returns:
+            Dict avec erreurs_verif_apres, erreurs_si_echec suggérées
+        """
+        if not self.available:
+            return {
+                "erreurs_verif_apres": [],
+                "erreurs_si_echec": [],
+                "explication": "API Claude non disponible",
+            }
+
+        # Préparer la liste des erreurs pour le prompt
+        erreurs_str = "\n".join([
+            f"- {e['nom']}: {e['message']} (catégorie: {e.get('categorie', 'autre')}, retry: {e.get('retry_action_originale', False)})"
+            for e in erreurs_disponibles
+        ])
+
+        prompt = f"""Tu es un assistant pour un framework d'automatisation de jeu mobile.
+
+Voici la description d'une action:
+{action_description}
+
+Voici les erreurs disponibles dans le système:
+{erreurs_str}
+
+Suggère les erreurs les plus pertinentes pour cette action:
+
+1. **erreurs_verif_apres** - Erreurs à vérifier après chaque exécution réussie (popups intempestifs, déconnexions)
+
+2. **erreurs_si_echec** - Erreurs à vérifier si l'action échoue (manque de ressources, slots pleins, etc.)
+
+Réponds UNIQUEMENT en JSON valide:
+{{
+  "erreurs_verif_apres": ["nom_erreur1", "nom_erreur2"],
+  "erreurs_si_echec": ["nom_erreur3", "nom_erreur4"],
+  "explication": "Pourquoi ces erreurs sont pertinentes"
+}}"""
+
+        try:
+            response = self.client.messages.create(
+                model=CLAUDE_MODEL,
+                max_tokens=CLAUDE_MAX_TOKENS,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt,
+                    }
+                ],
+            )
+
+            result = self._parse_json_response(response.content[0].text)
+            return {
+                "erreurs_verif_apres": result.get("erreurs_verif_apres", []),
+                "erreurs_si_echec": result.get("erreurs_si_echec", []),
+                "explication": result.get("explication", ""),
+            }
+
+        except Exception as e:
+            return {
+                "erreurs_verif_apres": [],
+                "erreurs_si_echec": [],
+                "explication": f"Erreur API Claude: {e}",
+            }
+
     def _build_analysis_prompt(
         self,
         contexte: str | None,

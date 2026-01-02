@@ -441,3 +441,158 @@ function showNotification(message, type = 'info') {
         alert(message);
     }
 }
+
+// =====================================================
+// Gestion de la modale de création d'erreur
+// =====================================================
+
+/**
+ * Ouvre la modale de création d'erreur
+ */
+function openCreateErreurModal() {
+    document.getElementById('create-erreur-modal').classList.remove('hidden');
+    document.getElementById('create-erreur-form').reset();
+    toggleErreurTypeFields();
+}
+
+/**
+ * Ferme la modale de création d'erreur
+ */
+function closeCreateErreurModal() {
+    document.getElementById('create-erreur-modal').classList.add('hidden');
+}
+
+/**
+ * Toggle les champs selon le type d'erreur sélectionné
+ */
+function toggleErreurTypeFields() {
+    const type = document.getElementById('erreur-type').value;
+    const imageGroup = document.getElementById('erreur-image-group');
+    const texteGroup = document.getElementById('erreur-texte-group');
+
+    if (type === 'image') {
+        imageGroup.classList.remove('hidden');
+        texteGroup.classList.add('hidden');
+        document.getElementById('erreur-image').required = true;
+        document.getElementById('erreur-texte').required = false;
+    } else {
+        imageGroup.classList.add('hidden');
+        texteGroup.classList.remove('hidden');
+        document.getElementById('erreur-image').required = false;
+        document.getElementById('erreur-texte').required = true;
+    }
+}
+
+/**
+ * Soumet le formulaire de création d'erreur
+ */
+async function submitCreateErreur(event) {
+    event.preventDefault();
+
+    const type = document.getElementById('erreur-type').value;
+    const data = {
+        nom: document.getElementById('erreur-nom').value.trim(),
+        type: type,
+        message: document.getElementById('erreur-message').value.trim(),
+        categorie: document.getElementById('erreur-categorie').value,
+        priorite: parseInt(document.getElementById('erreur-priorite').value) || 50,
+        retry_action_originale: document.getElementById('erreur-retry').checked,
+        exclure_fenetre: 0,
+    };
+
+    // Ajouter image ou texte selon le type
+    if (type === 'image') {
+        data.image = document.getElementById('erreur-image').value.trim();
+    } else {
+        data.texte = document.getElementById('erreur-texte').value.trim();
+    }
+
+    // Ajouter l'action de correction si sélectionnée
+    const action = document.getElementById('erreur-action').value;
+    if (action) {
+        data.action_correction = action;
+    }
+
+    try {
+        const result = await API.createErreur(data);
+
+        if (result.success) {
+            closeCreateErreurModal();
+            showNotification(`Erreur '${data.nom}' créée avec succès`, 'success');
+
+            // Recharger les erreurs
+            await loadErreurs();
+        } else {
+            showNotification(result.error?.message || 'Erreur lors de la création', 'error');
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        showNotification('Erreur lors de la création', 'error');
+    }
+}
+
+/**
+ * Suggère des erreurs pertinentes via l'IA Claude
+ */
+async function suggestErreursIA() {
+    // Construire la description de l'action à partir du formulaire
+    const nom = document.getElementById('nom').value.trim();
+    const description = document.getElementById('description').value.trim();
+    const runCode = document.getElementById('run-code').value.trim();
+
+    if (!nom && !description && !runCode) {
+        showNotification('Veuillez remplir au moins le nom ou la description de l\'action', 'warning');
+        return;
+    }
+
+    // Construire la description pour l'IA
+    let actionDescription = '';
+    if (nom) actionDescription += `Nom: ${nom}\n`;
+    if (description) actionDescription += `Description: ${description}\n`;
+    if (runCode) actionDescription += `Code:\n${runCode}\n`;
+
+    showNotification('Analyse en cours...', 'info');
+
+    try {
+        const result = await API.suggestErreurs(actionDescription);
+
+        if (result.success && result.data) {
+            // Appliquer les suggestions
+            const { erreurs_verif_apres, erreurs_si_echec, explication } = result.data;
+
+            // Sélectionner les erreurs suggérées pour "après"
+            if (erreurs_verif_apres && erreurs_verif_apres.length > 0) {
+                clearErreursApres();
+                erreurs_verif_apres.forEach(nom => {
+                    selectedErreursApres.add(nom);
+                    const checkbox = document.getElementById(`erreur-apres-${nom}`);
+                    if (checkbox) checkbox.checked = true;
+                });
+                updateSelectedTags('apres');
+            }
+
+            // Sélectionner les erreurs suggérées pour "si échec"
+            if (erreurs_si_echec && erreurs_si_echec.length > 0) {
+                clearErreursEchec();
+                erreurs_si_echec.forEach(nom => {
+                    selectedErreursEchec.add(nom);
+                    const checkbox = document.getElementById(`erreur-echec-${nom}`);
+                    if (checkbox) checkbox.checked = true;
+                });
+                updateSelectedTags('echec');
+            }
+
+            // Afficher l'explication
+            if (explication) {
+                showNotification(`IA: ${explication}`, 'success');
+            } else {
+                showNotification('Suggestions appliquées', 'success');
+            }
+        } else {
+            showNotification(result.error?.message || 'Erreur lors de la suggestion', 'error');
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        showNotification('Erreur lors de la suggestion', 'error');
+    }
+}

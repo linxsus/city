@@ -258,4 +258,25 @@ const API = {
             method: 'POST',
         });
     },
+
+    async previewErreur(data) {
+        return this.request('/erreurs/preview', {
+            method: 'POST',
+            body: data,
+        });
+    },
+
+    async createErreur(data) {
+        return this.request('/erreurs/create', {
+            method: 'POST',
+            body: data,
+        });
+    },
+
+    async suggestErreurs(actionDescription) {
+        return this.request('/erreurs/suggest', {
+            method: 'POST',
+            body: { action_description: actionDescription },
+        });
+    },
 };

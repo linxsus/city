@@ -256,7 +256,13 @@
 
                     <!-- Gestion des erreurs -->
                     <div class="form-card">
-                        <h3>Gestion des erreurs (optionnel)</h3>
+                        <div class="section-header">
+                            <h3>Gestion des erreurs (optionnel)</h3>
+                            <div style="display: flex; gap: var(--spacing-sm);">
+                                <button type="button" class="btn btn-primary btn-sm" onclick="suggestErreursIA()" title="Suggérer les erreurs pertinentes via l'IA">Suggestion IA</button>
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="openCreateErreurModal()">+ Nouvelle erreur</button>
+                            </div>
+                        </div>
 
                         <!-- Erreurs à vérifier après succès -->
                         <div class="form-group">
@@ -325,6 +331,95 @@
                 <div class="modal-actions">
                     <button type="button" class="btn btn-primary" onclick="closeResultModal()">OK</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- Modal création d'erreur -->
+        <div class="modal hidden" id="create-erreur-modal">
+            <div class="modal-content" style="max-width: 600px;">
+                <div class="modal-header">
+                    <h3>Créer une nouvelle erreur</h3>
+                    <button class="modal-close" onclick="closeCreateErreurModal()">&times;</button>
+                </div>
+                <form id="create-erreur-form" onsubmit="submitCreateErreur(event)">
+                    <div class="form-group">
+                        <label for="erreur-nom">Nom de l'erreur *</label>
+                        <input type="text" id="erreur-nom" name="nom"
+                               placeholder="ex: popup_maintenance"
+                               pattern="^[a-z][a-z0-9_]*$"
+                               required>
+                        <span class="help-text">Nom en snake_case</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="erreur-type">Type de détection *</label>
+                        <select id="erreur-type" name="type" required onchange="toggleErreurTypeFields()">
+                            <option value="image">Image (template)</option>
+                            <option value="texte">Texte (OCR)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="erreur-image-group">
+                        <label for="erreur-image">Chemin de l'image *</label>
+                        <input type="text" id="erreur-image" name="image"
+                               placeholder="ex: popup_maintenance.png">
+                        <span class="help-text">Nom du fichier dans templates/popups/</span>
+                    </div>
+
+                    <div class="form-group hidden" id="erreur-texte-group">
+                        <label for="erreur-texte">Texte à détecter *</label>
+                        <input type="text" id="erreur-texte" name="texte"
+                               placeholder="ex: Maintenance en cours">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="erreur-message">Message descriptif *</label>
+                        <input type="text" id="erreur-message" name="message"
+                               placeholder="ex: Popup de maintenance"
+                               required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="erreur-categorie">Catégorie</label>
+                        <select id="erreur-categorie" name="categorie">
+                            <option value="connexion">Connexion</option>
+                            <option value="jeu">Jeu</option>
+                            <option value="popup" selected>Popup / Publicité</option>
+                            <option value="systeme">Système</option>
+                            <option value="autre">Autre</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="erreur-priorite">Priorité</label>
+                        <input type="number" id="erreur-priorite" name="priorite"
+                               value="50" min="0" max="100">
+                        <span class="help-text">0-100 (plus élevé = vérifié en premier)</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="erreur-action">Action de correction</label>
+                        <select id="erreur-action" name="action_correction">
+                            <option value="">Aucune</option>
+                            <option value="_creer_action_clic_ok(fenetre)">Cliquer OK</option>
+                            <option value="_creer_action_fermer_popup(fenetre)">Fermer popup</option>
+                            <option value="_creer_action_clic_plus_tard(fenetre)">Cliquer Plus tard</option>
+                            <option value="_creer_action_attendre(fenetre)">Attendre</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="erreur-retry" name="retry">
+                            Réessayer l'action originale après correction
+                        </label>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeCreateErreurModal()">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Créer</button>
+                    </div>
+                </form>
             </div>
         </div>
     </main>
