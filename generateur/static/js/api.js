@@ -312,4 +312,98 @@ const API = {
     async getImageHash(imagePath) {
         return this.request(`/images/hash?path=${encodeURIComponent(imagePath)}`);
     },
+
+    // === Database (Sessions/Drafts) ===
+
+    async listSessions(sessionType = null, includeCompleted = false) {
+        const params = new URLSearchParams();
+        if (sessionType) params.append('session_type', sessionType);
+        if (includeCompleted) params.append('include_completed', 'true');
+        return this.request(`/db/sessions?${params}`);
+    },
+
+    async getSession(sessionId) {
+        return this.request(`/db/sessions/${sessionId}`);
+    },
+
+    async createSession(type, name, data) {
+        return this.request('/db/sessions', {
+            method: 'POST',
+            body: { type, name, data },
+        });
+    },
+
+    async updateSession(sessionId, type, name, data) {
+        return this.request(`/db/sessions/${sessionId}`, {
+            method: 'PUT',
+            body: { type, name, data },
+        });
+    },
+
+    async completeSession(sessionId) {
+        return this.request(`/db/sessions/${sessionId}/complete`, {
+            method: 'POST',
+        });
+    },
+
+    async deleteSession(sessionId) {
+        return this.request(`/db/sessions/${sessionId}`, {
+            method: 'DELETE',
+        });
+    },
+
+    // === Database (Groups) ===
+
+    async listDbGroups() {
+        return this.request('/db/groups');
+    },
+
+    async createDbGroup(name, description = null, color = null) {
+        return this.request('/db/groups', {
+            method: 'POST',
+            body: { name, description, color },
+        });
+    },
+
+    async deleteDbGroup(name) {
+        return this.request(`/db/groups/${encodeURIComponent(name)}`, {
+            method: 'DELETE',
+        });
+    },
+
+    // === Database (Templates Hash) ===
+
+    async listTemplateHashes(source = null) {
+        const params = source ? `?source=${encodeURIComponent(source)}` : '';
+        return this.request(`/db/templates${params}`);
+    },
+
+    async searchTemplatesByHash(dhash, maxDistance = 5) {
+        const params = new URLSearchParams({
+            dhash,
+            max_distance: maxDistance,
+        });
+        return this.request(`/db/templates/search?${params}`);
+    },
+
+    // === Database (History) ===
+
+    async getGenerationHistory(genType = null, limit = 50) {
+        const params = new URLSearchParams();
+        if (genType) params.append('gen_type', genType);
+        params.append('limit', limit);
+        return this.request(`/db/history?${params}`);
+    },
+
+    // === Database (Search & Stats) ===
+
+    async searchDatabase(query, tables = null) {
+        const params = new URLSearchParams({ q: query });
+        if (tables) params.append('tables', tables.join(','));
+        return this.request(`/db/search?${params}`);
+    },
+
+    async getDatabaseStats() {
+        return this.request('/db/stats');
+    },
 };

@@ -5,6 +5,7 @@ from .chemins import router as chemins_router
 from .images import router as images_router
 from .ia import router as ia_router
 from .erreur_routes import router as erreurs_router
+from .database_routes import router as database_router
 
 __all__ = [
     "etats_router",
@@ -12,4 +13,5 @@ __all__ = [
     "images_router",
     "ia_router",
     "erreurs_router",
+    "database_router",
 ]

@@ -96,13 +96,13 @@
 - [x] Proposition d'utiliser l'existant
 - [x] Forcer la création si nécessaire
 
-### Base de données
-- [ ] SQLite pour stocker les métadonnées
-- [ ] Table des sessions (brouillons)
-- [ ] Table des templates avec hash
-- [ ] Table des groupes
-- [ ] Table des erreurs connues
-- [ ] Recherche et filtrage
+### Base de données ✅
+- [x] SQLite pour stocker les métadonnées
+- [x] Table des sessions (brouillons)
+- [x] Table des templates avec hash
+- [x] Table des groupes
+- [x] Table des erreurs connues
+- [x] Recherche et filtrage
 
 ---
 
