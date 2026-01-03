@@ -109,6 +109,28 @@ class DatabaseService:
                 )
             """)
 
+            # Table de versioning des fichiers (pour sync bidirectionnelle)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS file_versions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    file_path TEXT NOT NULL,
+                    element_type TEXT NOT NULL,
+                    element_name TEXT NOT NULL,
+                    content_hash TEXT NOT NULL,
+                    file_mtime REAL NOT NULL,
+                    last_sync_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    sync_direction TEXT DEFAULT 'code_to_db',
+                    version INTEGER DEFAULT 1,
+                    UNIQUE(file_path, element_name)
+                )
+            """)
+
+            # Index pour recherche par fichier
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_file_versions_path
+                ON file_versions(file_path)
+            """)
+
     # === Sessions (Brouillons) ===
 
     def save_session(
@@ -525,7 +547,152 @@ class DatabaseService:
             cursor.execute("SELECT COUNT(*) FROM generation_history")
             stats["total_generations"] = cursor.fetchone()[0]
 
+            cursor.execute("SELECT COUNT(*) FROM file_versions")
+            stats["tracked_files"] = cursor.fetchone()[0]
+
             return stats
+
+    # === File Versioning ===
+
+    def save_file_version(
+        self,
+        file_path: str,
+        element_type: str,
+        element_name: str,
+        content_hash: str,
+        file_mtime: float,
+        sync_direction: str = "code_to_db",
+    ) -> int:
+        """
+        Sauvegarde ou met à jour une version de fichier.
+
+        Args:
+            file_path: Chemin du fichier
+            element_type: Type d'élément (etat, chemin, action)
+            element_name: Nom de l'élément
+            content_hash: Hash du contenu
+            file_mtime: Timestamp de modification du fichier
+            sync_direction: Direction de sync (code_to_db, db_to_code)
+
+        Returns:
+            ID de la version
+        """
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+
+            # Vérifier si une entrée existe
+            cursor.execute(
+                "SELECT id, version FROM file_versions WHERE file_path = ? AND element_name = ?",
+                (file_path, element_name),
+            )
+            existing = cursor.fetchone()
+
+            if existing:
+                # Mise à jour
+                cursor.execute("""
+                    UPDATE file_versions
+                    SET content_hash = ?, file_mtime = ?, last_sync_at = CURRENT_TIMESTAMP,
+                        sync_direction = ?, version = version + 1
+                    WHERE id = ?
+                """, (content_hash, file_mtime, sync_direction, existing["id"]))
+                return existing["id"]
+            else:
+                # Création
+                cursor.execute("""
+                    INSERT INTO file_versions
+                    (file_path, element_type, element_name, content_hash, file_mtime, sync_direction)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (file_path, element_type, element_name, content_hash, file_mtime, sync_direction))
+                return cursor.lastrowid
+
+    def get_file_version(self, file_path: str, element_name: str) -> dict | None:
+        """Récupère la version d'un fichier/élément."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT * FROM file_versions WHERE file_path = ? AND element_name = ?",
+                (file_path, element_name),
+            )
+            row = cursor.fetchone()
+            return dict(row) if row else None
+
+    def get_file_versions_by_type(self, element_type: str) -> list[dict]:
+        """Liste les versions par type d'élément."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT * FROM file_versions WHERE element_type = ? ORDER BY file_path",
+                (element_type,),
+            )
+            return [dict(row) for row in cursor.fetchall()]
+
+    def get_all_file_versions(self) -> list[dict]:
+        """Liste toutes les versions de fichiers."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM file_versions ORDER BY file_path, element_name")
+            return [dict(row) for row in cursor.fetchall()]
+
+    def delete_file_version(self, file_path: str, element_name: str) -> bool:
+        """Supprime une version de fichier."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "DELETE FROM file_versions WHERE file_path = ? AND element_name = ?",
+                (file_path, element_name),
+            )
+            return cursor.rowcount > 0
+
+    def find_modified_files(self, file_versions: list[tuple]) -> list[dict]:
+        """
+        Compare les fichiers actuels avec les versions stockées.
+
+        Args:
+            file_versions: Liste de tuples (file_path, element_name, current_mtime, current_hash)
+
+        Returns:
+            Liste des fichiers modifiés avec détails
+        """
+        modified = []
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+
+            for file_path, element_name, current_mtime, current_hash in file_versions:
+                cursor.execute(
+                    "SELECT * FROM file_versions WHERE file_path = ? AND element_name = ?",
+                    (file_path, element_name),
+                )
+                stored = cursor.fetchone()
+
+                if stored:
+                    # Fichier connu, vérifier les changements
+                    if stored["content_hash"] != current_hash:
+                        modified.append({
+                            "file_path": file_path,
+                            "element_name": element_name,
+                            "element_type": stored["element_type"],
+                            "change_type": "modified",
+                            "old_hash": stored["content_hash"],
+                            "new_hash": current_hash,
+                            "old_mtime": stored["file_mtime"],
+                            "new_mtime": current_mtime,
+                            "version": stored["version"],
+                        })
+                else:
+                    # Nouveau fichier
+                    modified.append({
+                        "file_path": file_path,
+                        "element_name": element_name,
+                        "element_type": "unknown",
+                        "change_type": "new",
+                        "old_hash": None,
+                        "new_hash": current_hash,
+                        "old_mtime": None,
+                        "new_mtime": current_mtime,
+                        "version": 0,
+                    })
+
+        return modified
 
 
 # Singleton

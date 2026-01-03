@@ -406,4 +406,49 @@ const API = {
     async getDatabaseStats() {
         return this.request('/db/stats');
     },
+
+    // === Synchronisation ===
+
+    async getSyncStatus() {
+        return this.request('/sync/status');
+    },
+
+    async listSyncChanges(elementType = null) {
+        const params = elementType ? `?element_type=${encodeURIComponent(elementType)}` : '';
+        return this.request(`/sync/changes${params}`);
+    },
+
+    async syncAll() {
+        return this.request('/sync/sync-all', {
+            method: 'POST',
+        });
+    },
+
+    async syncElement(elementName) {
+        return this.request(`/sync/sync/${encodeURIComponent(elementName)}`, {
+            method: 'POST',
+        });
+    },
+
+    async acceptSyncChange(filePath, elementName) {
+        return this.request('/sync/accept', {
+            method: 'POST',
+            body: { file_path: filePath, element_name: elementName },
+        });
+    },
+
+    async ignoreSyncChange(filePath, elementName) {
+        return this.request('/sync/ignore', {
+            method: 'POST',
+            body: { file_path: filePath, element_name: elementName },
+        });
+    },
+
+    async getSyncHistory(elementName) {
+        return this.request(`/sync/history/${encodeURIComponent(elementName)}`);
+    },
+
+    async getTrackedElements() {
+        return this.request('/sync/tracked');
+    },
 };

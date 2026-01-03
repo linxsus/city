@@ -11,7 +11,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from .api.routes import chemins_router, database_router, erreurs_router, etats_router, ia_router, images_router
+from .api.routes import chemins_router, database_router, erreurs_router, etats_router, ia_router, images_router, sync_router
 from .api.routes.actions import router as actions_router
 from .api.routes.action_routes import router as action_gen_router
 from .api.routes.import_routes import router as import_router
@@ -43,6 +43,7 @@ app.include_router(import_router, prefix="/api")
 app.include_router(scrcpy_router, prefix="/api")
 app.include_router(erreurs_router, prefix="/api")
 app.include_router(database_router, prefix="/api")
+app.include_router(sync_router, prefix="/api")
 
 
 @app.get("/", response_class=HTMLResponse)

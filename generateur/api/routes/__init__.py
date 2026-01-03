@@ -6,6 +6,7 @@ from .images import router as images_router
 from .ia import router as ia_router
 from .erreur_routes import router as erreurs_router
 from .database_routes import router as database_router
+from .sync_routes import router as sync_router
 
 __all__ = [
     "etats_router",
@@ -14,4 +15,5 @@ __all__ = [
     "ia_router",
     "erreurs_router",
     "database_router",
+    "sync_router",
 ]
