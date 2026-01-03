@@ -131,12 +131,16 @@ class ImageService:
 
         return output_path
 
-    def compute_hash(self, image_path: str | Path) -> str:
+    def compute_dhash(self, image_path: str | Path, hash_size: int = 8) -> str:
         """
-        Calcule un hash de l'image pour détection de duplicatas.
+        Calcule un hash perceptuel (dHash) de l'image.
+
+        dHash compare les pixels adjacents pour créer un hash robuste
+        aux changements de taille, contraste et couleur.
 
         Args:
             image_path: Chemin de l'image
+            hash_size: Taille du hash (8 = 64 bits)
 
         Returns:
             Hash hexadécimal de l'image
@@ -145,52 +149,163 @@ class ImageService:
         if not path.exists():
             raise FileNotFoundError(f"Image non trouvée: {image_path}")
 
-        # Hash basé sur le contenu redimensionné (robuste aux variations mineures)
         with Image.open(path) as img:
-            # Convertir en niveaux de gris et redimensionner
+            # Convertir en niveaux de gris
             img_gray = img.convert("L")
-            img_small = img_gray.resize((16, 16), Image.Resampling.LANCZOS)
+            # Redimensionner à hash_size+1 x hash_size
+            img_small = img_gray.resize(
+                (hash_size + 1, hash_size), Image.Resampling.LANCZOS
+            )
 
-            # Hash du contenu
+            # Comparer chaque pixel avec son voisin de droite
             pixels = list(img_small.getdata())
-            return hashlib.md5(bytes(pixels)).hexdigest()
+            diff = []
+            for row in range(hash_size):
+                for col in range(hash_size):
+                    left = pixels[row * (hash_size + 1) + col]
+                    right = pixels[row * (hash_size + 1) + col + 1]
+                    diff.append(left > right)
+
+            # Convertir en hexadécimal
+            decimal_value = sum([2**i for i, v in enumerate(diff) if v])
+            return f"{decimal_value:016x}"
+
+    def compute_hash(self, image_path: str | Path) -> str:
+        """
+        Calcule un hash de l'image pour détection de duplicatas.
+        Alias vers compute_dhash pour compatibilité.
+
+        Args:
+            image_path: Chemin de l'image
+
+        Returns:
+            Hash hexadécimal de l'image
+        """
+        return self.compute_dhash(image_path)
+
+    def hamming_distance(self, hash1: str, hash2: str) -> int:
+        """
+        Calcule la distance de Hamming entre deux hashes.
+
+        Args:
+            hash1: Premier hash hexadécimal
+            hash2: Deuxième hash hexadécimal
+
+        Returns:
+            Nombre de bits différents
+        """
+        if len(hash1) != len(hash2):
+            return 64  # Maximum distance
+
+        # Convertir en entiers et compter les bits différents
+        int1 = int(hash1, 16)
+        int2 = int(hash2, 16)
+        xor = int1 ^ int2
+        return bin(xor).count("1")
 
     def find_similar_templates(
         self,
         image_path: str | Path,
         threshold: float = 0.9,
-    ) -> list[tuple[Path, float]]:
+        include_framework: bool = True,
+    ) -> list[dict]:
         """
         Trouve les templates similaires à une image.
 
         Args:
             image_path: Chemin de l'image à comparer
             threshold: Seuil de similarité (0-1)
+            include_framework: Inclure les templates du framework
 
         Returns:
-            Liste de (chemin_template, score_similarité)
+            Liste de dicts avec path, relative_path, similarity, source
         """
-        if not self.templates_dir.exists():
-            return []
-
-        new_hash = self.compute_hash(image_path)
         similar = []
 
-        for template_path in self.templates_dir.rglob("*.png"):
-            try:
-                existing_hash = self.compute_hash(template_path)
+        try:
+            new_hash = self.compute_dhash(image_path)
+        except Exception as e:
+            print(f"Erreur lors du calcul du hash: {e}")
+            return []
 
-                # Comparer les hashes (distance de Hamming simplifiée)
-                diff = sum(a != b for a, b in zip(new_hash, existing_hash))
-                similarity = 1 - (diff / len(new_hash))
+        # Templates générés
+        if self.templates_dir.exists():
+            for template_path in self.templates_dir.rglob("*.png"):
+                try:
+                    existing_hash = self.compute_dhash(template_path)
+                    distance = self.hamming_distance(new_hash, existing_hash)
+                    # Distance 0 = identique, 64 = complètement différent
+                    similarity = 1 - (distance / 64)
 
-                if similarity >= threshold:
-                    similar.append((template_path, similarity))
-            except Exception:
-                continue
+                    if similarity >= threshold:
+                        similar.append({
+                            "path": str(template_path),
+                            "relative_path": template_path.name,
+                            "similarity": round(similarity, 3),
+                            "source": "generated",
+                        })
+                except Exception:
+                    continue
 
-        similar.sort(key=lambda x: x[1], reverse=True)
+        # Templates du framework
+        if include_framework and self.framework_templates_dir.exists():
+            for template_path in self.framework_templates_dir.rglob("*.png"):
+                try:
+                    existing_hash = self.compute_dhash(template_path)
+                    distance = self.hamming_distance(new_hash, existing_hash)
+                    similarity = 1 - (distance / 64)
+
+                    if similarity >= threshold:
+                        rel_path = str(
+                            template_path.relative_to(self.framework_templates_dir)
+                        )
+                        similar.append({
+                            "path": str(template_path),
+                            "relative_path": rel_path,
+                            "similarity": round(similarity, 3),
+                            "source": "framework",
+                        })
+                except Exception:
+                    continue
+
+        similar.sort(key=lambda x: x["similarity"], reverse=True)
         return similar
+
+    def find_duplicates(
+        self,
+        image_path: str | Path,
+        exact_threshold: float = 0.95,
+        similar_threshold: float = 0.85,
+    ) -> dict:
+        """
+        Trouve les duplicatas et templates similaires à une image.
+
+        Args:
+            image_path: Chemin de l'image à comparer
+            exact_threshold: Seuil pour considérer un duplicata exact
+            similar_threshold: Seuil pour considérer un template similaire
+
+        Returns:
+            Dict avec exact_duplicates, similar_templates, is_duplicate
+        """
+        all_similar = self.find_similar_templates(
+            image_path,
+            threshold=similar_threshold,
+            include_framework=True,
+        )
+
+        exact_duplicates = [t for t in all_similar if t["similarity"] >= exact_threshold]
+        similar_templates = [
+            t for t in all_similar
+            if t["similarity"] < exact_threshold
+        ]
+
+        return {
+            "is_duplicate": len(exact_duplicates) > 0,
+            "exact_duplicates": exact_duplicates,
+            "similar_templates": similar_templates,
+            "checked_image": str(image_path),
+        }
 
     def get_relative_template_path(self, template_path: Path) -> str:
         """

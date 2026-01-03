@@ -89,12 +89,12 @@
 - [ ] Gestion des conflits
 - [ ] Versioning des fichiers générés
 
-### Détection de duplicatas
-- [ ] Hash perceptuel des images (dHash)
-- [ ] Comparaison avec templates existants
-- [ ] Avertissement si template similaire
-- [ ] Proposition d'utiliser l'existant
-- [ ] Forcer la création si nécessaire
+### Détection de duplicatas ✅
+- [x] Hash perceptuel des images (dHash)
+- [x] Comparaison avec templates existants
+- [x] Avertissement si template similaire
+- [x] Proposition d'utiliser l'existant
+- [x] Forcer la création si nécessaire
 
 ### Base de données
 - [ ] SQLite pour stocker les métadonnées

@@ -295,4 +295,21 @@ const API = {
             body: { action_description: actionDescription },
         });
     },
+
+    // === Duplicate Detection ===
+
+    async checkDuplicates(imagePath, exactThreshold = 0.95, similarThreshold = 0.85) {
+        const params = new URLSearchParams({
+            image_path: imagePath,
+            exact_threshold: exactThreshold,
+            similar_threshold: similarThreshold,
+        });
+        return this.request(`/images/check-duplicates?${params}`, {
+            method: 'POST',
+        });
+    },
+
+    async getImageHash(imagePath) {
+        return this.request(`/images/hash?path=${encodeURIComponent(imagePath)}`);
+    },
 };
