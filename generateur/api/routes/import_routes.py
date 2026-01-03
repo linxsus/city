@@ -7,7 +7,7 @@ from pathlib import Path
 from fastapi import APIRouter
 
 from ...config import FRAMEWORK_CHEMINS_DIR, FRAMEWORK_ETATS_DIR, FRAMEWORK_TEMPLATES_DIR, TRASH_DIR
-from ...models.schemas import APIResponse
+from ...models.schemas import APIResponse, CheminUpdate, EtatUpdate
 from ...services.import_service import get_import_service
 
 router = APIRouter(prefix="/import", tags=["Import"])
@@ -61,6 +61,48 @@ async def get_etat_by_name(nom: str) -> APIResponse:
     )
 
 
+@router.put("/etats/{nom}")
+async def update_etat(nom: str, data: EtatUpdate) -> APIResponse:
+    """Met à jour un état existant."""
+    service = get_import_service()
+
+    # Vérifier que l'état existe
+    etat = service.get_etat_by_name(nom)
+    if etat is None:
+        return APIResponse(
+            success=False,
+            error={
+                "code": "NOT_FOUND",
+                "message": f"État '{nom}' non trouvé",
+            },
+        )
+
+    # Mettre à jour l'état
+    result = service.update_etat(
+        nom=nom,
+        groupes=data.groupes,
+        priorite=data.priorite,
+    )
+
+    if not result["success"]:
+        return APIResponse(
+            success=False,
+            error={
+                "code": "UPDATE_ERROR",
+                "message": result.get("error", "Erreur inconnue"),
+            },
+        )
+
+    # Récupérer l'état mis à jour
+    updated_etat = service.get_etat_by_name(nom)
+
+    return APIResponse(
+        success=True,
+        message=result.get("message"),
+        data=updated_etat.to_dict() if updated_etat else None,
+    )
+
+
 @router.get("/chemins")
 async def get_all_chemins() -> APIResponse:
     """Liste tous les chemins existants."""
@@ -94,6 +136,48 @@ async def get_chemin_by_name(nom: str) -> APIResponse:
     return APIResponse(
         success=True,
         data=chemin.to_dict(),
+    )
+
+
+@router.put("/chemins/{nom}")
+async def update_chemin(nom: str, data: CheminUpdate) -> APIResponse:
+    """Met à jour un chemin existant."""
+    service = get_import_service()
+
+    # Vérifier que le chemin existe
+    chemin = service.get_chemin_by_name(nom)
+    if chemin is None:
+        return APIResponse(
+            success=False,
+            error={
+                "code": "NOT_FOUND",
+                "message": f"Chemin '{nom}' non trouvé",
+            },
+        )
+
+    # Mettre à jour le chemin
+    result = service.update_chemin(
+        nom=nom,
+        etat_initial=data.etat_initial,
+        etat_sortie=data.etat_sortie,
+    )
+
+    if not result["success"]:
+        return APIResponse(
+            success=False,
+            error={
+                "code": "UPDATE_ERROR",
+                "message": result.get("error", "Erreur inconnue"),
+            },
+        )
+
+    # Récupérer le chemin mis à jour
+    updated_chemin = service.get_chemin_by_name(nom)
+
+    return APIResponse(
+        success=True,
+        message=result.get("message"),
+        data=updated_chemin.to_dict() if updated_chemin else None,
     )
 
 

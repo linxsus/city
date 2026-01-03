@@ -1,5 +1,7 @@
 """Service d'import des éléments existants du framework."""
 
+import ast
+import re
 from pathlib import Path
 
 from ..config import FRAMEWORK_TEMPLATES_DIR
@@ -304,6 +306,177 @@ class ImportService:
                     })
 
         return missing
+
+    def _update_class_attribute(
+        self,
+        filepath: Path,
+        class_name: str,
+        attr_name: str,
+        new_value: any,
+    ) -> bool:
+        """
+        Met à jour un attribut de classe dans un fichier Python.
+
+        Args:
+            filepath: Chemin du fichier
+            class_name: Nom de la classe à modifier
+            attr_name: Nom de l'attribut à modifier
+            new_value: Nouvelle valeur de l'attribut
+
+        Returns:
+            True si succès, False sinon
+        """
+        if not filepath.exists():
+            return False
+
+        try:
+            code = filepath.read_text(encoding="utf-8")
+            lines = code.split("\n")
+
+            # Parser le fichier pour trouver la classe
+            tree = ast.parse(code)
+            class_node = None
+
+            for node in ast.walk(tree):
+                if isinstance(node, ast.ClassDef) and node.name == class_name:
+                    class_node = node
+                    break
+
+            if not class_node:
+                return False
+
+            # Trouver l'attribut dans la classe
+            attr_line = None
+            for item in class_node.body:
+                if isinstance(item, ast.Assign):
+                    for target in item.targets:
+                        if isinstance(target, ast.Name) and target.id == attr_name:
+                            attr_line = item.lineno - 1
+                            break
+
+            if attr_line is None:
+                # L'attribut n'existe pas, l'ajouter après la ligne class
+                insert_line = class_node.lineno
+                # Trouver l'indentation
+                class_line = lines[class_node.lineno - 1]
+                indent = len(class_line) - len(class_line.lstrip()) + 4
+                new_attr_line = " " * indent + f"{attr_name} = {repr(new_value)}"
+                lines.insert(insert_line, new_attr_line)
+            else:
+                # Remplacer la ligne existante
+                old_line = lines[attr_line]
+                indent = len(old_line) - len(old_line.lstrip())
+                lines[attr_line] = " " * indent + f"{attr_name} = {repr(new_value)}"
+
+            # Écrire le fichier
+            filepath.write_text("\n".join(lines), encoding="utf-8")
+            return True
+
+        except Exception as e:
+            print(f"Erreur lors de la mise à jour: {e}")
+            return False
+
+    def update_etat(
+        self,
+        nom: str,
+        groupes: list[str] | None = None,
+        priorite: int | None = None,
+    ) -> dict:
+        """
+        Met à jour un état existant.
+
+        Args:
+            nom: Nom de l'état à modifier
+            groupes: Nouveaux groupes (optionnel)
+            priorite: Nouvelle priorité (optionnel)
+
+        Returns:
+            Dict avec succès/erreur
+        """
+        etat = self.get_etat_by_name(nom)
+        if not etat:
+            return {"success": False, "error": f"État '{nom}' non trouvé"}
+
+        filepath = Path(etat.fichier)
+        class_name = etat.nom_classe
+        updated = []
+        errors = []
+
+        if groupes is not None:
+            if self._update_class_attribute(filepath, class_name, "groupes", groupes):
+                updated.append("groupes")
+            else:
+                errors.append("groupes")
+
+        if priorite is not None:
+            if self._update_class_attribute(filepath, class_name, "priorite", priorite):
+                updated.append("priorite")
+            else:
+                errors.append("priorite")
+
+        if errors:
+            return {
+                "success": False,
+                "error": f"Échec de mise à jour: {', '.join(errors)}",
+                "updated": updated,
+            }
+
+        return {
+            "success": True,
+            "message": f"Attributs mis à jour: {', '.join(updated)}",
+            "updated": updated,
+        }
+
+    def update_chemin(
+        self,
+        nom: str,
+        etat_initial: str | None = None,
+        etat_sortie: str | None = None,
+    ) -> dict:
+        """
+        Met à jour un chemin existant.
+
+        Args:
+            nom: Nom du chemin à modifier
+            etat_initial: Nouvel état initial (optionnel)
+            etat_sortie: Nouvel état de sortie (optionnel)
+
+        Returns:
+            Dict avec succès/erreur
+        """
+        chemin = self.get_chemin_by_name(nom)
+        if not chemin:
+            return {"success": False, "error": f"Chemin '{nom}' non trouvé"}
+
+        filepath = Path(chemin.fichier)
+        class_name = chemin.nom_classe
+        updated = []
+        errors = []
+
+        if etat_initial is not None:
+            if self._update_class_attribute(filepath, class_name, "etat_initial", etat_initial):
+                updated.append("etat_initial")
+            else:
+                errors.append("etat_initial")
+
+        if etat_sortie is not None:
+            if self._update_class_attribute(filepath, class_name, "etat_sortie", etat_sortie):
+                updated.append("etat_sortie")
+            else:
+                errors.append("etat_sortie")
+
+        if errors:
+            return {
+                "success": False,
+                "error": f"Échec de mise à jour: {', '.join(errors)}",
+                "updated": updated,
+            }
+
+        return {
+            "success": True,
+            "message": f"Attributs mis à jour: {', '.join(updated)}",
+            "updated": updated,
+        }
 
 
 # Singleton

@@ -416,11 +416,54 @@ function filterByGroup(groupe) {
     switchTab('etats');
 }
 
+// Edit mode state
+let editMode = false;
+let currentEditElement = null;
+let currentEditType = null;
+
 // Detail views
 async function showEtatDetail(nom) {
     const etat = currentData.etats.find(e => e.nom === nom);
     if (!etat) return;
 
+    currentEditElement = etat;
+    currentEditType = 'etat';
+    editMode = false;
+
+    renderEtatDetailView(etat);
+
+    // Duplicate button
+    const duplicateBtn = document.getElementById('btn-duplicate-element');
+    duplicateBtn.style.display = '';
+    duplicateBtn.onclick = () => {
+        const duplicateData = {
+            nom: etat.nom + '_copie',
+            groupes: etat.groupes,
+            priorite: etat.priorite,
+            methode_verif: etat.methode_verif,
+            templates: etat.templates,
+            textes: etat.textes,
+            source: etat.nom,
+        };
+        sessionStorage.setItem('duplicate_etat', JSON.stringify(duplicateData));
+        window.location.href = '/etat?duplicate=' + encodeURIComponent(etat.nom);
+    };
+
+    // Edit button
+    const editBtn = document.getElementById('btn-edit-element');
+    editBtn.style.display = '';
+    editBtn.textContent = '✏️ Éditer';
+    editBtn.onclick = () => toggleEditMode('etat', etat);
+
+    // Delete button
+    const deleteBtn = document.getElementById('btn-delete-element');
+    deleteBtn.style.display = '';
+    deleteBtn.onclick = () => deleteEtat(etat.nom);
+
+    elements.detailModal.classList.remove('hidden');
+}
+
+function renderEtatDetailView(etat) {
     elements.detailTitle.textContent = `État: ${etat.nom}`;
     elements.detailBody.innerHTML = `
         <div class="detail-section">
@@ -478,35 +521,115 @@ async function showEtatDetail(nom) {
             </div>
         </div>
     `;
+}
 
-    document.getElementById('btn-edit-element').textContent = '📋 Dupliquer';
-    document.getElementById('btn-edit-element').onclick = () => {
-        // Store complete data in sessionStorage (URL has size limits)
-        const duplicateData = {
-            nom: etat.nom + '_copie',
-            groupes: etat.groupes,
-            priorite: etat.priorite,
-            methode_verif: etat.methode_verif,
-            templates: etat.templates,
-            textes: etat.textes,
-            source: etat.nom,
-        };
-        sessionStorage.setItem('duplicate_etat', JSON.stringify(duplicateData));
-        window.location.href = '/etat?duplicate=' + encodeURIComponent(etat.nom);
-    };
+function renderEtatEditView(etat) {
+    elements.detailTitle.textContent = `Édition: ${etat.nom}`;
+    elements.detailBody.innerHTML = `
+        <div class="detail-section">
+            <h4>Informations générales</h4>
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <div class="detail-label">Nom</div>
+                    <div class="detail-value">${escapeHtml(etat.nom)} <em style="color: var(--text-secondary);">(non modifiable)</em></div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Classe</div>
+                    <div class="detail-value">${escapeHtml(etat.nom_classe)}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Priorité</div>
+                    <div class="detail-value">
+                        <input type="number" id="edit-priorite" value="${etat.priorite}" min="-100" max="100" style="width: 80px;">
+                    </div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Méthode</div>
+                    <div class="detail-value">${etat.methode_verif}</div>
+                </div>
+            </div>
+        </div>
 
-    // Delete button
-    const deleteBtn = document.getElementById('btn-delete-element');
-    deleteBtn.style.display = '';
-    deleteBtn.onclick = () => deleteEtat(etat.nom);
+        <div class="detail-section">
+            <h4>Groupes</h4>
+            <div class="edit-tags-container">
+                <div class="detail-tags" id="edit-groupes-tags">
+                    ${etat.groupes.map(g => `
+                        <span class="detail-tag editable-tag">
+                            ${escapeHtml(g)}
+                            <button class="tag-remove" onclick="removeGroup('${escapeHtml(g)}')">&times;</button>
+                        </span>
+                    `).join('') || '<em>Aucun groupe</em>'}
+                </div>
+                <div style="margin-top: 8px; display: flex; gap: 8px;">
+                    <input type="text" id="new-groupe-input" placeholder="Nouveau groupe" style="flex: 1;">
+                    <button class="btn btn-secondary btn-sm" onclick="addGroup()">+ Ajouter</button>
+                </div>
+                <div style="margin-top: 8px;">
+                    <select id="existing-groupe-select" style="width: 100%;">
+                        <option value="">-- Sélectionner un groupe existant --</option>
+                        ${currentData.groupes.map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('')}
+                    </select>
+                </div>
+            </div>
+        </div>
 
-    elements.detailModal.classList.remove('hidden');
+        <div class="detail-section">
+            <h4>Fichier source</h4>
+            <p style="color: var(--text-secondary); font-size: 0.875rem;">${escapeHtml(etat.fichier)}</p>
+        </div>
+    `;
+
+    // Handle existing group selection
+    document.getElementById('existing-groupe-select').addEventListener('change', (e) => {
+        if (e.target.value) {
+            addGroupByName(e.target.value);
+            e.target.value = '';
+        }
+    });
 }
 
 async function showCheminDetail(nom) {
     const chemin = currentData.chemins.find(c => c.nom === nom);
     if (!chemin) return;
 
+    currentEditElement = chemin;
+    currentEditType = 'chemin';
+    editMode = false;
+
+    renderCheminDetailView(chemin);
+
+    // Duplicate button
+    const duplicateBtn = document.getElementById('btn-duplicate-element');
+    duplicateBtn.style.display = '';
+    duplicateBtn.onclick = () => {
+        const duplicateData = {
+            nom: chemin.nom + '_copie',
+            etat_initial: chemin.etat_initial,
+            etat_sortie: chemin.etat_sortie,
+            templates: chemin.templates,
+            code_source: chemin.code_source,
+            source: chemin.nom,
+        };
+        sessionStorage.setItem('duplicate_chemin', JSON.stringify(duplicateData));
+        window.location.href = '/chemin?duplicate=' + encodeURIComponent(chemin.nom);
+    };
+
+    // Edit button
+    const editBtn = document.getElementById('btn-edit-element');
+    editBtn.style.display = '';
+    editBtn.textContent = '✏️ Éditer';
+    editBtn.onclick = () => toggleEditMode('chemin', chemin);
+
+    // Delete button
+    const deleteBtn = document.getElementById('btn-delete-element');
+    deleteBtn.style.display = '';
+    deleteBtn.onclick = () => deleteChemin(chemin.nom);
+
+    elements.detailModal.classList.remove('hidden');
+}
+
+function renderCheminDetailView(chemin) {
     elements.detailTitle.textContent = `Chemin: ${chemin.nom}`;
     elements.detailBody.innerHTML = `
         <div class="detail-section">
@@ -550,28 +673,198 @@ async function showCheminDetail(nom) {
             </div>
         </div>
     `;
+}
 
-    document.getElementById('btn-edit-element').textContent = '📋 Dupliquer';
-    document.getElementById('btn-edit-element').onclick = () => {
-        // Store complete data in sessionStorage
-        const duplicateData = {
-            nom: chemin.nom + '_copie',
-            etat_initial: chemin.etat_initial,
-            etat_sortie: chemin.etat_sortie,
-            templates: chemin.templates,
-            code_source: chemin.code_source,
-            source: chemin.nom,
-        };
-        sessionStorage.setItem('duplicate_chemin', JSON.stringify(duplicateData));
-        window.location.href = '/chemin?duplicate=' + encodeURIComponent(chemin.nom);
+function renderCheminEditView(chemin) {
+    // Get available states for dropdowns
+    const availableStates = currentData.etats.map(e => e.nom);
+
+    elements.detailTitle.textContent = `Édition: ${chemin.nom}`;
+    elements.detailBody.innerHTML = `
+        <div class="detail-section">
+            <h4>Informations générales</h4>
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <div class="detail-label">Nom</div>
+                    <div class="detail-value">${escapeHtml(chemin.nom)} <em style="color: var(--text-secondary);">(non modifiable)</em></div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Classe</div>
+                    <div class="detail-value">${escapeHtml(chemin.nom_classe)}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">État initial</div>
+                    <div class="detail-value">
+                        <select id="edit-etat-initial" style="width: 100%;">
+                            ${availableStates.map(s => `<option value="${escapeHtml(s)}" ${s === chemin.etat_initial ? 'selected' : ''}>${escapeHtml(s)}</option>`).join('')}
+                        </select>
+                    </div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">État de sortie</div>
+                    <div class="detail-value">
+                        <select id="edit-etat-sortie" style="width: 100%;">
+                            ${availableStates.map(s => `<option value="${escapeHtml(s)}" ${s === chemin.etat_sortie ? 'selected' : ''}>${escapeHtml(s)}</option>`).join('')}
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="detail-section">
+            <h4>Fichier source</h4>
+            <p style="color: var(--text-secondary); font-size: 0.875rem;">${escapeHtml(chemin.fichier)}</p>
+        </div>
+    `;
+}
+
+// Edit mode functions
+function toggleEditMode(type, element) {
+    editMode = !editMode;
+    const editBtn = document.getElementById('btn-edit-element');
+    const duplicateBtn = document.getElementById('btn-duplicate-element');
+
+    if (editMode) {
+        editBtn.textContent = '💾 Enregistrer';
+        editBtn.onclick = () => saveElement(type, element);
+        duplicateBtn.style.display = 'none'; // Hide duplicate during edit
+
+        if (type === 'etat') {
+            initEditGroupes(element.groupes);
+            renderEtatEditView(element);
+        } else if (type === 'chemin') {
+            renderCheminEditView(element);
+        }
+    } else {
+        editBtn.textContent = '✏️ Éditer';
+        editBtn.onclick = () => toggleEditMode(type, element);
+        duplicateBtn.style.display = ''; // Show duplicate button again
+
+        if (type === 'etat') {
+            renderEtatDetailView(element);
+        } else if (type === 'chemin') {
+            renderCheminDetailView(element);
+        }
+    }
+}
+
+// Group management for etat edit
+let editedGroupes = [];
+
+function initEditGroupes(groupes) {
+    editedGroupes = [...groupes];
+}
+
+function removeGroup(groupe) {
+    editedGroupes = editedGroupes.filter(g => g !== groupe);
+    updateGroupTagsDisplay();
+}
+
+function addGroup() {
+    const input = document.getElementById('new-groupe-input');
+    const value = input.value.trim();
+    if (value && !editedGroupes.includes(value)) {
+        editedGroupes.push(value);
+        updateGroupTagsDisplay();
+        input.value = '';
+    }
+}
+
+function addGroupByName(groupe) {
+    if (groupe && !editedGroupes.includes(groupe)) {
+        editedGroupes.push(groupe);
+        updateGroupTagsDisplay();
+    }
+}
+
+function updateGroupTagsDisplay() {
+    const container = document.getElementById('edit-groupes-tags');
+    if (!container) return;
+
+    container.innerHTML = editedGroupes.length > 0
+        ? editedGroupes.map(g => `
+            <span class="detail-tag editable-tag">
+                ${escapeHtml(g)}
+                <button class="tag-remove" onclick="removeGroup('${escapeHtml(g)}')">&times;</button>
+            </span>
+        `).join('')
+        : '<em>Aucun groupe</em>';
+}
+
+async function saveElement(type, element) {
+    if (type === 'etat') {
+        await saveEtat(element);
+    } else if (type === 'chemin') {
+        await saveChemin(element);
+    }
+}
+
+async function saveEtat(etat) {
+    const priorite = parseInt(document.getElementById('edit-priorite').value, 10);
+
+    // Get the current groupes from the edit view
+    const updateData = {
+        priorite: priorite,
+        groupes: editedGroupes,
     };
 
-    // Delete button
-    const deleteBtn = document.getElementById('btn-delete-element');
-    deleteBtn.style.display = '';
-    deleteBtn.onclick = () => deleteChemin(chemin.nom);
+    try {
+        const result = await API.updateEtat(etat.nom, updateData);
 
-    elements.detailModal.classList.remove('hidden');
+        if (result.success) {
+            showNotification(`État "${etat.nom}" mis à jour`, 'success');
+
+            // Update local data
+            const index = currentData.etats.findIndex(e => e.nom === etat.nom);
+            if (index !== -1 && result.data) {
+                currentData.etats[index] = result.data;
+            }
+
+            // Exit edit mode and refresh view
+            editMode = false;
+            closeDetailModal();
+            loadData();
+        } else {
+            showNotification(result.error?.message || 'Erreur lors de la mise à jour', 'error');
+        }
+    } catch (error) {
+        console.error('Save error:', error);
+        showNotification('Erreur lors de la mise à jour', 'error');
+    }
+}
+
+async function saveChemin(chemin) {
+    const etatInitial = document.getElementById('edit-etat-initial').value;
+    const etatSortie = document.getElementById('edit-etat-sortie').value;
+
+    const updateData = {
+        etat_initial: etatInitial,
+        etat_sortie: etatSortie,
+    };
+
+    try {
+        const result = await API.updateChemin(chemin.nom, updateData);
+
+        if (result.success) {
+            showNotification(`Chemin "${chemin.nom}" mis à jour`, 'success');
+
+            // Update local data
+            const index = currentData.chemins.findIndex(c => c.nom === chemin.nom);
+            if (index !== -1 && result.data) {
+                currentData.chemins[index] = result.data;
+            }
+
+            // Exit edit mode and refresh view
+            editMode = false;
+            closeDetailModal();
+            loadData();
+        } else {
+            showNotification(result.error?.message || 'Erreur lors de la mise à jour', 'error');
+        }
+    } catch (error) {
+        console.error('Save error:', error);
+        showNotification('Erreur lors de la mise à jour', 'error');
+    }
 }
 
 async function showActionDetail(nom) {
@@ -618,8 +911,9 @@ async function showActionDetail(nom) {
         </div>
     `;
 
-    // Hide edit/duplicate button for now
+    // Hide edit/duplicate buttons for actions
     document.getElementById('btn-edit-element').style.display = 'none';
+    document.getElementById('btn-duplicate-element').style.display = 'none';
 
     // Show delete button for custom actions
     const deleteBtn = document.getElementById('btn-delete-element');
@@ -690,6 +984,7 @@ async function showTemplateDetail(path) {
         `;
 
         document.getElementById('btn-edit-element').style.display = 'none';
+        document.getElementById('btn-duplicate-element').style.display = 'none';
 
         // Delete button for template
         const deleteBtn = document.getElementById('btn-delete-element');
@@ -706,6 +1001,8 @@ function closeDetailModal() {
     elements.detailModal.classList.add('hidden');
     document.getElementById('btn-edit-element').style.display = '';
     document.getElementById('btn-delete-element').style.display = '';
+    document.getElementById('btn-duplicate-element').style.display = '';
+    editMode = false;
 }
 
 function closeCodeModal() {
@@ -790,3 +1087,6 @@ window.showTemplateDetail = showTemplateDetail;
 window.closeDetailModal = closeDetailModal;
 window.closeCodeModal = closeCodeModal;
 window.filterByGroup = filterByGroup;
+window.removeGroup = removeGroup;
+window.addGroup = addGroup;
+window.addGroupByName = addGroupByName;

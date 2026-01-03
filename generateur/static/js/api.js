@@ -175,6 +175,22 @@ const API = {
         });
     },
 
+    // === Update (modify existing elements) ===
+
+    async updateEtat(nom, data) {
+        return this.request(`/import/etats/${encodeURIComponent(nom)}`, {
+            method: 'PUT',
+            body: data,
+        });
+    },
+
+    async updateChemin(nom, data) {
+        return this.request(`/import/chemins/${encodeURIComponent(nom)}`, {
+            method: 'PUT',
+            body: data,
+        });
+    },
+
     // === Scrcpy/ADB ===
 
     async getScrcpyStatus() {

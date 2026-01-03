@@ -77,7 +77,7 @@
   - [x] Extraire les classes Chemin
   - [x] Extraire les classes Action
 - [x] Afficher les éléments importés dans l'interface
-- [ ] Permettre la modification des éléments importés
+- [x] Permettre la modification des éléments importés
 - [x] Détecter les templates associés
 - [x] API routes pour l'import (/api/import/*)
 - [x] Détection des templates orphelins et manquants
@@ -182,4 +182,4 @@ transformers + torch
 
 ---
 
-*Dernière mise à jour : 02/01/2026*
+*Dernière mise à jour : 03/01/2026*

@@ -433,6 +433,32 @@ class ErreurCreate(BaseModel):
     )
 
 
+class EtatUpdate(BaseModel):
+    """Données pour mettre à jour un état existant."""
+    groupes: list[str] | None = Field(
+        default=None,
+        description="Nouveaux groupes (optionnel)"
+    )
+    priorite: int | None = Field(
+        default=None,
+        ge=-100,
+        le=100,
+        description="Nouvelle priorité (optionnel)"
+    )
+
+
+class CheminUpdate(BaseModel):
+    """Données pour mettre à jour un chemin existant."""
+    etat_initial: str | None = Field(
+        default=None,
+        description="Nouvel état initial (optionnel)"
+    )
+    etat_sortie: str | None = Field(
+        default=None,
+        description="Nouvel état de sortie (optionnel)"
+    )
+
+
 class APIResponse(BaseModel):
     """Réponse standard de l'API."""
     success: bool = Field(..., description="Succès de l'opération")
