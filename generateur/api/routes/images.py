@@ -239,3 +239,92 @@ async def serve_template(path: str):
         raise HTTPException(status_code=403, detail="Accès non autorisé")
 
     return FileResponse(file_path)
+
+
+@router.post("/check-duplicates")
+async def check_duplicates(
+    image_path: str,
+    exact_threshold: float = 0.95,
+    similar_threshold: float = 0.85,
+) -> APIResponse:
+    """
+    Vérifie si une image a des duplicatas parmi les templates existants.
+
+    Args:
+        image_path: Chemin de l'image à vérifier
+        exact_threshold: Seuil pour considérer un duplicata exact (0-1)
+        similar_threshold: Seuil pour considérer un template similaire (0-1)
+
+    Returns:
+        Liste des duplicatas et templates similaires trouvés
+    """
+    try:
+        service = get_image_service()
+        result = service.find_duplicates(
+            image_path=image_path,
+            exact_threshold=exact_threshold,
+            similar_threshold=similar_threshold,
+        )
+
+        return APIResponse(
+            success=True,
+            data=result,
+        )
+
+    except FileNotFoundError:
+        return APIResponse(
+            success=False,
+            error={
+                "code": "FILE_NOT_FOUND",
+                "message": f"Image non trouvée: {image_path}",
+            },
+        )
+    except Exception as e:
+        return APIResponse(
+            success=False,
+            error={
+                "code": "CHECK_ERROR",
+                "message": str(e),
+            },
+        )
+
+
+@router.get("/hash")
+async def get_image_hash(path: str) -> APIResponse:
+    """
+    Calcule le hash perceptuel (dHash) d'une image.
+
+    Args:
+        path: Chemin de l'image
+
+    Returns:
+        Hash hexadécimal de l'image
+    """
+    try:
+        service = get_image_service()
+        hash_value = service.compute_dhash(path)
+
+        return APIResponse(
+            success=True,
+            data={
+                "path": path,
+                "hash": hash_value,
+            },
+        )
+
+    except FileNotFoundError:
+        return APIResponse(
+            success=False,
+            error={
+                "code": "FILE_NOT_FOUND",
+                "message": f"Image non trouvée: {path}",
+            },
+        )
+    except Exception as e:
+        return APIResponse(
+            success=False,
+            error={
+                "code": "HASH_ERROR",
+                "message": str(e),
+            },
+        )

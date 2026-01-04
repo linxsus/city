@@ -615,6 +615,120 @@ function collectFormData() {
 }
 
 /**
+ * Vérifie les duplicatas de template avant la création
+ */
+async function checkForDuplicates(imagePath, region) {
+    // Créer d'abord un crop temporaire pour vérifier
+    const params = new URLSearchParams({
+        image_path: imagePath,
+        x: region.x,
+        y: region.y,
+        width: region.width,
+        height: region.height,
+    });
+
+    try {
+        const cropResult = await API.request(`/images/crop?${params}`, {
+            method: 'POST',
+        });
+
+        if (!cropResult.success) {
+            return null;
+        }
+
+        // Vérifier les duplicatas
+        const duplicateResult = await API.checkDuplicates(cropResult.data.path);
+
+        if (duplicateResult.success) {
+            return duplicateResult.data;
+        }
+    } catch (error) {
+        console.error('Erreur lors de la vérification des duplicatas:', error);
+    }
+
+    return null;
+}
+
+/**
+ * Affiche le modal de warning pour les duplicatas
+ */
+function showDuplicateWarning(duplicateData, onConfirm, onUseExisting) {
+    const exactCount = duplicateData.exact_duplicates?.length || 0;
+    const similarCount = duplicateData.similar_templates?.length || 0;
+
+    let content = '';
+
+    if (exactCount > 0) {
+        content += `<div class="duplicate-warning" style="background: #fef3cd; border: 1px solid #ffc107; padding: 1rem; border-radius: 4px; margin-bottom: 1rem;">
+            <strong>⚠️ ${exactCount} duplicata(s) exact(s) trouvé(s)!</strong>
+            <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+                ${duplicateData.exact_duplicates.map(d =>
+                    `<li><code>${d.relative_path}</code> (${Math.round(d.similarity * 100)}%)</li>`
+                ).join('')}
+            </ul>
+        </div>`;
+    }
+
+    if (similarCount > 0) {
+        content += `<div class="similar-info" style="background: #e7f1ff; border: 1px solid #6c9bd9; padding: 1rem; border-radius: 4px; margin-bottom: 1rem;">
+            <strong>ℹ️ ${similarCount} template(s) similaire(s) trouvé(s)</strong>
+            <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+                ${duplicateData.similar_templates.slice(0, 5).map(d =>
+                    `<li><code>${d.relative_path}</code> (${Math.round(d.similarity * 100)}%)</li>`
+                ).join('')}
+                ${similarCount > 5 ? `<li><em>...et ${similarCount - 5} autres</em></li>` : ''}
+            </ul>
+        </div>`;
+    }
+
+    content += `<p style="margin-top: 1rem;">Que souhaitez-vous faire ?</p>`;
+
+    // Create custom modal
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.id = 'duplicate-modal';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>${exactCount > 0 ? '⚠️ Duplicatas détectés' : 'ℹ️ Templates similaires'}</h3>
+                <button class="modal-close" onclick="closeDuplicateModal()">&times;</button>
+            </div>
+            <div style="padding: 1rem;">
+                ${content}
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeDuplicateModal()">Annuler</button>
+                ${exactCount > 0 && duplicateData.exact_duplicates[0] ?
+                    `<button type="button" class="btn btn-primary" id="btn-use-existing">📋 Utiliser l'existant</button>` : ''}
+                <button type="button" class="btn ${exactCount > 0 ? 'btn-warning' : 'btn-primary'}" id="btn-create-anyway">
+                    ${exactCount > 0 ? '⚠️ Créer quand même' : 'Continuer'}
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Event handlers
+    document.getElementById('btn-create-anyway').onclick = () => {
+        closeDuplicateModal();
+        onConfirm();
+    };
+
+    const useExistingBtn = document.getElementById('btn-use-existing');
+    if (useExistingBtn && onUseExisting) {
+        useExistingBtn.onclick = () => {
+            closeDuplicateModal();
+            onUseExisting(duplicateData.exact_duplicates[0]);
+        };
+    }
+
+    window.closeDuplicateModal = function() {
+        modal.remove();
+    };
+}
+
+/**
  * Gère la soumission du formulaire
  */
 async function handleSubmit(e) {
@@ -623,6 +737,38 @@ async function handleSubmit(e) {
     const data = collectFormData();
     if (!data) return;
 
+    const btn = document.getElementById('btn-generate');
+    btn.disabled = true;
+    btn.textContent = 'Vérification des duplicatas...';
+
+    // Vérifier les duplicatas si on utilise une image
+    if (data.template_region && currentImagePath) {
+        const duplicateCheck = await checkForDuplicates(currentImagePath, data.template_region);
+
+        if (duplicateCheck && (duplicateCheck.is_duplicate || duplicateCheck.similar_templates?.length > 0)) {
+            btn.disabled = false;
+            btn.textContent = 'Générer le code';
+
+            // Montrer le warning et attendre la décision
+            showDuplicateWarning(
+                duplicateCheck,
+                () => createEtatWithData(data),
+                (existingTemplate) => {
+                    // TODO: Utiliser le template existant au lieu de créer un nouveau
+                    showNotification(`Template existant: ${existingTemplate.relative_path}. Veuillez l'utiliser dans la détection.`, 'info');
+                }
+            );
+            return;
+        }
+    }
+
+    await createEtatWithData(data);
+}
+
+/**
+ * Crée l'état avec les données fournies
+ */
+async function createEtatWithData(data) {
     const btn = document.getElementById('btn-generate');
     btn.disabled = true;
     btn.textContent = 'Génération...';

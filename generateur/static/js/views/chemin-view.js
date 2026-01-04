@@ -482,7 +482,7 @@ function saveAction() {
 }
 
 /**
- * Affiche la liste des actions
+ * Affiche la liste des actions avec support drag & drop
  */
 function renderActionsList() {
     const container = document.getElementById('actions-list');
@@ -512,20 +512,112 @@ function renderActionsList() {
         }
 
         return `
-            <div class="action-item" data-index="${index}">
+            <div class="action-item" data-index="${index}" draggable="true">
+                <span class="drag-handle" title="Glisser pour réordonner">⋮⋮</span>
                 <span class="action-icon">${icon}</span>
                 <div class="action-info">
                     <div class="action-type">${action.type}</div>
                     <div class="action-details">${details}</div>
                 </div>
                 <div class="action-controls">
-                    <button type="button" class="btn btn-icon btn-secondary" onclick="moveAction(${index}, -1)" ${index === 0 ? 'disabled' : ''}>↑</button>
-                    <button type="button" class="btn btn-icon btn-secondary" onclick="moveAction(${index}, 1)" ${index === actions.length - 1 ? 'disabled' : ''}>↓</button>
-                    <button type="button" class="btn btn-icon btn-secondary" onclick="removeAction(${index})">✕</button>
+                    <button type="button" class="btn btn-icon btn-secondary btn-duplicate" onclick="duplicateAction(${index})" title="Dupliquer (Ctrl+D)">⧉</button>
+                    <button type="button" class="btn btn-icon btn-secondary" onclick="moveAction(${index}, -1)" ${index === 0 ? 'disabled' : ''} title="Monter">↑</button>
+                    <button type="button" class="btn btn-icon btn-secondary" onclick="moveAction(${index}, 1)" ${index === actions.length - 1 ? 'disabled' : ''} title="Descendre">↓</button>
+                    <button type="button" class="btn btn-icon btn-secondary" onclick="removeAction(${index})" title="Supprimer (Suppr)">✕</button>
                 </div>
             </div>
         `;
     }).join('');
+
+    // Ajouter les event listeners pour le drag & drop
+    initDragAndDrop();
+}
+
+/**
+ * Initialise le drag & drop pour les actions
+ */
+let draggedIndex = null;
+
+function initDragAndDrop() {
+    const container = document.getElementById('actions-list');
+    const items = container.querySelectorAll('.action-item');
+
+    items.forEach(item => {
+        item.addEventListener('dragstart', handleDragStart);
+        item.addEventListener('dragend', handleDragEnd);
+        item.addEventListener('dragover', handleDragOver);
+        item.addEventListener('dragenter', handleDragEnter);
+        item.addEventListener('dragleave', handleDragLeave);
+        item.addEventListener('drop', handleDrop);
+    });
+}
+
+function handleDragStart(e) {
+    draggedIndex = parseInt(this.dataset.index);
+    this.classList.add('dragging');
+    document.getElementById('actions-list').classList.add('drag-active');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', draggedIndex);
+}
+
+function handleDragEnd(e) {
+    this.classList.remove('dragging');
+    document.getElementById('actions-list').classList.remove('drag-active');
+    document.querySelectorAll('.action-item').forEach(item => {
+        item.classList.remove('drag-over');
+    });
+    draggedIndex = null;
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+}
+
+function handleDragEnter(e) {
+    e.preventDefault();
+    const targetIndex = parseInt(this.dataset.index);
+    if (targetIndex !== draggedIndex) {
+        this.classList.add('drag-over');
+    }
+}
+
+function handleDragLeave(e) {
+    this.classList.remove('drag-over');
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    this.classList.remove('drag-over');
+
+    const targetIndex = parseInt(this.dataset.index);
+    if (draggedIndex !== null && targetIndex !== draggedIndex) {
+        // Réorganiser les actions
+        const movedAction = actions.splice(draggedIndex, 1)[0];
+        actions.splice(targetIndex, 0, movedAction);
+
+        // Mettre à jour les ordres
+        actions.forEach((a, i) => a.ordre = i);
+
+        renderActionsList();
+        showNotification('Action déplacée', 'success');
+    }
+}
+
+/**
+ * Duplique une action
+ */
+function duplicateAction(index) {
+    const action = actions[index];
+    const copy = JSON.parse(JSON.stringify(action));
+    copy.ordre = actions.length;
+
+    // Insérer après l'original
+    actions.splice(index + 1, 0, copy);
+    actions.forEach((a, i) => a.ordre = i);
+
+    renderActionsList();
+    showNotification('Action dupliquée', 'success');
 }
 
 /**
@@ -664,6 +756,129 @@ async function handleSubmit(e) {
 // Initialiser la liste vide
 document.addEventListener('DOMContentLoaded', renderActionsList);
 
+// =====================================================
+// Raccourcis clavier
+// =====================================================
+
+let selectedActionIndex = -1;
+
+/**
+ * Initialise les raccourcis clavier
+ */
+document.addEventListener('keydown', (e) => {
+    // Ignorer si on est dans un champ de saisie
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+        return;
+    }
+
+    // Ctrl+D - Dupliquer l'action sélectionnée ou la dernière
+    if (e.ctrlKey && e.key === 'd') {
+        e.preventDefault();
+        if (actions.length > 0) {
+            const index = selectedActionIndex >= 0 ? selectedActionIndex : actions.length - 1;
+            duplicateAction(index);
+        }
+        return;
+    }
+
+    // Suppr/Delete - Supprimer l'action sélectionnée
+    if (e.key === 'Delete' && selectedActionIndex >= 0) {
+        e.preventDefault();
+        removeAction(selectedActionIndex);
+        selectedActionIndex = Math.min(selectedActionIndex, actions.length - 1);
+        highlightSelectedAction();
+        return;
+    }
+
+    // Flèches haut/bas avec Ctrl - Déplacer l'action sélectionnée
+    if (e.ctrlKey && e.key === 'ArrowUp' && selectedActionIndex > 0) {
+        e.preventDefault();
+        moveAction(selectedActionIndex, -1);
+        selectedActionIndex--;
+        highlightSelectedAction();
+        return;
+    }
+
+    if (e.ctrlKey && e.key === 'ArrowDown' && selectedActionIndex >= 0 && selectedActionIndex < actions.length - 1) {
+        e.preventDefault();
+        moveAction(selectedActionIndex, 1);
+        selectedActionIndex++;
+        highlightSelectedAction();
+        return;
+    }
+
+    // Flèches haut/bas sans Ctrl - Naviguer dans les actions
+    if (e.key === 'ArrowUp' && !e.ctrlKey) {
+        e.preventDefault();
+        if (actions.length > 0) {
+            selectedActionIndex = Math.max(0, selectedActionIndex - 1);
+            highlightSelectedAction();
+        }
+        return;
+    }
+
+    if (e.key === 'ArrowDown' && !e.ctrlKey) {
+        e.preventDefault();
+        if (actions.length > 0) {
+            selectedActionIndex = Math.min(actions.length - 1, selectedActionIndex + 1);
+            highlightSelectedAction();
+        }
+        return;
+    }
+
+    // Escape - Désélectionner
+    if (e.key === 'Escape') {
+        selectedActionIndex = -1;
+        highlightSelectedAction();
+        closeActionModal();
+        return;
+    }
+
+    // Ctrl+S - Prévisualiser le code
+    if (e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+        previewCode();
+        return;
+    }
+
+    // Ctrl+Enter - Générer le code
+    if (e.ctrlKey && e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('chemin-form').dispatchEvent(new Event('submit', { cancelable: true }));
+        return;
+    }
+});
+
+/**
+ * Met en surbrillance l'action sélectionnée
+ */
+function highlightSelectedAction() {
+    document.querySelectorAll('.action-item').forEach((item, index) => {
+        if (index === selectedActionIndex) {
+            item.style.outline = '2px solid var(--color-primary)';
+            item.style.outlineOffset = '2px';
+            item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else {
+            item.style.outline = 'none';
+        }
+    });
+}
+
+/**
+ * Gère le clic sur une action pour la sélectionner
+ */
+document.addEventListener('click', (e) => {
+    const actionItem = e.target.closest('.action-item');
+    if (actionItem) {
+        selectedActionIndex = parseInt(actionItem.dataset.index);
+        highlightSelectedAction();
+    } else if (!e.target.closest('.action-modal')) {
+        // Désélectionner si on clique ailleurs (sauf dans le modal)
+        selectedActionIndex = -1;
+        highlightSelectedAction();
+    }
+});
 
 // Global functions for onclick handlers
 window.addCustomAction = addCustomAction;
+window.duplicateAction = duplicateAction;

@@ -175,6 +175,22 @@ const API = {
         });
     },
 
+    // === Update (modify existing elements) ===
+
+    async updateEtat(nom, data) {
+        return this.request(`/import/etats/${encodeURIComponent(nom)}`, {
+            method: 'PUT',
+            body: data,
+        });
+    },
+
+    async updateChemin(nom, data) {
+        return this.request(`/import/chemins/${encodeURIComponent(nom)}`, {
+            method: 'PUT',
+            body: data,
+        });
+    },
+
     // === Scrcpy/ADB ===
 
     async getScrcpyStatus() {
@@ -225,5 +241,214 @@ const API = {
 
     async getScrcpyWindowStatus() {
         return this.request('/scrcpy/scrcpy-status');
+    },
+
+    // === Erreurs ===
+
+    async getAllErreurs() {
+        return this.request('/erreurs/');
+    },
+
+    async getErreursCategories() {
+        return this.request('/erreurs/categories');
+    },
+
+    async getErreursByCategory(categorie) {
+        return this.request(`/erreurs/by-category/${encodeURIComponent(categorie)}`);
+    },
+
+    async getErreursVerifApresDefaults() {
+        return this.request('/erreurs/defaults/verif-apres');
+    },
+
+    async getErreursSiEchecDefaults() {
+        return this.request('/erreurs/defaults/si-echec');
+    },
+
+    async getErreurByNom(nom) {
+        return this.request(`/erreurs/${encodeURIComponent(nom)}`);
+    },
+
+    async refreshErreurs() {
+        return this.request('/erreurs/refresh', {
+            method: 'POST',
+        });
+    },
+
+    async previewErreur(data) {
+        return this.request('/erreurs/preview', {
+            method: 'POST',
+            body: data,
+        });
+    },
+
+    async createErreur(data) {
+        return this.request('/erreurs/create', {
+            method: 'POST',
+            body: data,
+        });
+    },
+
+    async suggestErreurs(actionDescription) {
+        return this.request('/erreurs/suggest', {
+            method: 'POST',
+            body: { action_description: actionDescription },
+        });
+    },
+
+    // === Duplicate Detection ===
+
+    async checkDuplicates(imagePath, exactThreshold = 0.95, similarThreshold = 0.85) {
+        const params = new URLSearchParams({
+            image_path: imagePath,
+            exact_threshold: exactThreshold,
+            similar_threshold: similarThreshold,
+        });
+        return this.request(`/images/check-duplicates?${params}`, {
+            method: 'POST',
+        });
+    },
+
+    async getImageHash(imagePath) {
+        return this.request(`/images/hash?path=${encodeURIComponent(imagePath)}`);
+    },
+
+    // === Database (Sessions/Drafts) ===
+
+    async listSessions(sessionType = null, includeCompleted = false) {
+        const params = new URLSearchParams();
+        if (sessionType) params.append('session_type', sessionType);
+        if (includeCompleted) params.append('include_completed', 'true');
+        return this.request(`/db/sessions?${params}`);
+    },
+
+    async getSession(sessionId) {
+        return this.request(`/db/sessions/${sessionId}`);
+    },
+
+    async createSession(type, name, data) {
+        return this.request('/db/sessions', {
+            method: 'POST',
+            body: { type, name, data },
+        });
+    },
+
+    async updateSession(sessionId, type, name, data) {
+        return this.request(`/db/sessions/${sessionId}`, {
+            method: 'PUT',
+            body: { type, name, data },
+        });
+    },
+
+    async completeSession(sessionId) {
+        return this.request(`/db/sessions/${sessionId}/complete`, {
+            method: 'POST',
+        });
+    },
+
+    async deleteSession(sessionId) {
+        return this.request(`/db/sessions/${sessionId}`, {
+            method: 'DELETE',
+        });
+    },
+
+    // === Database (Groups) ===
+
+    async listDbGroups() {
+        return this.request('/db/groups');
+    },
+
+    async createDbGroup(name, description = null, color = null) {
+        return this.request('/db/groups', {
+            method: 'POST',
+            body: { name, description, color },
+        });
+    },
+
+    async deleteDbGroup(name) {
+        return this.request(`/db/groups/${encodeURIComponent(name)}`, {
+            method: 'DELETE',
+        });
+    },
+
+    // === Database (Templates Hash) ===
+
+    async listTemplateHashes(source = null) {
+        const params = source ? `?source=${encodeURIComponent(source)}` : '';
+        return this.request(`/db/templates${params}`);
+    },
+
+    async searchTemplatesByHash(dhash, maxDistance = 5) {
+        const params = new URLSearchParams({
+            dhash,
+            max_distance: maxDistance,
+        });
+        return this.request(`/db/templates/search?${params}`);
+    },
+
+    // === Database (History) ===
+
+    async getGenerationHistory(genType = null, limit = 50) {
+        const params = new URLSearchParams();
+        if (genType) params.append('gen_type', genType);
+        params.append('limit', limit);
+        return this.request(`/db/history?${params}`);
+    },
+
+    // === Database (Search & Stats) ===
+
+    async searchDatabase(query, tables = null) {
+        const params = new URLSearchParams({ q: query });
+        if (tables) params.append('tables', tables.join(','));
+        return this.request(`/db/search?${params}`);
+    },
+
+    async getDatabaseStats() {
+        return this.request('/db/stats');
+    },
+
+    // === Synchronisation ===
+
+    async getSyncStatus() {
+        return this.request('/sync/status');
+    },
+
+    async listSyncChanges(elementType = null) {
+        const params = elementType ? `?element_type=${encodeURIComponent(elementType)}` : '';
+        return this.request(`/sync/changes${params}`);
+    },
+
+    async syncAll() {
+        return this.request('/sync/sync-all', {
+            method: 'POST',
+        });
+    },
+
+    async syncElement(elementName) {
+        return this.request(`/sync/sync/${encodeURIComponent(elementName)}`, {
+            method: 'POST',
+        });
+    },
+
+    async acceptSyncChange(filePath, elementName) {
+        return this.request('/sync/accept', {
+            method: 'POST',
+            body: { file_path: filePath, element_name: elementName },
+        });
+    },
+
+    async ignoreSyncChange(filePath, elementName) {
+        return this.request('/sync/ignore', {
+            method: 'POST',
+            body: { file_path: filePath, element_name: elementName },
+        });
+    },
+
+    async getSyncHistory(elementName) {
+        return this.request(`/sync/history/${encodeURIComponent(elementName)}`);
+    },
+
+    async getTrackedElements() {
+        return this.request('/sync/tracked');
     },
 };

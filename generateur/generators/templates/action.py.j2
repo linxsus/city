@@ -2,8 +2,7 @@
 
 from actions.action import Action
 {% if erreurs_verif_apres or erreurs_si_echec %}
-from erreurs import {% for e in erreurs_verif_apres %}{{ e }}{% if not loop.last %}, {% endif %}{% endfor %}{% if erreurs_verif_apres and erreurs_si_echec %}, {% endif %}{% for e in erreurs_si_echec %}{{ e }}{% if not loop.last %}, {% endif %}{% endfor %}
-
+from erreurs.liste_erreurs import creer_erreurs_mafia_city
 {% endif %}
 
 
@@ -14,20 +13,38 @@ class {{ nom_classe }}(Action):
         {{ nom_classe }}(fenetre{% for p in params_with_defaults %}, {{ p.split(':')[0].strip() }}=...{% endfor %})
     """
 
+    {% if erreurs_verif_apres %}
+    # Noms des erreurs à vérifier après succès
+    ERREURS_VERIF_APRES = [{% for e in erreurs_verif_apres %}"{{ e }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+    {% endif %}
+    {% if erreurs_si_echec %}
+    # Noms des erreurs à vérifier si échec
+    ERREURS_SI_ECHEC = [{% for e in erreurs_si_echec %}"{{ e }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+    {% endif %}
+
     def __init__(self, fenetre{% if params_with_defaults %}, {{ params_with_defaults | join(', ') }}{% endif %}, **kwargs):
         {% if erreurs_verif_apres or erreurs_si_echec %}
+        # Récupérer les erreurs depuis le catalogue
+        erreurs_catalogue = creer_erreurs_mafia_city(fenetre)
+        {% if erreurs_verif_apres %}
+        erreurs_apres = [erreurs_catalogue[nom] for nom in self.ERREURS_VERIF_APRES if nom in erreurs_catalogue]
+        {% endif %}
+        {% if erreurs_si_echec %}
+        erreurs_echec = [erreurs_catalogue[nom] for nom in self.ERREURS_SI_ECHEC if nom in erreurs_catalogue]
+        {% endif %}
         super().__init__(
             fenetre,
             {% if erreurs_verif_apres %}
-            erreurs_verif_apres=[{% for e in erreurs_verif_apres %}{{ e }}{% if not loop.last %}, {% endif %}{% endfor %}],
+            erreurs_verif_apres=erreurs_apres,
             {% endif %}
             {% if erreurs_si_echec %}
-            erreurs_si_echec=[{% for e in erreurs_si_echec %}{{ e }}{% if not loop.last %}, {% endif %}{% endfor %}],
+            erreurs_si_echec=erreurs_echec,
             {% endif %}
+            retry_si_erreur_non_identifiee={{ retry_si_erreur_non_identifiee }},
             **kwargs
         )
         {% else %}
-        super().__init__(fenetre, **kwargs)
+        super().__init__(fenetre, retry_si_erreur_non_identifiee={{ retry_si_erreur_non_identifiee }}, **kwargs)
         {% endif %}
         {% for init in params_init %}
         {{ init }}

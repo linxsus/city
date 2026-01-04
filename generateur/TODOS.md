@@ -52,24 +52,24 @@
 - [x] Interface web pour ActionLongue
 - [x] Sauvegarde/chargement du workspace Blockly
 
-### Gestion des erreurs
-- [ ] Charger la liste des erreurs existantes (liste_erreurs.py)
-- [ ] Interface de sélection des erreurs pour les actions
-- [ ] Création de nouvelles erreurs depuis l'interface
-- [ ] Suggestion d'erreurs par l'IA selon le contexte
-- [ ] Paramètres erreurs_verif_apres / erreurs_si_echec
-- [ ] Option retry_si_erreur_non_identifiee
+### Gestion des erreurs ✅
+- [x] Charger la liste des erreurs existantes (liste_erreurs.py)
+- [x] Interface de sélection des erreurs pour les actions
+- [x] Création de nouvelles erreurs depuis l'interface
+- [x] Suggestion d'erreurs par l'IA selon le contexte
+- [x] Paramètres erreurs_verif_apres / erreurs_si_echec
+- [x] Option retry_si_erreur_non_identifiee
 
-### Améliorations UX
+### Améliorations UX ✅
 - [x] Historique undo/redo (intégré à Blockly)
-- [ ] Drag & drop pour réordonner les actions (chemins)
-- [ ] Duplication d'actions
-- [ ] Raccourcis clavier
+- [x] Drag & drop pour réordonner les actions (chemins)
+- [x] Duplication d'actions
+- [x] Raccourcis clavier
 - [x] Mode sombre (thème par défaut)
 
 ---
 
-## Phase 3 - Import et Synchronisation (En cours)
+## Phase 3 - Import et Synchronisation ✅
 
 ### Import des éléments existants
 - [x] Parser les fichiers Python existants :
@@ -77,32 +77,32 @@
   - [x] Extraire les classes Chemin
   - [x] Extraire les classes Action
 - [x] Afficher les éléments importés dans l'interface
-- [ ] Permettre la modification des éléments importés
+- [x] Permettre la modification des éléments importés
 - [x] Détecter les templates associés
 - [x] API routes pour l'import (/api/import/*)
 - [x] Détection des templates orphelins et manquants
 
-### Synchronisation bidirectionnelle
-- [ ] Détecter les modifications manuelles du code
-- [ ] Mettre à jour l'interface si le code a changé
-- [ ] Mettre à jour le code si l'interface a changé
-- [ ] Gestion des conflits
-- [ ] Versioning des fichiers générés
+### Synchronisation bidirectionnelle ✅
+- [x] Détecter les modifications manuelles du code
+- [x] Mettre à jour l'interface si le code a changé
+- [x] Mettre à jour le code si l'interface a changé
+- [x] Gestion des conflits
+- [x] Versioning des fichiers générés
 
-### Détection de duplicatas
-- [ ] Hash perceptuel des images (dHash)
-- [ ] Comparaison avec templates existants
-- [ ] Avertissement si template similaire
-- [ ] Proposition d'utiliser l'existant
-- [ ] Forcer la création si nécessaire
+### Détection de duplicatas ✅
+- [x] Hash perceptuel des images (dHash)
+- [x] Comparaison avec templates existants
+- [x] Avertissement si template similaire
+- [x] Proposition d'utiliser l'existant
+- [x] Forcer la création si nécessaire
 
-### Base de données
-- [ ] SQLite pour stocker les métadonnées
-- [ ] Table des sessions (brouillons)
-- [ ] Table des templates avec hash
-- [ ] Table des groupes
-- [ ] Table des erreurs connues
-- [ ] Recherche et filtrage
+### Base de données ✅
+- [x] SQLite pour stocker les métadonnées
+- [x] Table des sessions (brouillons)
+- [x] Table des templates avec hash
+- [x] Table des groupes
+- [x] Table des erreurs connues
+- [x] Recherche et filtrage
 
 ---
 
@@ -182,4 +182,4 @@ transformers + torch
 
 ---
 
-*Dernière mise à jour : 27/12/2025*
+*Dernière mise à jour : 03/01/2026*
