@@ -10,36 +10,44 @@ echo   Lancement de l'automatisation Mafia City
 echo ========================================================================
 echo.
 
-REM Verification de conda
-where conda >nul 2>&1
-if %errorlevel% neq 0 (
-    echo ERREUR: Conda n'est pas detecte
-    echo Veuillez ouvrir "Anaconda Prompt" et lancer ce script depuis la
-    pause
-    exit /b 1
+REM Chercher Python dans l'environnement automatisation
+set "PYTHON_ENV="
+
+REM Vérifier les emplacements courants de conda
+if exist "C:\ia\anaconda\envs\automatisation\python.exe" (
+    set "PYTHON_ENV=C:\ia\anaconda\envs\automatisation\python.exe"
+    goto :found
+)
+if exist "%USERPROFILE%\anaconda3\envs\automatisation\python.exe" (
+    set "PYTHON_ENV=%USERPROFILE%\anaconda3\envs\automatisation\python.exe"
+    goto :found
+)
+if exist "%USERPROFILE%\miniconda3\envs\automatisation\python.exe" (
+    set "PYTHON_ENV=%USERPROFILE%\miniconda3\envs\automatisation\python.exe"
+    goto :found
+)
+if exist "%LOCALAPPDATA%\anaconda3\envs\automatisation\python.exe" (
+    set "PYTHON_ENV=%LOCALAPPDATA%\anaconda3\envs\automatisation\python.exe"
+    goto :found
+)
+if exist "C:\ProgramData\anaconda3\envs\automatisation\python.exe" (
+    set "PYTHON_ENV=C:\ProgramData\anaconda3\envs\automatisation\python.exe"
+    goto :found
 )
 
-REM Verification de l'environnement
-call conda env list | find "automatisation" >nul 2>&1
-if %errorlevel% neq 0 (
-    echo ERREUR: L'environnement "automatisation" n'existe pas
-    echo.
-    echo Veuillez d'abord executer un des scripts d'installation :
-    echo   - setup_env_cpu.bat (pour CPU uniquement)
-    echo   - setup_env_gpu.bat (pour GPU avec CUDA 12.1)
-    echo.
-    pause
-    exit /b 1
-)
+REM Environnement non trouvé
+echo ERREUR: L'environnement "automatisation" n'a pas ete trouve.
+echo.
+echo Executez d'abord un des scripts d'installation :
+echo   - setup_env_intel.bat (recommande pour Intel + Android)
+echo   - setup_env_cpu.bat (pour CPU uniquement)
+echo   - setup_env_gpu.bat (pour GPU NVIDIA avec CUDA 12.1)
+echo.
+pause
+exit /b 1
 
-echo Activation de l'environnement "automatisation"...
-call conda activate automatisation
-if %errorlevel% neq 0 (
-    echo ERREUR: Impossible d'activer l'environnement
-    pause
-    exit /b 1
-)
-
+:found
+echo Environnement trouve: %PYTHON_ENV%
 echo.
 echo Lancement de l'automatisation...
 echo Appuyez sur CTRL+C pour arreter proprement
@@ -47,7 +55,7 @@ echo.
 echo ========================================================================
 echo.
 
-python main.py %*
+"%PYTHON_ENV%" main.py %*
 
 echo.
 echo ========================================================================

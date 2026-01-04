@@ -1,23 +1,24 @@
 @echo off
 REM ============================================================================
-REM Script d'installation - Environnement GPU (CUDA 12.1)
+REM Script d'installation - Environnement Intel (CPU optimise avec MKL)
 REM Framework d'automatisation Mafia City
 REM ============================================================================
 
 echo.
 echo ========================================================================
-echo   Installation de l'environnement AUTOMATISATION (GPU - CUDA 12.1)
+echo   Installation de l'environnement AUTOMATISATION (Intel optimise)
 echo ========================================================================
 echo.
 echo Ce script va :
 echo   - Installer scrcpy et ADB (pour controle Android)
 echo   - Creer un environnement conda nomme "automatisation"
-echo   - Installer Python 3.12
-echo   - Installer PyTorch avec support CUDA 12.1
+echo   - Installer Python 3.11
+echo   - Installer PyTorch avec Intel MKL (optimise pour processeurs Intel)
 echo   - Installer toutes les dependances (OpenCV, EasyOCR, etc.)
 echo.
-echo PREREQUIS : CUDA 12.1 doit etre installe sur votre systeme
-echo Si vous n'avez pas CUDA 12.1, utilisez setup_env_cpu.bat
+echo OPTIMISATIONS:
+echo   - Intel MKL (Math Kernel Library) pour calculs rapides
+echo   - Compatible avec tous les processeurs Intel (Core Ultra, etc.)
 echo.
 echo Appuyez sur une touche pour continuer ou CTRL+C pour annuler...
 pause >nul
@@ -29,25 +30,42 @@ echo.
 REM Verifier si winget est disponible
 where winget >nul 2>&1
 if %errorlevel% neq 0 (
-    echo AVERTISSEMENT: winget n'est pas disponible
-    echo scrcpy ne sera pas installe automatiquement.
-    echo Installez-le manuellement depuis: https://github.com/Genymobile/scrcpy/releases
+    echo ERREUR: winget n'est pas disponible
+    echo Installez manuellement scrcpy depuis: https://github.com/Genymobile/scrcpy/releases
     echo.
-) else (
-    REM Installer scrcpy via winget (inclut ADB)
-    echo Installation de scrcpy via winget...
-    winget install Genymobile.scrcpy --accept-package-agreements --accept-source-agreements -h
+    pause
+    exit /b 1
+)
 
-    if %errorlevel% neq 0 (
-        echo Note: scrcpy est peut-etre deja installe.
-    )
+REM Installer scrcpy via winget (inclut ADB)
+echo Installation de scrcpy via winget...
+winget install Genymobile.scrcpy --accept-package-agreements --accept-source-agreements -h
+
+if %errorlevel% neq 0 (
+    echo.
+    echo Note: scrcpy est peut-etre deja installe ou winget a rencontre un probleme.
+    echo Verification...
 )
 
 REM Verifier que scrcpy est installe
 where scrcpy >nul 2>&1
 if %errorlevel% neq 0 (
+    echo.
     echo AVERTISSEMENT: scrcpy n'est pas dans le PATH
-    echo Apres installation, fermez et rouvrez Anaconda Prompt.
+    echo Ajout du chemin scrcpy au PATH utilisateur...
+
+    REM Chemin typique d'installation winget
+    set "SCRCPY_PATH=%LOCALAPPDATA%\Microsoft\WinGet\Packages\Genymobile.scrcpy_Microsoft.Winget.Source_8wekyb3d8bbwe"
+
+    REM Verifier si le dossier existe
+    if exist "%SCRCPY_PATH%\scrcpy.exe" (
+        setx PATH "%PATH%;%SCRCPY_PATH%" >nul 2>&1
+        echo Chemin ajoute: %SCRCPY_PATH%
+    ) else (
+        echo.
+        echo Impossible de trouver scrcpy automatiquement.
+        echo Apres l'installation, ajoutez manuellement le dossier scrcpy au PATH.
+    )
 ) else (
     echo OK - scrcpy detecte
 )
@@ -55,7 +73,9 @@ if %errorlevel% neq 0 (
 REM Verifier ADB
 where adb >nul 2>&1
 if %errorlevel% neq 0 (
+    echo.
     echo AVERTISSEMENT: adb n'est pas dans le PATH
+    echo scrcpy inclut adb, il devrait etre disponible apres redemarrage du terminal.
 ) else (
     echo OK - adb detecte
 )
@@ -77,8 +97,8 @@ call conda env remove -n automatisation -y >nul 2>&1
 echo OK
 
 echo.
-echo [4/7] Creation de l'environnement conda avec Python 3.12...
-call conda create -n automatisation python=3.12 -y
+echo [4/7] Creation de l'environnement conda avec Python 3.11...
+call conda create -n automatisation python=3.11 -y
 if %errorlevel% neq 0 (
     echo ERREUR: Echec de creation de l'environnement
     pause
@@ -97,20 +117,19 @@ if %errorlevel% neq 0 (
 echo OK
 
 echo.
-echo [6/7] Installation de PyTorch avec CUDA 12.1...
-echo Cette etape peut prendre plusieurs minutes (telechargement ~2-3 GB)...
-call pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+echo [6/7] Installation de PyTorch avec Intel MKL...
+echo Cette etape peut prendre plusieurs minutes (telechargement ~500 MB)...
+echo.
+
+REM Installation de PyTorch CPU avec MKL
+call pip install torch==2.8.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+
 if %errorlevel% neq 0 (
     echo ERREUR: Echec de l'installation de PyTorch
-    echo.
-    echo Verifiez que :
-    echo   - Vous avez CUDA 12.1 installe
-    echo   - Votre GPU est compatible CUDA
-    echo   - Vous avez suffisamment d'espace disque (~3 GB)
     pause
     exit /b 1
 )
-echo OK
+echo OK - PyTorch installe avec Intel MKL
 
 echo.
 echo [7/7] Installation des dependances du projet...
@@ -138,7 +157,7 @@ call pip install "pywin32>=306"
 echo   - pynput (detection clavier/souris)...
 call pip install "pynput>=1.7.6"
 
-echo   - EasyOCR (reconnaissance de texte - GPU accelere)...
+echo   - EasyOCR (reconnaissance de texte)...
 call pip install "easyocr>=1.7.0"
 
 echo   - pytest (tests unitaires)...
@@ -155,23 +174,25 @@ if %errorlevel% neq 0 (
 echo OK
 
 echo.
+echo Verification de l'installation...
+python -c "import torch; mkl = torch.backends.mkl.is_available(); print(f'PyTorch {torch.__version__}'); print(f'Intel MKL: {mkl}')"
+python -c "import easyocr; print('EasyOCR: OK')"
+
+echo.
 echo ========================================================================
 echo   INSTALLATION TERMINEE AVEC SUCCES !
 echo ========================================================================
 echo.
-echo Environnement : automatisation (GPU)
-echo Python        : 3.12
-echo PyTorch       : CUDA 12.1
-echo OCR           : EasyOCR (GPU accelere)
+echo Environnement : automatisation (Intel optimise)
+echo Python        : 3.11
+echo PyTorch       : 2.8.0 avec Intel MKL
+echo OCR           : EasyOCR (mode CPU)
 echo Scrcpy/ADB    : Installe via winget
 echo Tests         : pytest + pytest-cov
 echo.
-echo IMPORTANT: Si scrcpy/adb ne sont pas reconnus,
-echo            FERMEZ et ROUVREZ Anaconda Prompt.
-echo.
-echo Pour verifier que le GPU est detecte :
-echo   conda activate automatisation
-echo   python -c "import torch; print(f'CUDA: {torch.cuda.is_available()}')"
+echo IMPORTANT - Configuration scrcpy:
+echo   Si scrcpy/adb ne sont pas reconnus, FERMEZ et ROUVREZ Anaconda Prompt
+echo   pour que le PATH soit mis a jour.
 echo.
 echo Pour utiliser cet environnement :
 echo   1. Ouvrez un nouveau terminal Anaconda Prompt
