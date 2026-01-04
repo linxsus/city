@@ -1,0 +1,10 @@
+{
+  "name": "bouton_collecter",
+  "description": "Bouton pour collecter des ressources",
+  "group_configs": {
+    "bluestack": {
+      "variants": ["v1.png"],
+      "threshold": 0.8
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "icone_jeu_charge",
+  "description": "Icône indiquant que le jeu est chargé",
+  "group_configs": {
+    "bluestack": {
+      "variants": ["v1.png"],
+      "threshold": 0.8
+    }
+  }
+}

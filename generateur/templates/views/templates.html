@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Générateur de Classes</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        .templates-container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            min-height: 600px;
+        }
+
+        .templates-sidebar {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid var(--border-color);
+        }
+
+        .templates-main {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .category-section {
+            margin-bottom: 15px;
+        }
+
+        .category-header {
+            font-weight: bold;
+            padding: 8px 10px;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .category-header:hover {
+            background: var(--bg-hover);
+        }
+
+        .category-items {
+            padding-left: 10px;
+        }
+
+        .template-item {
+            padding: 8px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin: 2px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .template-item:hover {
+            background: var(--bg-hover);
+        }
+
+        .template-item.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .template-item .variant-count {
+            font-size: 0.8em;
+            opacity: 0.7;
+        }
+
+        .template-detail {
+            display: none;
+        }
+
+        .template-detail.active {
+            display: block;
+        }
+
+        .template-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .group-section {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+        }
+
+        .group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .group-header h4 {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .threshold-badge {
+            font-size: 0.8em;
+            padding: 2px 8px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 10px;
+        }
+
+        .variants-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+        }
+
+        .variant-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            position: relative;
+        }
+
+        .variant-card img {
+            max-width: 100%;
+            max-height: 80px;
+            object-fit: contain;
+            margin-bottom: 8px;
+        }
+
+        .variant-card .variant-name {
+            font-size: 0.85em;
+            word-break: break-all;
+        }
+
+        .variant-card .variant-actions {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .variant-card:hover .variant-actions {
+            opacity: 1;
+        }
+
+        .add-variant-btn {
+            border: 2px dashed var(--border-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100px;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        .add-variant-btn:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .no-template-selected {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 300px;
+            color: var(--text-secondary);
+        }
+
+        .no-template-selected .icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        .modal-form-group {
+            margin-bottom: 15px;
+        }
+
+        .modal-form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .modal-form-group input,
+        .modal-form-group select,
+        .modal-form-group textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .group-configs-editor {
+            margin-top: 15px;
+        }
+
+        .group-config-item {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .group-config-item input {
+            flex: 1;
+        }
+
+        .btn-icon {
+            padding: 5px 10px;
+            font-size: 1.2em;
+            line-height: 1;
+        }
+
+        .sidebar-actions {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .sidebar-actions .btn {
+            flex: 1;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-bottom: 15px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+<body>
+    {% include "partials/header.html" %}
+
+    <main class="container">
+        <div class="page-header">
+            <h1>Gestion des Templates</h1>
+            <p>Gérez vos templates multi-variantes avec support des groupes (bluestack, scrcpy, etc.)</p>
+        </div>
+
+        <div class="templates-container">
+            <!-- Sidebar avec liste des templates -->
+            <aside class="templates-sidebar">
+                <div class="sidebar-actions">
+                    <button class="btn btn-primary" id="btn-new-template">+ Nouveau</button>
+                    <button class="btn btn-secondary" id="btn-refresh">🔄</button>
+                </div>
+
+                <input type="text" class="search-input" id="search-templates" placeholder="Rechercher...">
+
+                <div id="templates-tree">
+                    <div class="loading">Chargement...</div>
+                </div>
+            </aside>
+
+            <!-- Zone principale avec détail du template -->
+            <div class="templates-main">
+                <div class="no-template-selected" id="no-selection">
+                    <div class="icon">📁</div>
+                    <h3>Sélectionnez un template</h3>
+                    <p>Ou créez-en un nouveau avec le bouton "Nouveau"</p>
+                </div>
+
+                <div class="template-detail" id="template-detail">
+                    <div class="template-header">
+                        <div>
+                            <h2 id="template-name">-</h2>
+                            <p id="template-description" style="margin: 5px 0; color: var(--text-secondary);">-</p>
+                        </div>
+                        <div>
+                            <button class="btn btn-secondary" id="btn-edit-template">✏️ Modifier</button>
+                            <button class="btn btn-danger" id="btn-delete-template">🗑️ Supprimer</button>
+                        </div>
+                    </div>
+
+                    <div id="groups-container">
+                        <!-- Les groupes et variantes seront affichés ici -->
+                    </div>
+
+                    <button class="btn btn-secondary" id="btn-add-group" style="margin-top: 15px;">+ Ajouter un groupe</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal création/édition template -->
+        <div class="modal hidden" id="template-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-title">Nouveau Template</h3>
+                    <button class="modal-close" onclick="closeTemplateModal()">&times;</button>
+                </div>
+                <form id="template-form">
+                    <div class="modal-form-group">
+                        <label for="template-name-input">Nom (snake_case)</label>
+                        <input type="text" id="template-name-input" pattern="^[a-z][a-z0-9_]*$" required>
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="template-category-input">Catégorie</label>
+                        <input type="text" id="template-category-input" list="categories-list" required>
+                        <datalist id="categories-list"></datalist>
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="template-description-input">Description</label>
+                        <textarea id="template-description-input" rows="2"></textarea>
+                    </div>
+                    <div class="modal-form-group">
+                        <label>Groupes initiaux</label>
+                        <div class="group-configs-editor" id="group-configs-editor">
+                            <div class="group-config-item">
+                                <input type="text" placeholder="Groupe (ex: bluestack)" class="group-name-input">
+                                <input type="number" placeholder="Threshold" value="0.8" step="0.05" min="0.5" max="1" class="group-threshold-input" style="width: 100px;">
+                                <button type="button" class="btn btn-danger btn-icon" onclick="this.parentElement.remove()">×</button>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-secondary" onclick="addGroupConfigRow()">+ Ajouter groupe</button>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeTemplateModal()">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Créer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal ajout variante -->
+        <div class="modal hidden" id="variant-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Ajouter une variante</h3>
+                    <button class="modal-close" onclick="closeVariantModal()">&times;</button>
+                </div>
+                <form id="variant-form">
+                    <input type="hidden" id="variant-template-name">
+                    <input type="hidden" id="variant-group">
+                    <div class="modal-form-group">
+                        <label for="variant-name-input">Nom de la variante</label>
+                        <input type="text" id="variant-name-input" placeholder="ex: v1.png" required>
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="variant-file-input">Image</label>
+                        <input type="file" id="variant-file-input" accept="image/*" required>
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="variant-threshold-input">Threshold (optionnel)</label>
+                        <input type="number" id="variant-threshold-input" step="0.05" min="0.5" max="1" placeholder="Hérite du groupe">
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeVariantModal()">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Ajouter</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal ajout groupe -->
+        <div class="modal hidden" id="group-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Ajouter un groupe</h3>
+                    <button class="modal-close" onclick="closeGroupModal()">&times;</button>
+                </div>
+                <form id="group-form">
+                    <input type="hidden" id="group-template-name">
+                    <div class="modal-form-group">
+                        <label for="group-name-input">Nom du groupe</label>
+                        <input type="text" id="group-name-input" list="groups-list" required>
+                        <datalist id="groups-list"></datalist>
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="group-threshold-input">Threshold</label>
+                        <input type="number" id="group-threshold-input" value="0.8" step="0.05" min="0.5" max="1" required>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeGroupModal()">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Ajouter</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal test template -->
+        <div class="modal hidden" id="test-modal">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h3>Tester le template</h3>
+                    <button class="modal-close" onclick="closeTestModal()">&times;</button>
+                </div>
+                <div class="modal-form-group">
+                    <label>Image à tester</label>
+                    <input type="file" id="test-image-input" accept="image/*">
+                </div>
+                <div id="test-results" style="margin-top: 15px;">
+                    <!-- Résultats du test -->
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeTestModal()">Fermer</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    {% include "partials/footer.html" %}
+
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/api.js"></script>
+    <script>
+        // État global
+        let currentTemplate = null;
+        let allTemplates = [];
+        let allCategories = [];
+        let allGroups = [];
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadTemplates();
+            await loadCategoriesAndGroups();
+            setupEventListeners();
+        });
+
+        // Charger les templates
+        async function loadTemplates() {
+            try {
+                const response = await fetch('/api/templates/list');
+                const data = await response.json();
+                if (data.success) {
+                    allTemplates = data.data.templates;
+                    renderTemplatesTree();
+                }
+            } catch (error) {
+                console.error('Erreur chargement templates:', error);
+            }
+        }
+
+        // Charger catégories et groupes
+        async function loadCategoriesAndGroups() {
+            try {
+                const [catRes, groupRes] = await Promise.all([
+                    fetch('/api/templates/categories'),
+                    fetch('/api/templates/groups')
+                ]);
+                const catData = await catRes.json();
+                const groupData = await groupRes.json();
+
+                if (catData.success) {
+                    allCategories = catData.data.categories;
+                    updateCategoriesDatalist();
+                }
+                if (groupData.success) {
+                    allGroups = groupData.data.groups;
+                    updateGroupsDatalist();
+                }
+            } catch (error) {
+                console.error('Erreur chargement catégories/groupes:', error);
+            }
+        }
+
+        // Afficher l'arbre des templates
+        function renderTemplatesTree() {
+            const container = document.getElementById('templates-tree');
+            const searchTerm = document.getElementById('search-templates').value.toLowerCase();
+
+            // Grouper par catégorie
+            const byCategory = {};
+            allTemplates.forEach(t => {
+                if (searchTerm && !t.name.toLowerCase().includes(searchTerm)) return;
+                if (!byCategory[t.category]) byCategory[t.category] = [];
+                byCategory[t.category].push(t);
+            });
+
+            if (Object.keys(byCategory).length === 0) {
+                container.innerHTML = '<p style="color: var(--text-secondary); text-align: center;">Aucun template</p>';
+                return;
+            }
+
+            let html = '';
+            Object.keys(byCategory).sort().forEach(cat => {
+                html += `
+                    <div class="category-section">
+                        <div class="category-header" onclick="toggleCategory(this)">
+                            <span>📁 ${cat}</span>
+                            <span>${byCategory[cat].length}</span>
+                        </div>
+                        <div class="category-items">
+                `;
+                byCategory[cat].forEach(t => {
+                    const isActive = currentTemplate && currentTemplate.name === t.name;
+                    html += `
+                        <div class="template-item ${isActive ? 'active' : ''}"
+                             onclick="selectTemplate('${t.name}')">
+                            <span>${t.name}</span>
+                            <span class="variant-count">${t.variant_count} var.</span>
+                        </div>
+                    `;
+                });
+                html += '</div></div>';
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Toggle catégorie
+        function toggleCategory(header) {
+            const items = header.nextElementSibling;
+            items.style.display = items.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // Sélectionner un template
+        async function selectTemplate(name) {
+            try {
+                const response = await fetch(`/api/templates/${name}`);
+                const data = await response.json();
+                if (data.success) {
+                    currentTemplate = data.data;
+                    renderTemplateDetail();
+                    renderTemplatesTree();
+                }
+            } catch (error) {
+                console.error('Erreur chargement template:', error);
+            }
+        }
+
+        // Afficher le détail du template
+        function renderTemplateDetail() {
+            document.getElementById('no-selection').style.display = 'none';
+            const detail = document.getElementById('template-detail');
+            detail.classList.add('active');
+
+            document.getElementById('template-name').textContent = currentTemplate.name;
+            document.getElementById('template-description').textContent = currentTemplate.description || '(pas de description)';
+
+            const container = document.getElementById('groups-container');
+            let html = '';
+
+            const groupConfigs = currentTemplate.group_configs || {};
+            Object.keys(groupConfigs).forEach(groupName => {
+                const config = groupConfigs[groupName];
+                html += `
+                    <div class="group-section">
+                        <div class="group-header">
+                            <h4>
+                                🏷️ ${groupName}
+                                <span class="threshold-badge">threshold: ${config.threshold}</span>
+                            </h4>
+                            <button class="btn btn-sm btn-danger" onclick="deleteGroup('${groupName}')">×</button>
+                        </div>
+                        <div class="variants-grid">
+                `;
+                (config.variants || []).forEach(variant => {
+                    html += `
+                        <div class="variant-card">
+                            <div class="variant-actions">
+                                <button class="btn btn-sm btn-danger" onclick="deleteVariant('${groupName}', '${variant}')">×</button>
+                            </div>
+                            <img src="/api/templates/${currentTemplate.name}/variants/${variant}"
+                                 onerror="this.src='/static/img/placeholder.png'" alt="${variant}">
+                            <div class="variant-name">${variant}</div>
+                        </div>
+                    `;
+                });
+                html += `
+                            <div class="variant-card add-variant-btn" onclick="openVariantModal('${groupName}')">
+                                <span style="font-size: 2em;">+</span>
+                                <span>Ajouter</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Event listeners
+        function setupEventListeners() {
+            document.getElementById('btn-new-template').addEventListener('click', openNewTemplateModal);
+            document.getElementById('btn-refresh').addEventListener('click', loadTemplates);
+            document.getElementById('search-templates').addEventListener('input', renderTemplatesTree);
+            document.getElementById('btn-edit-template').addEventListener('click', openEditTemplateModal);
+            document.getElementById('btn-delete-template').addEventListener('click', deleteCurrentTemplate);
+            document.getElementById('btn-add-group').addEventListener('click', openGroupModal);
+
+            document.getElementById('template-form').addEventListener('submit', handleTemplateSubmit);
+            document.getElementById('variant-form').addEventListener('submit', handleVariantSubmit);
+            document.getElementById('group-form').addEventListener('submit', handleGroupSubmit);
+        }
+
+        // Modales
+        function openNewTemplateModal() {
+            document.getElementById('modal-title').textContent = 'Nouveau Template';
+            document.getElementById('template-form').reset();
+            document.getElementById('template-modal').classList.remove('hidden');
+        }
+
+        function openEditTemplateModal() {
+            if (!currentTemplate) return;
+            document.getElementById('modal-title').textContent = 'Modifier Template';
+            document.getElementById('template-name-input').value = currentTemplate.name;
+            document.getElementById('template-name-input').disabled = true;
+            document.getElementById('template-category-input').value = currentTemplate.category;
+            document.getElementById('template-description-input').value = currentTemplate.description || '';
+            document.getElementById('template-modal').classList.remove('hidden');
+        }
+
+        function closeTemplateModal() {
+            document.getElementById('template-modal').classList.add('hidden');
+            document.getElementById('template-name-input').disabled = false;
+        }
+
+        function openVariantModal(group) {
+            document.getElementById('variant-template-name').value = currentTemplate.name;
+            document.getElementById('variant-group').value = group;
+            document.getElementById('variant-form').reset();
+            document.getElementById('variant-modal').classList.remove('hidden');
+        }
+
+        function closeVariantModal() {
+            document.getElementById('variant-modal').classList.add('hidden');
+        }
+
+        function openGroupModal() {
+            document.getElementById('group-template-name').value = currentTemplate.name;
+            document.getElementById('group-form').reset();
+            document.getElementById('group-modal').classList.remove('hidden');
+        }
+
+        function closeGroupModal() {
+            document.getElementById('group-modal').classList.add('hidden');
+        }
+
+        function closeTestModal() {
+            document.getElementById('test-modal').classList.add('hidden');
+        }
+
+        // Formulaires
+        async function handleTemplateSubmit(e) {
+            e.preventDefault();
+
+            const name = document.getElementById('template-name-input').value;
+            const category = document.getElementById('template-category-input').value;
+            const description = document.getElementById('template-description-input').value;
+
+            // Collecter les groupes
+            const groupConfigs = {};
+            document.querySelectorAll('#group-configs-editor .group-config-item').forEach(item => {
+                const groupName = item.querySelector('.group-name-input').value;
+                const threshold = parseFloat(item.querySelector('.group-threshold-input').value) || 0.8;
+                if (groupName) {
+                    groupConfigs[groupName] = { variants: [], threshold };
+                }
+            });
+
+            if (Object.keys(groupConfigs).length === 0) {
+                alert('Ajoutez au moins un groupe');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/templates/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, category, description, group_configs: groupConfigs })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    closeTemplateModal();
+                    await loadTemplates();
+                    await selectTemplate(name);
+                } else {
+                    alert(data.error?.message || 'Erreur');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de la création');
+            }
+        }
+
+        async function handleVariantSubmit(e) {
+            e.preventDefault();
+
+            const templateName = document.getElementById('variant-template-name').value;
+            const group = document.getElementById('variant-group').value;
+            const variantName = document.getElementById('variant-name-input').value;
+            const file = document.getElementById('variant-file-input').files[0];
+            const threshold = document.getElementById('variant-threshold-input').value;
+
+            if (!file) {
+                alert('Sélectionnez une image');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                let url = `/api/templates/${templateName}/variants/upload?group=${encodeURIComponent(group)}&variant_name=${encodeURIComponent(variantName)}`;
+                if (threshold) url += `&threshold=${threshold}`;
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                if (data.success) {
+                    closeVariantModal();
+                    await selectTemplate(templateName);
+                } else {
+                    alert(data.error?.message || 'Erreur');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de l\'ajout');
+            }
+        }
+
+        async function handleGroupSubmit(e) {
+            e.preventDefault();
+
+            const templateName = document.getElementById('group-template-name').value;
+            const groupName = document.getElementById('group-name-input').value;
+            const threshold = parseFloat(document.getElementById('group-threshold-input').value);
+
+            // Mettre à jour la config du template
+            const newGroupConfigs = { ...currentTemplate.group_configs };
+            newGroupConfigs[groupName] = { variants: [], threshold };
+
+            try {
+                const response = await fetch(`/api/templates/${templateName}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ group_configs: newGroupConfigs })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    closeGroupModal();
+                    await selectTemplate(templateName);
+                } else {
+                    alert(data.error?.message || 'Erreur');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de l\'ajout');
+            }
+        }
+
+        // Actions
+        async function deleteCurrentTemplate() {
+            if (!currentTemplate) return;
+            if (!confirm(`Supprimer le template "${currentTemplate.name}" et toutes ses variantes ?`)) return;
+
+            try {
+                const response = await fetch(`/api/templates/${currentTemplate.name}`, { method: 'DELETE' });
+                const data = await response.json();
+                if (data.success) {
+                    currentTemplate = null;
+                    document.getElementById('template-detail').classList.remove('active');
+                    document.getElementById('no-selection').style.display = 'flex';
+                    await loadTemplates();
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+            }
+        }
+
+        async function deleteVariant(group, variant) {
+            if (!confirm(`Supprimer la variante "${variant}" ?`)) return;
+
+            try {
+                const response = await fetch(
+                    `/api/templates/${currentTemplate.name}/variants/${encodeURIComponent(group)}/${encodeURIComponent(variant)}`,
+                    { method: 'DELETE' }
+                );
+                const data = await response.json();
+                if (data.success) {
+                    await selectTemplate(currentTemplate.name);
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+            }
+        }
+
+        async function deleteGroup(group) {
+            if (!confirm(`Supprimer le groupe "${group}" et toutes ses variantes ?`)) return;
+
+            const newGroupConfigs = { ...currentTemplate.group_configs };
+            delete newGroupConfigs[group];
+
+            try {
+                const response = await fetch(`/api/templates/${currentTemplate.name}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ group_configs: newGroupConfigs })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    await selectTemplate(currentTemplate.name);
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+            }
+        }
+
+        // Helpers
+        function addGroupConfigRow() {
+            const editor = document.getElementById('group-configs-editor');
+            const row = document.createElement('div');
+            row.className = 'group-config-item';
+            row.innerHTML = `
+                <input type="text" placeholder="Groupe (ex: bluestack)" class="group-name-input">
+                <input type="number" placeholder="Threshold" value="0.8" step="0.05" min="0.5" max="1" class="group-threshold-input" style="width: 100px;">
+                <button type="button" class="btn btn-danger btn-icon" onclick="this.parentElement.remove()">×</button>
+            `;
+            editor.appendChild(row);
+        }
+
+        function updateCategoriesDatalist() {
+            const datalist = document.getElementById('categories-list');
+            datalist.innerHTML = allCategories.map(c => `<option value="${c}">`).join('');
+        }
+
+        function updateGroupsDatalist() {
+            const datalist = document.getElementById('groups-list');
+            datalist.innerHTML = allGroups.map(g => `<option value="${g}">`).join('');
+        }
+    </script>
+</body>
+</html>

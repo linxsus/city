@@ -1,0 +1,10 @@
+{
+  "name": "rapport_developpement",
+  "description": "Popup de rapport de développement",
+  "group_configs": {
+    "bluestack": {
+      "variants": ["v1.png"],
+      "threshold": 0.8
+    }
+  }
+}
