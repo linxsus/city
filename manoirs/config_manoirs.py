@@ -19,8 +19,10 @@ BLUESTACKS_PLAYER = r"C:\Program Files\BlueStacks_nxt\HD-Player.exe"
 BLUESTACKS_MANAGER = r"C:\Program Files\BlueStacks_nxt\HD-MultiInstanceManager.exe"
 
 # Chemins vers ADB et scrcpy
-ADB_PATH = r"C:\Projets\platform-tools\adb.exe"
-SCRCPY_PATH = r"C:\Projets\platform-tools\scrcpy.exe"  # Si installé au même endroit
+# Si installé via winget (recommandé), ils sont dans le PATH
+# Sinon, spécifiez le chemin complet
+ADB_PATH = "adb"  # ou r"C:\chemin\vers\adb.exe"
+SCRCPY_PATH = "scrcpy"  # ou r"C:\chemin\vers\scrcpy.exe"
 
 # =====================================================
 # DIMENSIONS BLUESTACKS (pour gestion pub/bandeau)

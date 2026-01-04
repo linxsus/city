@@ -43,17 +43,19 @@ Nous avons créé des scripts batch pour automatiser complètement l'installatio
 ✅ **Avantages** : OCR beaucoup plus rapide avec EasyOCR
 ❌ **Inconvénient** : Nécessite GPU NVIDIA + CUDA
 
-### Option 3 : GPU Intel Arc / Core Ultra (nouveau!)
+### Option 3 : Intel optimisé + scrcpy (recommandé pour Android)
 
-**Prérequis** : Pilotes Intel Arc à jour
+**Pour** : Processeurs Intel (Core Ultra, etc.) + automatisation via téléphone Android
 
 1. Double-cliquez sur `setup_env_intel.bat`
 2. Suivez les instructions à l'écran
-3. Attendez la fin de l'installation (~10-15 minutes, téléchargement ~2 GB)
-4. Vérifiez avec `python check_intel_xpu.py`
+3. Attendez la fin de l'installation (~10-15 minutes)
+4. **Rouvrez Anaconda Prompt** après installation (pour le PATH scrcpy/adb)
 
-✅ **Avantages** : Exploite les GPU Intel Arc et Core Ultra, bonnes performances
-❌ **Inconvénient** : Support plus récent, peut nécessiter pilotes très récents
+✅ **Avantages** : Installe scrcpy/ADB automatiquement, Intel MKL pour bonnes performances CPU
+❌ **Inconvénient** : Nécessite winget (Windows 10/11)
+
+**Inclus** : scrcpy, ADB, PyTorch avec Intel MKL
 
 ---
 

@@ -10,6 +10,7 @@ echo   Installation de l'environnement AUTOMATISATION (Intel optimise)
 echo ========================================================================
 echo.
 echo Ce script va :
+echo   - Installer scrcpy et ADB (pour controle Android)
 echo   - Creer un environnement conda nomme "automatisation"
 echo   - Installer Python 3.11
 echo   - Installer PyTorch avec Intel MKL (optimise pour processeurs Intel)
@@ -23,7 +24,64 @@ echo Appuyez sur une touche pour continuer ou CTRL+C pour annuler...
 pause >nul
 
 echo.
-echo [1/6] Verification de conda...
+echo [1/7] Installation de scrcpy et ADB...
+echo.
+
+REM Verifier si winget est disponible
+where winget >nul 2>&1
+if %errorlevel% neq 0 (
+    echo ERREUR: winget n'est pas disponible
+    echo Installez manuellement scrcpy depuis: https://github.com/Genymobile/scrcpy/releases
+    echo.
+    pause
+    exit /b 1
+)
+
+REM Installer scrcpy via winget (inclut ADB)
+echo Installation de scrcpy via winget...
+winget install Genymobile.scrcpy --accept-package-agreements --accept-source-agreements -h
+
+if %errorlevel% neq 0 (
+    echo.
+    echo Note: scrcpy est peut-etre deja installe ou winget a rencontre un probleme.
+    echo Verification...
+)
+
+REM Verifier que scrcpy est installe
+where scrcpy >nul 2>&1
+if %errorlevel% neq 0 (
+    echo.
+    echo AVERTISSEMENT: scrcpy n'est pas dans le PATH
+    echo Ajout du chemin scrcpy au PATH utilisateur...
+
+    REM Chemin typique d'installation winget
+    set "SCRCPY_PATH=%LOCALAPPDATA%\Microsoft\WinGet\Packages\Genymobile.scrcpy_Microsoft.Winget.Source_8wekyb3d8bbwe"
+
+    REM Verifier si le dossier existe
+    if exist "%SCRCPY_PATH%\scrcpy.exe" (
+        setx PATH "%PATH%;%SCRCPY_PATH%" >nul 2>&1
+        echo Chemin ajoute: %SCRCPY_PATH%
+    ) else (
+        echo.
+        echo Impossible de trouver scrcpy automatiquement.
+        echo Apres l'installation, ajoutez manuellement le dossier scrcpy au PATH.
+    )
+) else (
+    echo OK - scrcpy detecte
+)
+
+REM Verifier ADB
+where adb >nul 2>&1
+if %errorlevel% neq 0 (
+    echo.
+    echo AVERTISSEMENT: adb n'est pas dans le PATH
+    echo scrcpy inclut adb, il devrait etre disponible apres redemarrage du terminal.
+) else (
+    echo OK - adb detecte
+)
+
+echo.
+echo [2/7] Verification de conda...
 where conda >nul 2>&1
 if %errorlevel% neq 0 (
     echo ERREUR: Conda n'est pas installe ou n'est pas dans le PATH
@@ -34,12 +92,12 @@ if %errorlevel% neq 0 (
 echo OK - Conda detecte
 
 echo.
-echo [2/6] Suppression de l'environnement existant (si present)...
+echo [3/7] Suppression de l'environnement existant (si present)...
 call conda env remove -n automatisation -y >nul 2>&1
 echo OK
 
 echo.
-echo [3/6] Creation de l'environnement conda avec Python 3.11...
+echo [4/7] Creation de l'environnement conda avec Python 3.11...
 call conda create -n automatisation python=3.11 -y
 if %errorlevel% neq 0 (
     echo ERREUR: Echec de creation de l'environnement
@@ -49,7 +107,7 @@ if %errorlevel% neq 0 (
 echo OK
 
 echo.
-echo [4/6] Activation de l'environnement...
+echo [5/7] Activation de l'environnement...
 call conda activate automatisation
 if %errorlevel% neq 0 (
     echo ERREUR: Impossible d'activer l'environnement
@@ -59,7 +117,7 @@ if %errorlevel% neq 0 (
 echo OK
 
 echo.
-echo [5/6] Installation de PyTorch avec Intel MKL...
+echo [6/7] Installation de PyTorch avec Intel MKL...
 echo Cette etape peut prendre plusieurs minutes (telechargement ~500 MB)...
 echo.
 
@@ -74,7 +132,7 @@ if %errorlevel% neq 0 (
 echo OK - PyTorch installe avec Intel MKL
 
 echo.
-echo [6/6] Installation des dependances du projet...
+echo [7/7] Installation des dependances du projet...
 echo Cette etape peut prendre plusieurs minutes...
 
 REM Installation des dependances principales
@@ -129,12 +187,18 @@ echo Environnement : automatisation (Intel optimise)
 echo Python        : 3.11
 echo PyTorch       : 2.8.0 avec Intel MKL
 echo OCR           : EasyOCR (mode CPU)
+echo Scrcpy/ADB    : Installe via winget
 echo Tests         : pytest + pytest-cov
+echo.
+echo IMPORTANT - Configuration scrcpy:
+echo   Si scrcpy/adb ne sont pas reconnus, FERMEZ et ROUVREZ Anaconda Prompt
+echo   pour que le PATH soit mis a jour.
 echo.
 echo Pour utiliser cet environnement :
 echo   1. Ouvrez un nouveau terminal Anaconda Prompt
 echo   2. Tapez : conda activate automatisation
-echo   3. Lancez : python main.py
+echo   3. Connectez votre telephone Android en USB (mode debogage active)
+echo   4. Lancez : python main.py
 echo.
 echo Ou double-cliquez simplement sur run.bat !
 echo.
