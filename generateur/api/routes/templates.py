@@ -187,6 +187,7 @@ async def add_variant(
     width: int | None = None,
     height: int | None = None,
     threshold: float | None = None,
+    force: bool = False,
 ) -> APIResponse:
     """Ajoute une variante à un template.
 
@@ -197,6 +198,7 @@ async def add_variant(
         image_path: Chemin de l'image source
         x, y, width, height: Région à extraire (optionnel)
         threshold: Seuil spécifique (optionnel)
+        force: Forcer l'ajout même si duplicata détecté
     """
     service = get_template_service()
 
@@ -205,43 +207,40 @@ async def add_variant(
     if all(v is not None for v in [x, y, width, height]):
         region = RegionSchema(x=x, y=y, width=width, height=height)
 
-    try:
-        variant_path = service.add_variant(
-            template_name=template_name,
-            group=group,
-            variant_name=variant_name,
-            image_path=image_path,
-            region=region,
-            threshold=threshold,
-        )
+    result = service.add_variant(
+        template_name=template_name,
+        group=group,
+        variant_name=variant_name,
+        image_path=image_path,
+        region=region,
+        threshold=threshold,
+        force=force,
+    )
 
-        if not variant_path:
-            return APIResponse(
-                success=False,
-                error={
-                    "code": "NOT_FOUND",
-                    "message": f"Template '{template_name}' non trouvé",
-                },
-            )
-
-        return APIResponse(
-            success=True,
-            data={
-                "variant": variant_name,
-                "group": group,
-                "path": str(variant_path),
-            },
-            message="Variante ajoutée avec succès",
-        )
-
-    except ValueError as e:
+    if not result.get("success"):
         return APIResponse(
             success=False,
             error={
-                "code": "ERROR",
-                "message": str(e),
+                "code": "DUPLICATE" if result.get("requires_force") else "ERROR",
+                "message": result.get("error", "Erreur inconnue"),
+            },
+            data={
+                "duplicates": result.get("duplicates", []),
+                "similar": result.get("similar", []),
+                "requires_force": result.get("requires_force", False),
             },
         )
+
+    return APIResponse(
+        success=True,
+        data={
+            "variant": variant_name,
+            "group": group,
+            "path": result.get("path"),
+            "hash": result.get("hash"),
+        },
+        message=result.get("message", "Variante ajoutée avec succès"),
+    )
 
 
 @router.post("/{template_name}/variants/upload")
@@ -251,6 +250,7 @@ async def upload_variant(
     variant_name: str,
     file: UploadFile = File(...),
     threshold: float | None = None,
+    force: bool = False,
 ) -> APIResponse:
     """Upload une image comme variante.
 
@@ -260,6 +260,7 @@ async def upload_variant(
         variant_name: Nom du fichier
         file: Image à uploader
         threshold: Seuil spécifique (optionnel)
+        force: Forcer l'ajout même si duplicata détecté
     """
     # Vérifier le type de fichier
     if not file.content_type or not file.content_type.startswith("image/"):
@@ -279,46 +280,42 @@ async def upload_variant(
     # Ajouter la variante
     template_service = get_template_service()
 
-    try:
-        variant_path = template_service.add_variant(
-            template_name=template_name,
-            group=group,
-            variant_name=variant_name,
-            image_path=str(temp_path),
-            threshold=threshold,
-        )
+    result = template_service.add_variant(
+        template_name=template_name,
+        group=group,
+        variant_name=variant_name,
+        image_path=str(temp_path),
+        threshold=threshold,
+        force=force,
+    )
 
-        # Supprimer le fichier temporaire
-        image_service.cleanup_upload(str(temp_path))
+    # Supprimer le fichier temporaire
+    image_service.cleanup_upload(str(temp_path))
 
-        if not variant_path:
-            return APIResponse(
-                success=False,
-                error={
-                    "code": "NOT_FOUND",
-                    "message": f"Template '{template_name}' non trouvé",
-                },
-            )
-
-        return APIResponse(
-            success=True,
-            data={
-                "variant": variant_name,
-                "group": group,
-                "path": str(variant_path),
-            },
-            message="Variante uploadée avec succès",
-        )
-
-    except ValueError as e:
-        image_service.cleanup_upload(str(temp_path))
+    if not result.get("success"):
         return APIResponse(
             success=False,
             error={
-                "code": "ERROR",
-                "message": str(e),
+                "code": "DUPLICATE" if result.get("requires_force") else "ERROR",
+                "message": result.get("error", "Erreur inconnue"),
+            },
+            data={
+                "duplicates": result.get("duplicates", []),
+                "similar": result.get("similar", []),
+                "requires_force": result.get("requires_force", False),
             },
         )
+
+    return APIResponse(
+        success=True,
+        data={
+            "variant": variant_name,
+            "group": group,
+            "path": result.get("path"),
+            "hash": result.get("hash"),
+        },
+        message=result.get("message", "Variante uploadée avec succès"),
+    )
 
 
 @router.delete("/{template_name}/variants/{group}/{variant_name}")
@@ -459,4 +456,64 @@ async def test_template(
             "found_count": sum(1 for r in results if r.get("found")),
             "total_count": len(results),
         },
+    )
+
+
+# =====================================================
+# DÉTECTION DE DUPLICATAS ET INDEXATION (Phase 3)
+# =====================================================
+
+
+@router.post("/check-duplicate")
+async def check_duplicate(
+    image_path: str,
+    x: int | None = None,
+    y: int | None = None,
+    width: int | None = None,
+    height: int | None = None,
+    exact_threshold: float = 0.95,
+    similar_threshold: float = 0.85,
+) -> APIResponse:
+    """Vérifie si une image est un duplicata d'un template existant.
+
+    Args:
+        image_path: Chemin de l'image à vérifier
+        x, y, width, height: Région à extraire (optionnel)
+        exact_threshold: Seuil pour duplicata exact (défaut: 0.95)
+        similar_threshold: Seuil pour image similaire (défaut: 0.85)
+    """
+    service = get_template_service()
+
+    # Construire la région si spécifiée
+    region = None
+    if all(v is not None for v in [x, y, width, height]):
+        region = RegionSchema(x=x, y=y, width=width, height=height)
+
+    result = service.check_duplicate(
+        image_path=image_path,
+        region=region,
+        exact_threshold=exact_threshold,
+        similar_threshold=similar_threshold,
+    )
+
+    return APIResponse(
+        success=True,
+        data=result,
+    )
+
+
+@router.post("/index-all")
+async def index_all_templates() -> APIResponse:
+    """Indexe tous les templates existants dans la base de données.
+
+    Calcule le hash perceptuel (dHash) de chaque template et le stocke
+    pour permettre la détection rapide de duplicatas.
+    """
+    service = get_template_service()
+    result = service.index_all_templates()
+
+    return APIResponse(
+        success=True,
+        data=result,
+        message=result.get("message"),
     )
