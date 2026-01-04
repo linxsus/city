@@ -1,0 +1,10 @@
+{
+  "name": "connexion_quotidienne",
+  "description": "Popup de connexion quotidienne",
+  "group_configs": {
+    "bluestack": {
+      "variants": ["v1.png"],
+      "threshold": 0.8
+    }
+  }
+}

@@ -56,6 +56,9 @@ class ManoirBlueStacks(ManoirBase):
     - En cas de timeout: sauvegarde écran + log détaillé
     """
 
+    # Groupe pour le système de templates
+    group = "bluestack"
+
     # Timeout de lancement en secondes (30 minutes)
     TIMEOUT_LANCEMENT = 30 * 60
 

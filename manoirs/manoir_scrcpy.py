@@ -40,6 +40,9 @@ class ManoirScrcpy(ManoirBase):
         templates_subdir: Sous-dossier pour les templates spécifiques
     """
 
+    # Groupe pour le système de templates
+    group = "scrcpy"
+
     def __init__(
         self,
         manoir_id: str,

@@ -13,6 +13,9 @@ class ManoirPrincipal(ManoirBlueStacks):
     3. Exécute une action toutes les 5 minutes qui affiche "je suis la" dans les logs
     """
 
+    # Groupe pour le système de templates
+    group = "principal"
+
     def __init__(self, manoir_id="principal", config=None):
         """Initialise le manoir principal
 

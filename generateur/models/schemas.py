@@ -465,3 +465,154 @@ class APIResponse(BaseModel):
     data: Any | None = Field(default=None, description="Données retournées")
     error: dict | None = Field(default=None, description="Détails de l'erreur")
     message: str | None = Field(default=None, description="Message informatif")
+
+
+# =====================================================
+# SCHEMAS POUR LE SYSTÈME DE TEMPLATES
+# =====================================================
+
+
+class GroupConfigSchema(BaseModel):
+    """Configuration d'un groupe pour un template."""
+    variants: list[str] = Field(
+        ...,
+        min_length=1,
+        description="Liste des fichiers de variantes"
+    )
+    threshold: float = Field(
+        default=0.8,
+        ge=0.5,
+        le=1.0,
+        description="Seuil de confiance pour la détection"
+    )
+
+
+class TemplateConfigCreate(BaseModel):
+    """Données pour créer un nouveau template."""
+    name: str = Field(
+        ...,
+        min_length=1,
+        max_length=50,
+        pattern=r'^[a-z][a-z0-9_]*$',
+        description="Nom unique du template (snake_case)"
+    )
+    description: str = Field(
+        default="",
+        description="Description du template"
+    )
+    category: str = Field(
+        ...,
+        min_length=1,
+        description="Catégorie du template (boutons, popups, etc.)"
+    )
+    group_configs: dict[str, GroupConfigSchema] = Field(
+        ...,
+        min_length=1,
+        description="Configuration par groupe (bluestack, scrcpy, etc.)"
+    )
+
+
+class TemplateConfigSchema(TemplateConfigCreate):
+    """Template complet avec métadonnées."""
+    base_path: str | None = Field(
+        default=None,
+        description="Chemin vers le dossier du template"
+    )
+    created_at: datetime = Field(
+        default_factory=datetime.now,
+        description="Date de création"
+    )
+
+
+class VariantCreate(BaseModel):
+    """Données pour ajouter une variante à un template."""
+    template_name: str = Field(
+        ...,
+        description="Nom du template parent"
+    )
+    group: str = Field(
+        ...,
+        description="Groupe auquel appartient la variante"
+    )
+    variant_name: str = Field(
+        ...,
+        min_length=1,
+        description="Nom du fichier de variante"
+    )
+    threshold: float | None = Field(
+        default=None,
+        ge=0.5,
+        le=1.0,
+        description="Seuil spécifique (optionnel, hérite du groupe sinon)"
+    )
+    image_region: RegionSchema | None = Field(
+        default=None,
+        description="Région de l'image source à extraire"
+    )
+    image_source: str | None = Field(
+        default=None,
+        description="Chemin de l'image source uploadée"
+    )
+
+
+class TemplateStatsSchema(BaseModel):
+    """Statistiques d'utilisation d'un template pour un manoir."""
+    priority_order: list[str] = Field(
+        default_factory=list,
+        description="Ordre de priorité des variantes"
+    )
+    hits: dict[str, int] = Field(
+        default_factory=dict,
+        description="Nombre de matchs par variante"
+    )
+    last_match: str | None = Field(
+        default=None,
+        description="Dernière variante qui a matché"
+    )
+
+
+class TemplateListItem(BaseModel):
+    """Élément de la liste des templates."""
+    name: str = Field(..., description="Nom du template")
+    category: str = Field(..., description="Catégorie")
+    description: str = Field(default="", description="Description")
+    groups: list[str] = Field(
+        default_factory=list,
+        description="Groupes configurés"
+    )
+    variant_count: int = Field(
+        default=0,
+        description="Nombre total de variantes"
+    )
+
+
+class TemplateTestRequest(BaseModel):
+    """Requête pour tester un template sur une image."""
+    template_name: str = Field(
+        ...,
+        description="Nom du template à tester"
+    )
+    image_source: str = Field(
+        ...,
+        description="Chemin de l'image source"
+    )
+    groups: list[str] = Field(
+        default_factory=list,
+        description="Groupes à tester (tous si vide)"
+    )
+
+
+class TemplateTestResult(BaseModel):
+    """Résultat du test d'un template."""
+    variant: str = Field(..., description="Nom de la variante")
+    group: str = Field(..., description="Groupe de la variante")
+    found: bool = Field(..., description="Template trouvé ou non")
+    position: tuple[int, int] | None = Field(
+        default=None,
+        description="Position (x, y) si trouvé"
+    )
+    confidence: float | None = Field(
+        default=None,
+        description="Confiance du match"
+    )
+    threshold: float = Field(..., description="Seuil utilisé")

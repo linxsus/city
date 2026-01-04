@@ -7,6 +7,7 @@ from .ia import router as ia_router
 from .erreur_routes import router as erreurs_router
 from .database_routes import router as database_router
 from .sync_routes import router as sync_router
+from .templates import router as templates_router
 
 __all__ = [
     "etats_router",
@@ -16,4 +17,5 @@ __all__ = [
     "erreurs_router",
     "database_router",
     "sync_router",
+    "templates_router",
 ]
