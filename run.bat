@@ -10,7 +10,8 @@ echo   Lancement de l'automatisation Mafia City
 echo ========================================================================
 echo.
 
-REM Initialiser conda pour ce script
+REM Initialiser conda pour ce script (essayer plusieurs emplacements)
+call "C:\ia\anaconda\Scripts\activate.bat" >nul 2>&1
 call "%USERPROFILE%\anaconda3\Scripts\activate.bat" >nul 2>&1
 call "%USERPROFILE%\miniconda3\Scripts\activate.bat" >nul 2>&1
 call "%LOCALAPPDATA%\anaconda3\Scripts\activate.bat" >nul 2>&1
