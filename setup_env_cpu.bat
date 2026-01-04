@@ -155,6 +155,9 @@ call pip install "Jinja2>=3.1.0"
 echo   - anthropic (API Claude IA)...
 call pip install "anthropic>=0.18.0"
 
+echo   - python-dotenv (variables environnement)...
+call pip install "python-dotenv>=1.0.0"
+
 if %errorlevel% neq 0 (
     echo ERREUR: Echec de l'installation des dependances
     pause
