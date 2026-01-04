@@ -7,10 +7,15 @@
 - **BlueStacks 5** installé et configuré
 - **Anaconda** ou **Miniconda** installé ([télécharger ici](https://www.anaconda.com/download))
 
-### Pour la version GPU (optionnel)
+### Pour la version GPU NVIDIA (optionnel)
 - **Carte graphique NVIDIA** compatible CUDA
 - **CUDA 12.1** installé ([télécharger ici](https://developer.nvidia.com/cuda-downloads))
 - **Pilotes NVIDIA** à jour
+
+### Pour la version GPU Intel Arc (optionnel)
+- **Intel Arc** (A380, A580, A750, A770) ou **Intel Core Ultra** avec iGPU
+- **Pilotes Intel Arc** à jour (version 31.0.101.5186 ou supérieure)
+- Télécharger les pilotes : [Intel Arc Graphics](https://www.intel.com/content/www/us/en/download/726609/intel-arc-iris-xe-graphics-whql-windows.html)
 
 ---
 
@@ -27,7 +32,7 @@ Nous avons créé des scripts batch pour automatiser complètement l'installatio
 ✅ **Avantages** : Plus rapide, moins d'espace disque, fonctionne sur tous les PC
 ❌ **Inconvénient** : OCR plus lent (acceptable pour la plupart des usages)
 
-### Option 2 : GPU avec CUDA 12.1 (pour meilleures performances)
+### Option 2 : GPU NVIDIA avec CUDA 12.1
 
 **Prérequis** : CUDA 12.1 doit être installé
 
@@ -37,6 +42,18 @@ Nous avons créé des scripts batch pour automatiser complètement l'installatio
 
 ✅ **Avantages** : OCR beaucoup plus rapide avec EasyOCR
 ❌ **Inconvénient** : Nécessite GPU NVIDIA + CUDA
+
+### Option 3 : GPU Intel Arc / Core Ultra (nouveau!)
+
+**Prérequis** : Pilotes Intel Arc à jour
+
+1. Double-cliquez sur `setup_env_intel.bat`
+2. Suivez les instructions à l'écran
+3. Attendez la fin de l'installation (~10-15 minutes, téléchargement ~2 GB)
+4. Vérifiez avec `python check_intel_xpu.py`
+
+✅ **Avantages** : Exploite les GPU Intel Arc et Core Ultra, bonnes performances
+❌ **Inconvénient** : Support plus récent, peut nécessiter pilotes très récents
 
 ---
 
@@ -116,7 +133,7 @@ python --version
 # Doit afficher : Python 3.12.x
 ```
 
-### 3. Vérifier PyTorch (GPU uniquement)
+### 3. Vérifier PyTorch (GPU NVIDIA)
 
 ```bash
 conda activate automatisation
@@ -128,6 +145,23 @@ Résultat attendu :
 ```
 CUDA disponible: True
 GPU: NVIDIA GeForce RTX 3060
+```
+
+### 3b. Vérifier PyTorch (GPU Intel Arc)
+
+```bash
+conda activate automatisation
+python check_intel_xpu.py
+```
+
+Ou manuellement :
+```bash
+python -c "import intel_extension_for_pytorch as ipex; print(f'XPU disponible: {ipex.xpu.is_available()}')"
+```
+
+Résultat attendu :
+```
+XPU disponible: True
 ```
 
 ### 4. Tester EasyOCR
