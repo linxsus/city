@@ -139,6 +139,22 @@ call pip install "pytest>=7.4.0"
 echo   - pytest-cov (couverture de code)...
 call pip install "pytest-cov>=4.1.0"
 
+echo.
+echo   - FastAPI (serveur web generateur)...
+call pip install "fastapi>=0.109.0"
+
+echo   - Uvicorn (serveur ASGI)...
+call pip install "uvicorn[standard]>=0.27.0"
+
+echo   - python-multipart (upload fichiers)...
+call pip install "python-multipart>=0.0.6"
+
+echo   - Jinja2 (templates HTML)...
+call pip install "Jinja2>=3.1.0"
+
+echo   - anthropic (API Claude IA)...
+call pip install "anthropic>=0.18.0"
+
 if %errorlevel% neq 0 (
     echo ERREUR: Echec de l'installation des dependances
     pause
@@ -157,6 +173,7 @@ echo PyTorch       : CPU uniquement
 echo OCR           : EasyOCR (CPU)
 echo Scrcpy/ADB    : Installe via winget
 echo Tests         : pytest + pytest-cov
+echo Generateur    : FastAPI + Uvicorn + Jinja2
 echo.
 echo IMPORTANT: Si scrcpy/adb ne sont pas reconnus,
 echo            FERMEZ et ROUVREZ Anaconda Prompt.
@@ -166,6 +183,10 @@ echo   1. Ouvrez un nouveau terminal Anaconda Prompt
 echo   2. Tapez : conda activate automatisation
 echo   3. Connectez votre telephone Android en USB (mode debogage active)
 echo   4. Lancez : python main.py
+echo.
+echo Pour lancer le generateur web :
+echo   python -m generateur.main
+echo   Puis ouvrez http://localhost:8000
 echo.
 echo Ou double-cliquez simplement sur run.bat !
 echo.
